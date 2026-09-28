@@ -183,7 +183,7 @@ Three notes on that command:
   degrades the protection rather than removing it — the frame still arrives, it is
   just refused before being parsed.
 
-> **Keep `watchfiles` installed.** It is pinned in `requirements.txt`/`pyproject.toml`
+> **Keep `watchfiles` installed.** It is pinned in `pyproject.toml`
 > and `--reload` depends on it. Without it uvicorn silently falls back to `StatReload`,
 > which `os.stat()`s every `.py` file under `backend/` four times a second — including
 > the ~15k files in `.venv`. One sweep takes ~4s on a laptop, so the watcher never
@@ -200,18 +200,43 @@ doing their job, not bugs.
 Every document an agent generates (a BRD, a design, a QA report) is stored as bytes and
 referenced from an `artifacts` row. Two backends, chosen in `shared/storage/__init__.py`:
 
-| `backend/.env`                              | Storage                                  |
-|---------------------------------------------|------------------------------------------|
-| `AZURE_BLOB_ACCOUNT_URL` set                | Azure Blob Storage (the deployed setup)  |
-| blank, and `ARTIFACT_STORAGE_ROOT` set      | a directory on this machine              |
-| both blank                                  | nothing — rows record `blob_url = None`  |
+| `backend/.env`                                          | Storage                                 |
+|---------------------------------------------------------|-----------------------------------------|
+| `STORAGE_BACKEND=local` or `=azure`                     | exactly that, whatever else is set      |
+| `ENV=dev` and `ARTIFACT_STORAGE_ROOT` set               | a directory on this machine             |
+| otherwise, `AZURE_BLOB_ACCOUNT_URL` set                 | Azure Blob Storage (the deployed setup) |
+| otherwise, `ARTIFACT_STORAGE_ROOT` set                  | a directory on this machine             |
+| nothing set                                             | nothing — rows record `blob_url = None` |
 
-For local work set `ARTIFACT_STORAGE_ROOT=files/artifact-store`. The full lifecycle —
-approval, download, the agents' `read_document`, publishing to SharePoint or Confluence
-— works against it; only evidence export (which mints Azure SAS links) answers 503.
-Azure wins when both are set. The two are not synchronised: a document stored on disk
-stays on disk when you point the backend back at Azure, and vice versa — a row whose
-bytes live in the other backend downloads as "could not be retrieved".
+For local work set `ARTIFACT_STORAGE_ROOT=files/artifact-store` (absolute paths work too;
+a relative one is resolved against `backend/`). In dev that wins even with an Azure account
+configured, so you can keep the account's settings in `.env` for the days you want them —
+`STORAGE_BACKEND=azure` pins Azure again without deleting anything.
+
+Under the root, every document lands in the same layout the blob names use —
+`tenant/unit/project/stage/run/document/<id>/<file>`, and unapproved documents under the
+tenant's `_pending/` prefix — so the same `blob_path` resolves in either backend. The full
+lifecycle works: approval (which moves the bytes out of `_pending/`), download, preview,
+the agents' `read_document`, publishing to SharePoint or Confluence. Only evidence export
+answers 503, because it mints Azure SAS links and a directory has no equivalent.
+
+**The two backends do not share bytes.** Switching without copying hides everything the
+other one holds: downloads 404, previews report a missing file, and an agent asking for an
+approved document is told it could not be retrieved. Before any switch, in either
+direction:
+
+```powershell
+cd backend
+# look first — nothing is written without --apply
+.venv\Scripts\python.exe scripts\mirror_artifact_storage.py --direction azure-to-local
+.venv\Scripts\python.exe scripts\mirror_artifact_storage.py --direction azure-to-local --apply
+# and afterwards, check the whole lifecycle against the backend now in use
+.venv\Scripts\python.exe scripts\verify_artifact_storage.py
+```
+
+The mirror copies names exactly (`_pending/` included), skips files already identical, never
+overwrites one that differs, and deletes nothing — so both sides keep a copy and you can
+switch back.
 
 ## 5. Seed the dev data
 
@@ -513,10 +538,43 @@ collection time names exactly what to do) — this is deliberate, so "I forgot t
 this up" fails loudly on a fresh machine instead of silently testing against whatever
 `.env` happens to point at.
 
+### The app role, without which a third of the suite cannot pass
+
+```powershell
+cd backend
+uv run python -m scripts.setup_test_app_role
+```
+
+**Copying your `.env`'s credentials means the test app connects as `postgres`, and
+`postgres` is BYPASSRLS.** Around 30 tests assert tenant isolation the way the
+application experiences it — `_events(org_id)` opens a session for one tenant and
+selects from `audit_events` with no tenant filter, because the row-level policy is
+supposed to be the filter. Bypassed, they read every tenant's rows and fail on counts
+like `176 == 1`, alongside `test_app_role_is_not_bypassrls`,
+`test_migrations_dsn_is_not_app_dsn` and the append-only audit tests, which name the
+problem outright. Nothing is wrong with the application; the test connection is simply
+not the kind of connection the application uses.
+
+The script gives `sdlc_product_test` the same two-role shape production has — `postgres`
+for migrations (it must create the policies), `sdlc_app` for the app (NOSUPERUSER,
+NOBYPASSRLS, so they bind) — applies `grant_app_role.sql`, verifies the append-only
+revokes, and rewrites the two app DSNs in `.env.test`, keeping a `.env.test.bak`. It
+refuses to run against a database whose name does not contain "test". Idempotent; re-run
+it after any migration that adds tables.
+
 **Keep it re-migrated.** Same rule as the real database (see "3. Grants for the app
 role" and the migration-lineage troubleshooting above): after `alembic upgrade head`
 adds tables, re-run it against `sdlc_product_test` too, or newer tests that touch those
 tables will fail with relation-does-not-exist instead of a real assertion failure.
+
+### The test suite's own document store
+
+`.env.test` also sets `ARTIFACT_STORAGE_ROOT=files/artifact-store-test`. Without it the
+tests inherit `.env`'s root and file their documents into the store the development app
+reads — the dev store fills with `brd.pdf` and `policy.pdf` under invented tenant ids,
+and a test that tidies up could take a real document with it. Same reasoning as the
+separate database, and `test_local_blob_storage.py` fails if the two roots are ever the
+same again.
 
 ---
 
