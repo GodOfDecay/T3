@@ -1,5 +1,17 @@
 # Track 3 frontend — what exists, what's wrong in the Phase 1 doc, what to build
 
+> **STATUS UPDATE 2026-09-28.** §0's "neither page exists / chat is broken" describes the state
+> **before** Phase 1. Both pages now exist (`requirements-modernization/page.tsx`,
+> `discovery/page.tsx`), `agentWsPath` has both cases and is pinned in `chat-agent-map.test.ts`,
+> and `BUILT_AGENTS_BY_TRACK` gives Track 3 its own built list. §1's naming correction stands.
+> New rules for the remaining eight pages (evidence in `Track-3 Lessons from Track 1-2.md` §2.E):
+> add each backend route's BFF handler in the same change (`every-api-path-has-a-proxy.test.ts`);
+> add the agent id to the Zod protocol union and the emitter together (frames that fail `safeParse`
+> are dropped silently); **do not use Monaco** for diffs (its CDN fetch is blocked by the CSP and
+> hangs on "Loading…"; render a unified diff as a markdown `diff` block instead); render-test each
+> page's access gate; design the read-only-stage and self-approval-refusal states; enable the tile
+> **last**.
+
 Companion to `help/track3-phase1-requirements-discovery.md`. That doc was written
 from the backend side only. This one is the frontend research it was missing, and
 it **corrects a real naming mistake** in that doc's §1 — read §1 below before

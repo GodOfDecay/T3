@@ -1,0 +1,50 @@
+{
+  "schema_version": 1,
+  "agent_id": "development_modernization",
+  "artifact": "migration_artifacts",
+  "version": 1,
+  "status": "published",
+  "built_from": [
+    {"artifact": "target_design_artifacts", "version": 1, "status": "published"},
+    {"artifact": "strategy_artifacts", "version": 2, "status": "published"},
+    {"artifact": "equivalence_artifacts", "version": 1, "status": "published"}
+  ],
+  "produced_by": {"user_id": "fixture:developer", "model": "fixture (research §9 stage 6, illustrative)", "run_id": null},
+  "produced_at": "2026-12-20T15:00:00Z",
+  "payload": {
+    "module_id": "M-05",
+    "outcome": "ready_for_review",
+    "legacy_module_path": "claimtrack-reports",
+    "target_branch": "migrate/claimtrack-reports",
+    "pr_url": "https://dev.azure.com/contoso/claimtrack-modern/_git/claimtrack-modern/pullrequest/12",
+    "recipes": [
+      {"tool": "2to3", "version": "python 3.12 stdlib (lib2to3)", "args": "-w -n"},
+      {"tool": "pyupgrade", "version": "3.19.1", "args": "--py312-plus"}
+    ],
+    "file_map": [
+      {"legacy_path": "claimtrack-reports/cr4_return.py", "disposition": "mapped", "target_path": "claimtrack-reports/cr4_return.py"},
+      {"legacy_path": "claimtrack-reports/stats.py", "disposition": "mapped", "target_path": "claimtrack-reports/stats.py"},
+      {"legacy_path": "claimtrack-reports/monthly_report.py", "disposition": "mapped", "target_path": "claimtrack-reports/monthly_report.py"},
+      {"legacy_path": "claimtrack-reports/db.py", "disposition": "mapped", "target_path": "claimtrack-reports/db.py"},
+      {"legacy_path": "claimtrack-reports/config.py", "disposition": "mapped", "target_path": "claimtrack-reports/config.py"},
+      {"legacy_path": "claimtrack-reports/sql/monthly_summary.sql", "disposition": "mapped", "target_path": "claimtrack-reports/sql/monthly_summary.sql"},
+      {"legacy_path": "claimtrack-reports/sql/monthly_regions.sql", "disposition": "mapped", "target_path": "claimtrack-reports/sql/monthly_regions.sql"},
+      {"legacy_path": "claimtrack-reports/sql/monthly_totals.sql", "disposition": "mapped", "target_path": "claimtrack-reports/sql/monthly_totals.sql"},
+      {"legacy_path": "claimtrack-reports/sql/cr4_sections.sql", "disposition": "mapped", "target_path": "claimtrack-reports/sql/cr4_sections.sql"},
+      {"legacy_path": "claimtrack-reports/tests/test_cr4.py", "disposition": "mapped", "target_path": "claimtrack-reports/tests/test_cr4.py"},
+      {"legacy_path": "claimtrack-reports/tests/test_stats.py", "disposition": "mapped", "target_path": "claimtrack-reports/tests/test_stats.py"},
+      {"legacy_path": "claimtrack-reports/job.cron", "disposition": "mapped", "target_path": "claimtrack-reports/job.yaml"},
+      {"legacy_path": "claimtrack-reports/requirements.txt", "disposition": "merged", "target_path": "claimtrack-reports/pyproject.toml"},
+      {"legacy_path": "claimtrack-reports/setup.py", "disposition": "merged", "target_path": "claimtrack-reports/pyproject.toml"}
+    ],
+    "llm_rewritten": [
+      {"file": "claimtrack-reports/cr4_return.py", "reason": "py2_round() reproduces Python 2 half-away-from-zero rounding (TR-03)"},
+      {"file": "claimtrack-reports/sql/monthly_regions.sql", "reason": "explicit ORDER BY matching MySQL 5.6 implicit GROUP BY order (TR-04)"}
+    ],
+    "traps_handled": {"TR-03": "claimtrack-reports/cr4_return.py:88,141", "TR-04": "claimtrack-reports/sql/monthly_*.sql", "TR-06": "claimtrack-reports/job.yaml env TZ"},
+    "vault_references": ["kv://claimtrack/reports-db-password"],
+    "build": {"status": "green", "rounds": 2, "failing": null},
+    "manual_follow_ups": ["provision Key Vault secret reports-db-password before cutover"],
+    "handoff_note": null
+  }
+}

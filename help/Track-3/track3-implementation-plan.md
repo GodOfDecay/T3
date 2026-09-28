@@ -1,5 +1,12 @@
 # Track 3 (Code Modernization) — implementation plan
 
+> **STATUS UPDATE 2026-09-28.** Phase 0 is done and Phase 1 (Migration Intent, Dependency and
+> Risk) is built and mounted, so §1's "`TRACK_PORTFOLIOS["modernization"] = []`" is historical.
+> Two additions the plan below did not know about: (1) the platform now has a **publication gate,
+> `read_upstream`, project documents and Agent Studio tech stacks**, all of which Track 3 should use;
+> (2) migrations are numbered by `alembic heads` at the time (head `0065`), and two branches once both
+> took `0057`. See `Track-3 Lessons from Track 1-2.md` §3.
+
 Companion to `help/multi-track-agent-access-design.md` (the 10-agent shape) and
 `help/track3-agent-build-plan.md` (which of those 10 are net-new vs. rebuilds). This
 doc is the third piece: the actual engineering plan to make a user's flow real —

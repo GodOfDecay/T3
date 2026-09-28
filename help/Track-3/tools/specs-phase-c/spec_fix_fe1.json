@@ -1,0 +1,4 @@
+{"root": "frontend", "target": "lib/api/artifact-versions.ts",
+ "cmd": ["node", "node_modules/vitest/vitest.mjs", "run", "__tests__/app/track3-pages-retrofit.test.tsx"],
+ "mutants": [["id-only-again", "  return [user.id, user.email].some((v) => !!v && v.trim().toLowerCase() === who);", "  return !!user.id && user.id === producedBy;"],
+             ["case-sensitive", "  const who = producedBy.trim().toLowerCase();", "  const who = producedBy;"]]}

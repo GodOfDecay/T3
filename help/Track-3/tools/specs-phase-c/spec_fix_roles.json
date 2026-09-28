@@ -1,0 +1,2 @@
+{"target": "shared/routers/custom_roles.py", "tests": ["tests/test_custom_role_phases_match_frontend.py"],
+ "mutants": [["new-phase-missing", "    \"documentation_modernization\",\n})", "})"]]}

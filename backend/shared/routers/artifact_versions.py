@@ -64,6 +64,13 @@ class VersionOut(BaseModel):
     covers: list = Field(default_factory=list)
     createdAt: Optional[str] = None
     runId: Optional[str] = None
+    # 0068: provenance and the approver's capacity. Optional, so Track 1 rows (all NULL)
+    # and clients that ignore them are unchanged.
+    builtFrom: Optional[list] = None
+    restoredFrom: Optional[int] = None
+    restoreReason: Optional[str] = None
+    approvedAs: Optional[str] = None
+    fallbackReason: Optional[str] = None
 
     @classmethod
     def of(cls, row) -> "VersionOut":
@@ -75,6 +82,11 @@ class VersionOut(BaseModel):
             rejectionReason=row.rejection_reason, covers=list(row.covers or []),
             createdAt=row.created_at.isoformat() if row.created_at else None,
             runId=str(row.run_id) if row.run_id else None,
+            builtFrom=getattr(row, "built_from", None),
+            restoredFrom=getattr(row, "restored_from", None),
+            restoreReason=getattr(row, "restore_reason", None),
+            approvedAs=getattr(row, "approved_as", None),
+            fallbackReason=getattr(row, "fallback_reason", None),
         )
 
 
@@ -259,6 +271,11 @@ async def snapshot_stage_version(
     return await _labelled(db, request, VersionOut.of(row))
 
 
+class PublishBody(BaseModel):
+    """Optional. A Project Admin approving a Track 3 version as FALLBACK must say why."""
+    fallbackReason: Optional[str] = Field(default=None, max_length=2000)
+
+
 @artifact_versions_router.post(
     "/{project_id}/stages/{stage}/versions/{version}/publish",
     response_model=VersionOut,
@@ -269,16 +286,43 @@ async def publish_stage_version(
     stage: str,
     version: int,
     request: Request,
+    body: Optional[PublishBody] = None,
     db: AsyncSession = Depends(get_db_session),
 ):
     """Sign a version off, as the role that owns this stage.
 
     The permission is resolved from the path's stage, so an Architect can publish a
     design and not a deployment. Self-publication is refused here and by the schema.
+
+    TRACK 3 STAGES also record the approver's CAPACITY (`shared/services/fallback_approval`):
+    the owning role, or a Project Admin of this project as labelled fallback with a reason.
+    A refusal says why, in words (R14). Track 1 stages are unchanged.
     """
     actor = getattr(request.state, "user_id", None)
     if not actor:
         raise HTTPException(status_code=403, detail="Forbidden")
+    capacity = None
+    from shared.services import fallback_approval  # noqa: PLC0415
+
+    if stage in fallback_approval.TRACK3_STAGES:
+        from shared.services.version_lineage import producers_of  # noqa: PLC0415
+
+        target = await svc.get_version(db, project_id, stage, version)
+        if target is None:
+            raise HTTPException(status_code=404, detail=f"{stage} v{version} not found")
+        if target.status == "published":
+            # Already decided: answer as before (a double-click is not an error) but NEVER
+            # rewrite who approved it in which capacity — that record is the decision.
+            return await _labelled(db, request, VersionOut.of(target))
+        try:
+            capacity = await fallback_approval.approval_capacity(
+                db, tenant_id=str(request.state.tenant_id), project_id=project_id, stage=stage,
+                user_id=str(actor), produced_by=target.produced_by, version_created_at=target.created_at,
+                reason=body.fallbackReason if body else None,
+                also_produced_by=await producers_of(db, project_id, stage, version),
+            )
+        except fallback_approval.ApprovalRefused as exc:
+            raise HTTPException(status_code=403, detail=str(exc)) from exc
     try:
         row = await svc.publish_version(
             db, tenant_id=request.state.tenant_id, project_id=project_id,
@@ -288,6 +332,9 @@ async def publish_stage_version(
         raise _refusal(exc) from exc
     except svc.UnknownStage as exc:
         raise HTTPException(status_code=404, detail=str(exc)) from exc
+    if capacity is not None:
+        row.approved_as, row.fallback_reason = capacity.approved_as, capacity.reason
+        await db.flush()
     return await _labelled(db, request, VersionOut.of(row))
 
 
@@ -305,10 +352,27 @@ async def reject_stage_version(
     db: AsyncSession = Depends(get_db_session),
 ):
     """Refuse a version, with a reason. The row stays readable — a rejection is a
-    decision, not a deletion."""
+    decision, not a deletion.
+
+    TRACK 3 STAGES: the permission is a tenant-wide union, so it alone would let a BA of
+    another project reject this one's brief. The rejecter must be the owning role or a
+    Project Admin ON THIS PROJECT. (The producer is refused by the service either way —
+    whoever produced a version decides it neither way.)"""
     actor = getattr(request.state, "user_id", None)
     if not actor:
         raise HTTPException(status_code=403, detail="Forbidden")
+    from shared.services import fallback_approval  # noqa: PLC0415
+
+    if stage in fallback_approval.TRACK3_STAGES:
+        target = await svc.get_version(db, project_id, stage, version)
+        if target is None:
+            raise HTTPException(status_code=404, detail=f"{stage} v{version} not found")
+        roles = await fallback_approval.project_roles(
+            db, tenant_id=str(request.state.tenant_id), project_id=project_id, user_id=str(actor))
+        owner = fallback_approval.agent_owner_role(stage)
+        if owner not in roles and "project_admin" not in roles:
+            raise HTTPException(status_code=403, detail=(
+                f"only a {owner.replace('_', ' ')} or a Project Admin of this project rejects this"))
     try:
         row = await svc.reject_version(
             db, tenant_id=request.state.tenant_id, project_id=project_id,

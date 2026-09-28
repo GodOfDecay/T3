@@ -577,7 +577,7 @@ Requirements." When you answer directly, just answer: your reply is what they se
 
 
 #: Track 3 — Code Modernization. ITS OWN TEMPLATE rather than a conditional section in
-#: the Greenfield one (help/track3-implementation-plan.md §7's open question): a
+#: the Greenfield one (help/Track-3/track3-implementation-plan.md §7's open question): a
 #: modernization is a different conversation — a legacy system, a target stack, a
 #: migration — and Greenfield's examples ("I need a PRD", "Development clones the
 #: repository") would tell the model about agents this track does not have. The
@@ -598,8 +598,10 @@ The agents you may choose from are exactly the tools you have been given, one pe
 {roster}
 
 Track 3's full roster, in hand-off order, is Migration Intent → Dependency and
-Risk → Design → Strategy → Development → Code Review → Security → Testing →
-Deployment → Documentation. Not built for this track yet: {unbuilt}. If the user asks for
+Risk → Target Architecture → Migration Strategy → Equivalence Testing (baseline) →
+Migration Development → Migration Review and Security → Equivalence Testing (verify) →
+Cutover → Cutover Pack. From Migration Development onwards the work repeats for every
+module, wave by wave. Not built for this track yet: {unbuilt}. If the user asks for
 one of those, answer directly: say plainly that that agent is not available for Code
 Modernization yet, and offer what the agents above can do instead. Never send that work to
 an agent above that does not do it.
@@ -660,8 +662,9 @@ just answer: your reply is what they see.
 #: Track 3's roster by display name, in hand-off order — used only to NAME the agents
 #: not built yet. Which agents can run comes from the capabilities map, never from here.
 _MODERNIZATION_ROSTER: tuple[str, ...] = (
-    "Migration Intent", "Dependency and Risk", "Design", "Strategy",
-    "Development", "Code Review", "Security", "Testing", "Deployment", "Documentation",
+    "Migration Intent", "Dependency and Risk", "Target Architecture", "Migration Strategy",
+    "Equivalence Testing", "Migration Development", "Migration Review", "Security",
+    "Cutover", "Cutover Pack",
 )
 
 

@@ -19,15 +19,36 @@ from __future__ import annotations
 
 import json
 import logging
+from contextvars import ContextVar
 from typing import Any, Optional
 
 logger = logging.getLogger(__name__)
 
+#: The input versions THIS TURN read (research §5.3, `built_from`), noted by
+#: `standalone.upstream_from_pages` as it reads each one and stamped on any version the turn
+#: freezes. Set per turn and cleared at its end, so a pin never leaks into the next turn.
+_BUILT_FROM: ContextVar[Optional[list]] = ContextVar("track3_built_from", default=None)
 
-async def freeze_version(stage: str, payload: Any) -> Optional[int]:
+
+def note_input(*, artifact: str, stage: str, version: int, status: str) -> None:
+    """Record that this turn built on `stage` v`version` (a published or draft read)."""
+    pins = [p for p in (_BUILT_FROM.get() or []) if p.get("stage") != stage]
+    _BUILT_FROM.set([*pins, {"artifact": artifact, "stage": stage, "version": version, "status": status}])
+
+
+def turn_built_from() -> Optional[list]:
+    return _BUILT_FROM.get()
+
+
+def reset_built_from() -> None:
+    _BUILT_FROM.set(None)
+
+
+async def freeze_version(stage: str, payload: Any, built_from: Optional[list] = None) -> Optional[int]:
     """Freeze `payload` as the next version of `stage` on this turn's project, produced
-    by this turn's user. Returns the version number, or None when it could not be
-    written (no project or user bound, or the store refused)."""
+    by this turn's user, pinned to what it was built from (`built_from`, else the inputs
+    this turn read — `turn_built_from`). Returns the version number, or None when it could
+    not be written (no project or user bound, or the store refused)."""
     from config.ws_helper import (  # noqa: PLC0415
         get_orchestrator_run,
         get_project_id,
@@ -51,6 +72,10 @@ async def freeze_version(stage: str, payload: Any) -> Optional[int]:
                 db, tenant_id=str(tenant_id), project_id=str(project_id), stage=stage,
                 payload=frozen, produced_by=str(user_id),
                 run_id=str(get_run_id()) if get_run_id() else None,
+                # A page freeze always records its inputs: [] when the turn read nothing
+                # upstream (a first-stage agent), so "pinned nothing" is distinguishable
+                # from a pre-0068 version, whose built_from is NULL ("not known").
+                built_from=built_from if built_from is not None else (turn_built_from() or []),
             )
         return ref.version
     except Exception:  # noqa: BLE001

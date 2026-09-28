@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { PHASE_LABEL } from "@/lib/agents";
+import { PHASE_LABEL, phaseRoute } from "@/lib/agents";
 import { prettySegment, segmentLabels } from "@/lib/nav";
 
 /**
@@ -15,18 +15,13 @@ import { prettySegment, segmentLabels } from "@/lib/nav";
  * own name. `plan` is the one phase where the two differ.
  */
 
-/** Phase key -> route segment.
+/** Phase key -> route segment: the app's own `phaseRoute`, not a copy of it.
  *
- * Underscores become hyphens in a URL, so that conversion is general rather than a
- * per-phase entry — listing them by hand is how `data_engineering` was missed here on
- * the first attempt, which produced a failure that looked like a product bug and was
- * this map being wrong. `review` is the one genuine rename. */
-const SEGMENT: Partial<Record<keyof typeof PHASE_LABEL, string>> = {
-  review: "code-review",
-};
-
-const routeSegment = (phase: string) =>
-  SEGMENT[phase as keyof typeof SEGMENT] ?? phase.replace(/_/g, "-");
+ * This file used to keep its own map ("underscores become hyphens", plus `review`),
+ * which was right until Track 3's agents got route names of their own
+ * (`design_modernization` → `target-architecture`); a hand-kept copy is the drift this
+ * test exists to catch elsewhere. */
+const routeSegment = (phase: string) => phaseRoute(phase as keyof typeof PHASE_LABEL);
 
 describe("breadcrumb labels for agent pages", () => {
   it("names every phase, and names it the way the page does", () => {

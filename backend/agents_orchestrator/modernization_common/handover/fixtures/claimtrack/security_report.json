@@ -1,0 +1,31 @@
+{
+  "schema_version": 1,
+  "agent_id": "security_modernization",
+  "artifact": "modernization_security_artifacts",
+  "version": 1,
+  "status": "published",
+  "built_from": [
+    {"artifact": "migration_artifacts", "version": 1, "status": "published"},
+    {"artifact": "target_design_artifacts", "version": 1, "status": "published"}
+  ],
+  "produced_by": {"user_id": "fixture:security_engineer", "model": "fixture (research §9 stage 7, first scan, illustrative)", "run_id": null},
+  "produced_at": "2026-12-21T12:00:00Z",
+  "payload": {
+    "module_id": "M-05",
+    "pr": "claimtrack-modern!12",
+    "legacy_commit": "a1b2c3d",
+    "scans": {"trivy": "ran", "semgrep": "ran", "gitleaks": "ran", "legacy_baseline": "cached"},
+    "findings": [
+      {"id": "S-002", "title": "PyYAML unsafe load on a path taken from job config", "severity": "high", "origin": "carried_over",
+       "legacy_ref": "claimtrack-reports/config.py:29", "reachable": true, "file": "claimtrack-reports/config.py"}
+    ],
+    "fixed_from_legacy": [
+      {"title": "pycrypto (unmaintained, known CVEs)", "package": "pycrypto", "legacy_ref": "pycrypto@2.6.1"},
+      {"title": "nose (unmaintained)", "package": "nose", "legacy_ref": "nose@1.3.7"}
+    ],
+    "contract_authz": [],
+    "sbom": {"components": 23, "vulnerabilities": 1},
+    "verdict": "FAIL",
+    "rationale": "A reachable high issue is carried over from the legacy code; the brief requires no critical or high at go-live."
+  }
+}

@@ -27,6 +27,7 @@ import { DeliveryStatusPicker } from "@/components/app/delivery-status-badge";
 import { ProjectCostPanel } from "@/components/app/project-cost-panel";
 import { RecentChatsList } from "@/components/app/recent-chats-list";
 import { RunAgentButton } from "@/components/app/run-agent-button";
+import { ProgrammeStatusStrip } from "@/components/modernization/programme-status-strip";
 import { isStoredArtifact } from "@/components/app/artifact-list";
 import { RequireRole } from "@/components/auth/require-role";
 import { OutOfScope } from "@/components/auth/scope-empty-state";
@@ -282,6 +283,9 @@ export default function ProjectOverviewPage() {
               decide between. The tab is the one that shows where you are. */}
         </div>
       </header>
+
+      {/* Code Modernization: where the modules stand, and the way to the Programme board. */}
+      {project.track === "modernization" && <ProgrammeStatusStrip projectId={id} />}
 
       {/* ─── Pending / rejected governance banner ────────── */}
       {actionsLocked && (

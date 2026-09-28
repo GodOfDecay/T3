@@ -19,6 +19,7 @@ export default function RequirementsModernizationPage() {
   return (
     <Track3AgentPage
       phase="requirements_modernization"
+      showTechStack
       runLabel="Run Migration Intent agent"
       intro="Captures the migration intent: why the modernization is happening, what the system runs on today and what it should run on, scope, constraints and success criteria."
       noun="brief"

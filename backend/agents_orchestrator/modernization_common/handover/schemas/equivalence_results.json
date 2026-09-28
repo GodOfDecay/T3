@@ -1,0 +1,479 @@
+{
+  "$defs": {
+    "BuiltFrom": {
+      "additionalProperties": false,
+      "description": "One input this artifact was built from, pinned to the version that was read.",
+      "properties": {
+        "artifact": {
+          "enum": [
+            "migration_intent_payload",
+            "discovery_artifacts",
+            "target_design_artifacts",
+            "strategy_artifacts",
+            "equivalence_artifacts",
+            "migration_artifacts",
+            "migration_review_artifacts",
+            "modernization_security_artifacts",
+            "cutover_artifacts",
+            "cutover_pack_artifacts"
+          ],
+          "title": "Artifact",
+          "type": "string"
+        },
+        "commit": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Commit"
+        },
+        "status": {
+          "enum": [
+            "draft",
+            "published",
+            "superseded",
+            "rejected"
+          ],
+          "title": "Status",
+          "type": "string"
+        },
+        "version": {
+          "minimum": 1,
+          "title": "Version",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "artifact",
+        "version",
+        "status"
+      ],
+      "title": "BuiltFrom",
+      "type": "object"
+    },
+    "CriterionResult": {
+      "additionalProperties": false,
+      "properties": {
+        "cases_compared": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "None = not run.",
+          "title": "Cases Compared"
+        },
+        "ec_id": {
+          "pattern": "^EC-\\d{2,}$",
+          "title": "Ec Id",
+          "type": "string"
+        },
+        "normalization_applied": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "title": "Normalization Applied",
+          "type": "array"
+        },
+        "verdict": {
+          "enum": [
+            "passed",
+            "failed",
+            "open",
+            "not_run"
+          ],
+          "title": "Verdict",
+          "type": "string"
+        }
+      },
+      "required": [
+        "ec_id",
+        "verdict"
+      ],
+      "title": "CriterionResult",
+      "type": "object"
+    },
+    "Difference": {
+      "additionalProperties": false,
+      "properties": {
+        "adr_id": {
+          "anyOf": [
+            {
+              "pattern": "^ADR-\\d{2,}$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Adr Id"
+        },
+        "cases": {
+          "minimum": 1,
+          "title": "Cases",
+          "type": "integer"
+        },
+        "classification": {
+          "enum": [
+            "regression",
+            "normalization_gap",
+            "accepted_change",
+            "environment"
+          ],
+          "title": "Classification",
+          "type": "string"
+        },
+        "ec_id": {
+          "pattern": "^EC-\\d{2,}$",
+          "title": "Ec Id",
+          "type": "string"
+        },
+        "field": {
+          "minLength": 1,
+          "title": "Field",
+          "type": "string"
+        },
+        "id": {
+          "pattern": "^EQ-\\d{3,}$",
+          "title": "Id",
+          "type": "string"
+        },
+        "likely_area": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Likely Area"
+        },
+        "masked_example": {
+          "minLength": 1,
+          "title": "Masked Example",
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "ec_id",
+        "classification",
+        "field",
+        "cases",
+        "masked_example"
+      ],
+      "title": "Difference",
+      "type": "object"
+    },
+    "EquivalencePayload": {
+      "additionalProperties": false,
+      "description": "Refusals checked here: `passed` on a criterion that was not run or that has a regression\nor an open normalization gap; `not_run` with cases compared; a performance criterion passed\nwithout both numbers or over its threshold.\n\nNormalization rules cannot be changed here: there is no field for them, only proposals.",
+      "properties": {
+        "baselines_replayed": {
+          "items": {
+            "$ref": "#/$defs/ReplayedBaseline"
+          },
+          "minItems": 1,
+          "title": "Baselines Replayed",
+          "type": "array"
+        },
+        "criteria": {
+          "items": {
+            "$ref": "#/$defs/CriterionResult"
+          },
+          "minItems": 1,
+          "title": "Criteria",
+          "type": "array"
+        },
+        "differences": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/Difference"
+          },
+          "title": "Differences",
+          "type": "array"
+        },
+        "mode": {
+          "const": "verify",
+          "default": "verify",
+          "title": "Mode",
+          "type": "string"
+        },
+        "module_id": {
+          "pattern": "^M-\\d{2,}$",
+          "title": "Module Id",
+          "type": "string"
+        },
+        "performance": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/Performance"
+          },
+          "title": "Performance",
+          "type": "array"
+        },
+        "pr": {
+          "minLength": 1,
+          "title": "Pr",
+          "type": "string"
+        },
+        "rule_proposals": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/RuleProposal"
+          },
+          "title": "Rule Proposals",
+          "type": "array"
+        },
+        "runs": {
+          "minimum": 1,
+          "title": "Runs",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "module_id",
+        "pr",
+        "baselines_replayed",
+        "criteria",
+        "runs"
+      ],
+      "title": "EquivalencePayload",
+      "type": "object"
+    },
+    "Performance": {
+      "additionalProperties": false,
+      "properties": {
+        "ec_id": {
+          "pattern": "^EC-\\d{2,}$",
+          "title": "Ec Id",
+          "type": "string"
+        },
+        "legacy_p95_ms": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Legacy P95 Ms"
+        },
+        "target_p95_ms": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Target P95 Ms"
+        },
+        "threshold_ms": {
+          "exclusiveMinimum": 0,
+          "title": "Threshold Ms",
+          "type": "number"
+        }
+      },
+      "required": [
+        "ec_id",
+        "threshold_ms"
+      ],
+      "title": "Performance",
+      "type": "object"
+    },
+    "ProducedBy": {
+      "additionalProperties": false,
+      "properties": {
+        "model": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Model"
+        },
+        "run_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Run Id"
+        },
+        "user_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "User Id"
+        }
+      },
+      "title": "ProducedBy",
+      "type": "object"
+    },
+    "ReplayedBaseline": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "pattern": "^BL-\\d{2,}$",
+          "title": "Id",
+          "type": "string"
+        },
+        "version": {
+          "minimum": 1,
+          "title": "Version",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "id",
+        "version"
+      ],
+      "title": "ReplayedBaseline",
+      "type": "object"
+    },
+    "RuleProposal": {
+      "additionalProperties": false,
+      "description": "A normalization rule PROPOSED to Migration Strategy. Testing never applies one.",
+      "properties": {
+        "ec_id": {
+          "pattern": "^EC-\\d{2,}$",
+          "title": "Ec Id",
+          "type": "string"
+        },
+        "evidence": {
+          "minLength": 1,
+          "title": "Evidence",
+          "type": "string"
+        },
+        "field": {
+          "minLength": 1,
+          "title": "Field",
+          "type": "string"
+        },
+        "rule": {
+          "minLength": 1,
+          "title": "Rule",
+          "type": "string"
+        }
+      },
+      "required": [
+        "ec_id",
+        "field",
+        "rule",
+        "evidence"
+      ],
+      "title": "RuleProposal",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "agent_id": {
+      "const": "testing_modernization",
+      "default": "testing_modernization",
+      "title": "Agent Id",
+      "type": "string"
+    },
+    "artifact": {
+      "const": "equivalence_artifacts",
+      "default": "equivalence_artifacts",
+      "title": "Artifact",
+      "type": "string"
+    },
+    "built_from": {
+      "default": [],
+      "items": {
+        "$ref": "#/$defs/BuiltFrom"
+      },
+      "title": "Built From",
+      "type": "array"
+    },
+    "payload": {
+      "$ref": "#/$defs/EquivalencePayload"
+    },
+    "produced_at": {
+      "anyOf": [
+        {
+          "format": "date-time",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Produced At"
+    },
+    "produced_by": {
+      "$ref": "#/$defs/ProducedBy",
+      "default": {
+        "model": null,
+        "run_id": null,
+        "user_id": null
+      }
+    },
+    "schema_version": {
+      "const": 1,
+      "default": 1,
+      "title": "Schema Version",
+      "type": "integer"
+    },
+    "status": {
+      "enum": [
+        "draft",
+        "published",
+        "superseded",
+        "rejected"
+      ],
+      "title": "Status",
+      "type": "string"
+    },
+    "version": {
+      "minimum": 1,
+      "title": "Version",
+      "type": "integer"
+    }
+  },
+  "required": [
+    "version",
+    "status",
+    "payload"
+  ],
+  "title": "EquivalencePacket",
+  "type": "object"
+}

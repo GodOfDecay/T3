@@ -1,0 +1,49 @@
+{
+  "schema_version": 1,
+  "agent_id": "deployment_modernization",
+  "artifact": "cutover_artifacts",
+  "version": 1,
+  "status": "published",
+  "built_from": [
+    {"artifact": "strategy_artifacts", "version": 2, "status": "published"},
+    {"artifact": "equivalence_artifacts", "version": 2, "status": "published"},
+    {"artifact": "modernization_security_artifacts", "version": 2, "status": "published"},
+    {"artifact": "migration_review_artifacts", "version": 2, "status": "published"}
+  ],
+  "produced_by": {"user_id": "fixture:devops", "model": "fixture (research §9 stage 9, illustrative)", "run_id": null},
+  "produced_at": "2027-01-03T10:00:00Z",
+  "payload": {
+    "wave_id": "W1",
+    "window": "parallel run 4–29 Jan 2027; send switch Sun 31 Jan 2027 08:00",
+    "downtime_limit_minutes": 120,
+    "readiness": [
+      {"module_id": "M-05", "baseline": "green", "review": "green", "security": "green", "equivalence": "green", "pr_merged": "green"}
+    ],
+    "go": true,
+    "steps": [
+      {"id": "CO-1.1", "action": "Deploy the Container Apps Job (reads the Azure MySQL replica) in shadow mode", "owner": "DevOps", "at": "Mon 4 Jan 2027",
+       "rollback_trigger": "job fails to start", "rollback_action": "disable the job"},
+      {"id": "CO-1.2", "action": "Daily: both produce; Equivalence Testing diffs EC-06", "owner": "QA", "at": "4–29 Jan 2027",
+       "rollback_trigger": "EC-06 difference", "rollback_action": "keep legacy sending; fix and re-verify"},
+      {"id": "CO-1.3", "action": "Compare the January reports; switch delivery to the new job; disable the legacy cron", "owner": "DevOps", "at": "Sun 31 Jan 2027 08:00",
+       "minutes": 10, "counts_as_downtime": false, "rollback_trigger": "January reports differ", "rollback_action": "re-enable the legacy cron (≤ 10 min)"},
+      {"id": "CO-1.4", "action": "Hypercare: job success, report diffs, SLOs", "owner": "DevOps", "at": "31 Jan – 14 Feb 2027",
+       "rollback_trigger": "job failure or report diff", "rollback_action": "as CO-1.3"}
+    ],
+    "downtime_exceeds_window": false,
+    "traffic_shift": [],
+    "parallel_runs": [
+      {"outbound": "monthly reports delivery", "days": [
+        {"day": "2027-01-04", "sender": "legacy"},
+        {"day": "2027-01-29", "sender": "legacy"},
+        {"day": "2027-01-31", "sender": "new"}
+      ]}
+    ],
+    "hypercare": "not_started",
+    "decommission": [],
+    "sign_off": [
+      {"role": "devops_engineer", "user_id": "fixture:devops-2", "approved_as": "owner"},
+      {"role": "business_owner", "user_id": "fixture:priya-raman", "approved_as": "owner"}
+    ]
+  }
+}

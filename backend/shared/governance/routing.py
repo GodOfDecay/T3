@@ -145,9 +145,20 @@ AGENT_OWNER_ROLE: dict[str, str] = {
     "requirements_modernization": "ba",
     # BA, not Architect, for Track 3 (2026-09-10) — see config/agent_registry._OWNER_OF.
     "discovery": "ba",
+    # Track 3 agents 3–10 (2026-09-28, Phase B): owners fixed in one change with the
+    # other maps (R10); not in AGENT_REGISTRY until each is built.
+    "design_modernization": "architect",
+    "testing_modernization": "qa",
+    "development_modernization": "developer",
+    "code_review_modernization": "architect",
+    "security_modernization": "security_engineer",
+    "deployment_modernization": "devops_engineer",
+    "documentation_modernization": "ba",
     # Track-specific agents not built yet. Not in AGENT_REGISTRY, so no run ever sits
-    # at one and they have no artifact:approve_* permission — but agent-access requests
-    # are routed for them from the catalogue, so they need an owner.
+    # at one. `strategy` HAS an artifact:approve_* permission since migration 0066 (Track 3's
+    # owner rows land before its agents); the others do not. Unbuilt stages stay
+    # unapprovable anyway (`require_stage_approval` requires a registered stage). Agent-access
+    # requests are routed for them from the catalogue, so they need an owner.
     "strategy": "architect",
     "migration_mapping": "architect",
     "validation": "qa",

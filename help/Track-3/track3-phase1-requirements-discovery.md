@@ -1,5 +1,13 @@
 # Track 3 Phase 1 — Migration Intent + Dependency and Risk
 
+> **STATUS UPDATE 2026-09-28.** Built and verified in the standalone and Orchestrator paths. Two
+> Phase 1 gaps that the Track 1 lessons say to close before the next agents: the private-repository
+> clone with a project-scoped credential is **unit-tested only** (the ClaimTrack run cloned a public
+> repository), and the pages have not been confirmed in a real browser. Both are listed as
+> unchecked items in `docs/superpowers/plans/2026-09-10-track3-phase1-agents.md` Task 12. Do
+> those two checks first; they are the same class of gap that hid two credential bugs in Track 1
+> (`Track-3 Lessons from Track 1-2.md` rule R7).
+
 > **RENAMED (2026-09-12).** Requirements (migration intent) is now **Migration Intent**,
 > and Discovery & Assessment is now **Dependency and Risk**. Display names only: the ids
 > `requirements_modernization` and `discovery`, the routes and the artifact keys are

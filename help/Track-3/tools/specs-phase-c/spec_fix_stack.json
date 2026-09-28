@@ -1,0 +1,2 @@
+{"target": "agents_orchestrator/modernization_common/tech_stack.py", "tests": ["tests/modernization_common/test_tech_stack_and_prompts.py"],
+ "mutants": [["unreadable-recorded-as-none", "        return {\"name\": None, \"source\": \"unreadable\", \"source_text\": SOURCE_TEXT[\"unreadable\"],", "        return {\"name\": None, \"source\": \"none\", \"source_text\": SOURCE_TEXT[\"none\"],"]]}

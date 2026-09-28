@@ -1,0 +1,566 @@
+{
+  "$defs": {
+    "BuiltFrom": {
+      "additionalProperties": false,
+      "description": "One input this artifact was built from, pinned to the version that was read.",
+      "properties": {
+        "artifact": {
+          "enum": [
+            "migration_intent_payload",
+            "discovery_artifacts",
+            "target_design_artifacts",
+            "strategy_artifacts",
+            "equivalence_artifacts",
+            "migration_artifacts",
+            "migration_review_artifacts",
+            "modernization_security_artifacts",
+            "cutover_artifacts",
+            "cutover_pack_artifacts"
+          ],
+          "title": "Artifact",
+          "type": "string"
+        },
+        "commit": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Commit"
+        },
+        "status": {
+          "enum": [
+            "draft",
+            "published",
+            "superseded",
+            "rejected"
+          ],
+          "title": "Status",
+          "type": "string"
+        },
+        "version": {
+          "minimum": 1,
+          "title": "Version",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "artifact",
+        "version",
+        "status"
+      ],
+      "title": "BuiltFrom",
+      "type": "object"
+    },
+    "ContractCheck": {
+      "additionalProperties": false,
+      "properties": {
+        "ct_id": {
+          "pattern": "^CT-\\d{2,}$",
+          "title": "Ct Id",
+          "type": "string"
+        },
+        "note": {
+          "default": "",
+          "title": "Note",
+          "type": "string"
+        },
+        "status": {
+          "enum": [
+            "unchanged",
+            "changed_allowed",
+            "changed"
+          ],
+          "title": "Status",
+          "type": "string"
+        }
+      },
+      "required": [
+        "ct_id",
+        "status"
+      ],
+      "title": "ContractCheck",
+      "type": "object"
+    },
+    "CoverageCheck": {
+      "additionalProperties": false,
+      "properties": {
+        "ec_id": {
+          "pattern": "^EC-\\d{2,}$",
+          "title": "Ec Id",
+          "type": "string"
+        },
+        "note": {
+          "default": "",
+          "title": "Note",
+          "type": "string"
+        },
+        "status": {
+          "enum": [
+            "covered",
+            "at_risk",
+            "not_addressed"
+          ],
+          "title": "Status",
+          "type": "string"
+        }
+      },
+      "required": [
+        "ec_id",
+        "status"
+      ],
+      "title": "CoverageCheck",
+      "type": "object"
+    },
+    "FilesRead": {
+      "additionalProperties": false,
+      "properties": {
+        "legacy": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "title": "Legacy",
+          "type": "array"
+        },
+        "target": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "title": "Target",
+          "type": "array"
+        }
+      },
+      "title": "FilesRead",
+      "type": "object"
+    },
+    "KnownDebt": {
+      "additionalProperties": false,
+      "properties": {
+        "legacy_file": {
+          "minLength": 1,
+          "title": "Legacy File",
+          "type": "string"
+        },
+        "note": {
+          "default": "",
+          "title": "Note",
+          "type": "string"
+        },
+        "pattern": {
+          "minLength": 1,
+          "title": "Pattern",
+          "type": "string"
+        }
+      },
+      "required": [
+        "pattern",
+        "legacy_file"
+      ],
+      "title": "KnownDebt",
+      "type": "object"
+    },
+    "ProducedBy": {
+      "additionalProperties": false,
+      "properties": {
+        "model": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Model"
+        },
+        "run_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Run Id"
+        },
+        "user_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "User Id"
+        }
+      },
+      "title": "ProducedBy",
+      "type": "object"
+    },
+    "ReviewFinding": {
+      "additionalProperties": false,
+      "properties": {
+        "autofix_patch": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Autofix Patch"
+        },
+        "category": {
+          "enum": [
+            "contract_drift",
+            "trap_unhandled",
+            "behaviour_change",
+            "carried_over",
+            "introduced",
+            "scope_creep",
+            "traceability",
+            "design",
+            "maintainability",
+            "style"
+          ],
+          "title": "Category",
+          "type": "string"
+        },
+        "description": {
+          "minLength": 1,
+          "title": "Description",
+          "type": "string"
+        },
+        "file": {
+          "minLength": 1,
+          "title": "File",
+          "type": "string"
+        },
+        "id": {
+          "pattern": "^F-\\d{3,}$",
+          "title": "Id",
+          "type": "string"
+        },
+        "legacy_file": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Legacy File"
+        },
+        "legacy_line": {
+          "anyOf": [
+            {
+              "minimum": 1,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Legacy Line"
+        },
+        "line": {
+          "anyOf": [
+            {
+              "minimum": 1,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Line"
+        },
+        "recommendation": {
+          "minLength": 1,
+          "title": "Recommendation",
+          "type": "string"
+        },
+        "refs": {
+          "default": [],
+          "items": {
+            "pattern": "^(?:M-\\d{2,}|CT-\\d{2,}|TR-\\d{2,}|ADR-\\d{2,}|EC-\\d{2,}|BL-\\d{2,}|F-\\d{3,}|S-\\d{3,}|EQ-\\d{3,})$",
+            "type": "string"
+          },
+          "title": "Refs",
+          "type": "array"
+        },
+        "severity": {
+          "enum": [
+            "critical",
+            "high",
+            "medium",
+            "low",
+            "info"
+          ],
+          "title": "Severity",
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "severity",
+        "category",
+        "file",
+        "description",
+        "recommendation"
+      ],
+      "title": "ReviewFinding",
+      "type": "object"
+    },
+    "ReviewPayload": {
+      "additionalProperties": false,
+      "description": "The merge-recommendation rules (research \u00a76.7) are enforced here, so a model cannot\n`approve` a review whose own findings say otherwise.\n\nChecked by `submit_migration_review`: every file cited is in `files_read`, and every file\nin `files_read` was actually opened this run (needs the tool log).",
+      "properties": {
+        "contract_check": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/ContractCheck"
+          },
+          "title": "Contract Check",
+          "type": "array"
+        },
+        "equivalence_coverage": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/CoverageCheck"
+          },
+          "title": "Equivalence Coverage",
+          "type": "array"
+        },
+        "files_read": {
+          "$ref": "#/$defs/FilesRead"
+        },
+        "findings": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/ReviewFinding"
+          },
+          "title": "Findings",
+          "type": "array"
+        },
+        "known_debt": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/KnownDebt"
+          },
+          "title": "Known Debt",
+          "type": "array"
+        },
+        "merge_recommendation": {
+          "enum": [
+            "approve",
+            "request_changes",
+            "needs_discussion"
+          ],
+          "title": "Merge Recommendation",
+          "type": "string"
+        },
+        "module_id": {
+          "pattern": "^M-\\d{2,}$",
+          "title": "Module Id",
+          "type": "string"
+        },
+        "pr": {
+          "minLength": 1,
+          "title": "Pr",
+          "type": "string"
+        },
+        "summary": {
+          "minLength": 1,
+          "title": "Summary",
+          "type": "string"
+        },
+        "traceability": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/Traceability"
+          },
+          "title": "Traceability",
+          "type": "array"
+        },
+        "trap_check": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/TrapCheck"
+          },
+          "title": "Trap Check",
+          "type": "array"
+        }
+      },
+      "required": [
+        "module_id",
+        "pr",
+        "summary",
+        "merge_recommendation",
+        "files_read"
+      ],
+      "title": "ReviewPayload",
+      "type": "object"
+    },
+    "Traceability": {
+      "additionalProperties": false,
+      "properties": {
+        "legacy_path": {
+          "minLength": 1,
+          "title": "Legacy Path",
+          "type": "string"
+        },
+        "status": {
+          "enum": [
+            "mapped",
+            "merged",
+            "dropped_justified",
+            "missing"
+          ],
+          "title": "Status",
+          "type": "string"
+        },
+        "target_path": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Target Path"
+        }
+      },
+      "required": [
+        "legacy_path",
+        "status"
+      ],
+      "title": "Traceability",
+      "type": "object"
+    },
+    "TrapCheck": {
+      "additionalProperties": false,
+      "properties": {
+        "status": {
+          "enum": [
+            "handled",
+            "not_handled",
+            "not_applicable"
+          ],
+          "title": "Status",
+          "type": "string"
+        },
+        "tr_id": {
+          "pattern": "^TR-\\d{2,}$",
+          "title": "Tr Id",
+          "type": "string"
+        },
+        "where": {
+          "default": "",
+          "title": "Where",
+          "type": "string"
+        }
+      },
+      "required": [
+        "tr_id",
+        "status"
+      ],
+      "title": "TrapCheck",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "agent_id": {
+      "const": "code_review_modernization",
+      "default": "code_review_modernization",
+      "title": "Agent Id",
+      "type": "string"
+    },
+    "artifact": {
+      "const": "migration_review_artifacts",
+      "default": "migration_review_artifacts",
+      "title": "Artifact",
+      "type": "string"
+    },
+    "built_from": {
+      "default": [],
+      "items": {
+        "$ref": "#/$defs/BuiltFrom"
+      },
+      "title": "Built From",
+      "type": "array"
+    },
+    "payload": {
+      "$ref": "#/$defs/ReviewPayload"
+    },
+    "produced_at": {
+      "anyOf": [
+        {
+          "format": "date-time",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Produced At"
+    },
+    "produced_by": {
+      "$ref": "#/$defs/ProducedBy",
+      "default": {
+        "model": null,
+        "run_id": null,
+        "user_id": null
+      }
+    },
+    "schema_version": {
+      "const": 1,
+      "default": 1,
+      "title": "Schema Version",
+      "type": "integer"
+    },
+    "status": {
+      "enum": [
+        "draft",
+        "published",
+        "superseded",
+        "rejected"
+      ],
+      "title": "Status",
+      "type": "string"
+    },
+    "version": {
+      "minimum": 1,
+      "title": "Version",
+      "type": "integer"
+    }
+  },
+  "required": [
+    "version",
+    "status",
+    "payload"
+  ],
+  "title": "ReviewPacket",
+  "type": "object"
+}

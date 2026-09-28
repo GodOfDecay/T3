@@ -208,8 +208,16 @@ async def snapshot_stage_payload(
     run_id: Optional[str] = None,
     covers: Optional[list[str]] = None,
     dedupe: bool = True,
+    built_from: Optional[list[dict]] = None,
+    restored_from: Optional[int] = None,
+    restore_reason: Optional[str] = None,
 ) -> VersionRef:
     """Freeze the stage's working payload as the next version.
+
+    `built_from`, `restored_from` and `restore_reason` (migration 0068) are PROVENANCE:
+    what the version was built from, and — for a restore — which earlier version it
+    brings back and why. All optional; every caller that does not pass them writes the
+    row exactly as before. See `shared/services/version_lineage.py`.
 
     Returns the EXISTING version when `dedupe` and the latest one already holds an
     identical payload. A stage re-running without producing anything new should not
@@ -274,6 +282,8 @@ async def snapshot_stage_payload(
             run_id=run_id, version=next_version, payload=payload,
             content_hash=content_hash, covers=list(covers or []),
             status="draft", produced_by=produced_by,
+            built_from=list(built_from) if built_from is not None else None,
+            restored_from=restored_from, restore_reason=restore_reason,
         )
         db.add(row)
         try:

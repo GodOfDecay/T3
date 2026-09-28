@@ -211,10 +211,20 @@ def versions_store(monkeypatch):
     async def latest_version(db, project_id, stage):
         return state["latest"]
 
+    async def read_upstream(db, *, stage, **_kw):
+        # The published version only — the page chat now reads through the platform's
+        # one reader of approved work (which also records the read; covered for real in
+        # tests/modernization_common/test_upstream_from_pages.py).
+        row = state["published"]
+        if row is None:
+            return svc.UpstreamRead(stage=stage, reason="none published")
+        return svc.UpstreamRead(stage=stage, payload=row.payload, version=row.version)
+
     monkeypatch.setattr(shared.db, "get_db_session_for_tenant", lambda tenant: _Session())
     monkeypatch.setattr(svc, "enforcement_enabled", enforcement_enabled)
     monkeypatch.setattr(svc, "latest_published", latest_published)
     monkeypatch.setattr(svc, "latest_version", latest_version)
+    monkeypatch.setattr(svc, "read_upstream", read_upstream)
     return state
 
 
@@ -238,7 +248,10 @@ async def test_enforced_publication_leaves_a_draft_brief_out(versions_store):
     from agents_orchestrator.modernization_common.standalone import upstream_from_pages
 
     versions_store.update(enforced=True, latest=SimpleNamespace(version=3, status="draft", payload=BRIEF))
-    assert await upstream_from_pages(PROJECT, "tenant", "discovery") == ""
+    text = await upstream_from_pages(PROJECT, "tenant", "discovery")
+    # Left out — and SAID to be missing, rather than an empty string that reads as
+    # "no brief was ever written" (Phase B).
+    assert "ClaimTrack" not in text and "none approved yet" in text
 
 
 async def test_requirements_has_no_upstream(versions_store):

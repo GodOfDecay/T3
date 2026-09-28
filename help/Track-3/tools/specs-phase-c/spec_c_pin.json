@@ -1,0 +1,2 @@
+{"target": "agents_orchestrator/modernization_common/versions.py", "tests": ["tests/modernization_common/test_version_lineage.py"], "env_test": true,
+ "mutants": [["pin-dropped", "                built_from=built_from if built_from is not None else (turn_built_from() or []),", "                built_from=None,"]]}

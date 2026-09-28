@@ -8,6 +8,7 @@ export async function POST(req: NextRequest, { params }: P) {
   const { projectId, stage, version } = await params;
   return forward(req, `/artifact-versions/${encodeURIComponent(projectId)}/stages/${encodeURIComponent(stage)}/versions/${encodeURIComponent(version)}/publish`, {
     method: "POST",
-    withBody: false,
+    // A Project Admin approving a Track 3 version as fallback sends { fallbackReason }.
+    withBody: true,
   });
 }

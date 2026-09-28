@@ -2,7 +2,7 @@
 
 Before this, `orchestrator2.registry.AGENT_IDS`/`REGISTRY` and
 `orchestrator2.router`'s roster were a single global set with no notion of
-track — see `help/track3-implementation-plan.md` §1-2. That is safe only because
+track — see `help/Track-3/track3-implementation-plan.md` §1-2. That is safe only because
 `config.agent_registry.TRACK_PORTFOLIOS["modernization"]` (and `rpa_infra`,
 `data_engineering`) are still empty today: the moment a real agent is added to one
 of them, every project on every OTHER track would start seeing it offered too,

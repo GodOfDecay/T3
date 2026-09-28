@@ -48,6 +48,14 @@ def _agent_id(phase_or_agent: str) -> str:
     return PHASE_TO_AGENT.get(phase_or_agent, phase_or_agent)
 
 
+def pa_floor_applies(role: str, agent_id: str) -> bool:
+    """True when `role`'s reach on `agent_id` is pinned at its default (owner) and no
+    role-level override may lower it: the Project Admin on a Code Modernization agent."""
+    from shared.services.repository_roles import TRACK3_STAGES  # noqa: PLC0415
+
+    return role == "project_admin" and _agent_id(agent_id) in TRACK3_STAGES
+
+
 async def extra_agents_for(
     db: AsyncSession, *, project_id: str, user_id: str
 ) -> set[str]:
@@ -126,7 +134,11 @@ async def resolve_involvement(
     if agent_id in extra_agents and default == "none":
         return "use"  # beyond the role's own; the role's own agent stays owned
 
-    if role:
+    # THE PROJECT ADMIN FLOOR on Code Modernization agents (Track 3, research §12.2 rule 9):
+    # the Project Admin is every Track 3 stage's fallback approver, so a role-level
+    # override may not lower their reach there. The write refuses it
+    # (`project_scoped.set_override`); this ignores any such row that exists anyway.
+    if role and not pa_floor_applies(role, agent_id):
         role_row = (
             await db.execute(
                 text(

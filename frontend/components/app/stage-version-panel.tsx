@@ -43,7 +43,7 @@ import { ErrorState } from "@/components/ui/error-state";
 import { LoadingState } from "@/components/ui/loading-state";
 import { useSession } from "@/hooks/use-session";
 import {
-  getVersionConsumers, listStageVersions, publishStageVersion, rejectStageVersion,
+  getVersionConsumers, listStageVersions, producedByMe, publishStageVersion, rejectStageVersion,
   snapshotStageVersion, toBackendStage, type ArtifactVersion,
 } from "@/lib/api/artifact-versions";
 import { qk } from "@/lib/api/query-keys";
@@ -172,9 +172,9 @@ export function StageVersionPanel({
   const canDecide = hasPermission(session, `artifact:approve_${stage}`);
   // Freezing is producing, not accepting — the same permission as running the agent.
   const canProduce = hasPermission(session, "run:create");
-  // `produced_by` is the backend's `request.state.user_id`, which is this same id —
-  // comparing against email instead would silently never match.
-  const me = session?.user.id ?? null;
+  // `produced_by` is STORED as the user id but the API RELABELS it to the user's email
+  // (`_labelled` in shared/routers/artifact_versions.py), so "is this mine?" is
+  // `producedByMe`, which matches either. Comparing the id alone never matched.
 
   // WHETHER THIS PANEL SHOULD EXIST AT ALL on this project. Versions gate what agents
   // may read ONLY when `enforceArtifactPublication` is on; with it off — which is the
@@ -325,7 +325,8 @@ export function StageVersionPanel({
             const busy = deciding === v.version;
             // The backend refuses this and says why; hiding the buttons avoids
             // offering a click that can only fail.
-            const isMine = me != null && v.producedBy === me;
+            // The backend relabels producedBy to an email; match the id OR the email.
+            const isMine = producedByMe(v.producedBy, session?.user);
             const decidable = canDecide && v.status === "draft" && !isMine;
             return (
               <li key={v.id} className="p-3">

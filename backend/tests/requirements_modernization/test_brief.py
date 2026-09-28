@@ -150,14 +150,21 @@ def test_prompt_keeps_the_agents_own_examples_out_of_the_brief():
 
 
 def test_graph_compiles():
-    from agents_orchestrator.requirements_modernization_agent.agents.intake import TOOLS, app
+    from agents_orchestrator.requirements_modernization_agent.agents.intake import (
+        DOCUMENT_TOOLS, TOOLS, app,
+    )
 
     assert app is not None
     assert {t.name for t in TOOLS} == {
+        "get_project_tech_stack",
         "record_migration_intent", "export_migration_brief", "list_board_projects",
         "create_migration_work_items",
         "get_legacy_code_profile", "list_legacy_files", "read_legacy_file", "search_legacy_code",
         "find_legacy_repositories", "pull_legacy_code",
+    }
+    # The platform's document system, bound to this stage (Phase B retrofit).
+    assert {t.name for t in DOCUMENT_TOOLS} == {
+        "list_project_documents", "read_document", "raise_document_for_approval",
     }
 
 

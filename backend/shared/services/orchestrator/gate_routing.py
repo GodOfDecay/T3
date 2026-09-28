@@ -1,33 +1,35 @@
-"""Gate routing — stage-to-owner-role map, approval check, and notify seam.
+"""Gate routing — stage owner, approval check, and notify seam.
 
-GATE_OWNER maps each pipeline stage to the role responsible for approving that gate.
-can_user_approve reuses the canonical RBAC primitives (_PHASE_PERMISSION + has_permission)
-so approval logic is never duplicated.
+`gate_owner_role` answers from `shared.governance.routing.AGENT_OWNER_ROLE`, the one owner
+map the platform keeps. can_user_approve reuses the canonical RBAC primitives
+(_PHASE_PERMISSION + has_permission) so approval logic is never duplicated.
 notify_gate_pending is a best-effort audit seam; it never raises into the gate flow.
+
+THERE USED TO BE A FOURTH OWNER MAP HERE. `GATE_OWNER` named roles the platform does not
+have (`product_manager`, `tech_lead`, `sre_lead`, …), covered Track 1 only, and answered
+`"product_manager"` for any stage it did not know — the swallowing default that produced
+the `code_review` owner defect elsewhere (Lessons R10). Nothing called it (grep, 2026-09-28),
+so it is now a read-only view of the real map, and an unknown stage raises.
 """
 from __future__ import annotations
 
 import logging
+from types import MappingProxyType
 
 from shared.authz.permissions import _PHASE_PERMISSION, has_permission
+from shared.governance.routing import AGENT_OWNER_ROLE, agent_owner_role
 
 logger = logging.getLogger(__name__)
 
-GATE_OWNER: dict[str, str] = {
-    "requirements": "product_manager",
-    "design": "tech_lead",
-    "development": "tech_lead",
-    "code_review": "tech_lead",
-    "security": "delivery_lead",
-    "testing": "qa_lead",
-    "deployment": "sre_lead",
-    "documentation": "auto",
-}
+#: Read-only view of `AGENT_OWNER_ROLE`, kept under its old name for any caller outside
+#: this repository. Never a copy: a copy is a second map, and second maps drift.
+GATE_OWNER = MappingProxyType(AGENT_OWNER_ROLE)
 
 
 def gate_owner_role(stage: str) -> str:
-    """Return the owning role for the given pipeline stage gate."""
-    return GATE_OWNER.get(stage, "product_manager")
+    """The owning role for `stage`'s gate. Raises `UnknownAgentPhase` for a stage that
+    names no agent — never a plausible default."""
+    return agent_owner_role(stage)
 
 
 def stage_approve_permission(stage: str) -> str | None:

@@ -115,6 +115,12 @@ class Project(Base):
     # have never published makes every agent correctly report "no approved upstream",
     # which is the right answer and is indistinguishable from an outage to whoever is
     # looking. That has to be a switch somebody throws, not a migration that lands.
+    # 0069 — the universal Project Admin fallback (research §12.2): when a PA may decide a
+    # gate ("always" | "after_sla") and how strictly ("standard" | "pilot" | "strict").
+    approval_fallback_mode: Mapped[str] = mapped_column(String(16), nullable=False, default="always",
+                                                        server_default="always")
+    approval_policy: Mapped[str] = mapped_column(String(16), nullable=False, default="standard",
+                                                 server_default="standard")
     enforce_artifact_publication: Mapped[bool] = mapped_column(
         Boolean, nullable=False, default=False, server_default=text("false")
     )
@@ -332,6 +338,19 @@ class ArtifactVersion(Base):
     published_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     rejection_reason: Mapped[str | None] = mapped_column(Text)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    # 0068 — provenance (write-once, in the freeze trigger) and the approver's capacity.
+    # built_from: [{artifact, stage, version, status, commit?}] pinned at freeze time.
+    # none_as_null: a Python None must be SQL NULL ("not recorded"). Plain JSONB writes JSON
+    # `null`, which fails ck_artifact_versions_built_from_array — and, through the insert
+    # retry's rollback, surfaced as an RLS error on EVERY snapshot that passed no built_from.
+    built_from: Mapped[list | None] = mapped_column(JSONB(none_as_null=True))
+    restored_from: Mapped[int | None] = mapped_column(Integer)
+    restore_reason: Mapped[str | None] = mapped_column(Text)
+    # "owner" | "fallback:project_admin" (a fallback needs `fallback_reason`, a DB CHECK).
+    approved_as: Mapped[str | None] = mapped_column(String(32))
+    fallback_reason: Mapped[str | None] = mapped_column(Text)
+    # When the project's Project Admins were told this draft passed its SLA (0070). Mutable.
+    sla_notified_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
 
     __table_args__ = (
         UniqueConstraint("project_id", "stage", "version",
@@ -1385,3 +1404,71 @@ class DevWorkspace(Base):
     __table_args__ = (
         UniqueConstraint("tenant_id", "project_id", name="uq_dev_workspace_project"),
     )
+
+
+class ModernizationModule(Base):
+    """One legacy module of a Track 3 project, and where it is in the migration (0067).
+
+    State machine and append-only `history` are enforced by a database trigger; which AGENT
+    may make which transition is `shared/services/modernization_ledger.py`. Write it only
+    through that service. FORCE RLS on `app.current_tenant_id`.
+    """
+
+    __tablename__ = "modernization_modules"
+
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    tenant_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), nullable=False, index=True)
+    project_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("projects.id", ondelete="CASCADE"), nullable=False, index=True)
+    module_id: Mapped[str] = mapped_column(String(16), nullable=False)
+    module_name: Mapped[str] = mapped_column(String(255), nullable=False)
+    legacy_path: Mapped[str] = mapped_column(Text, nullable=False, default="", server_default="")
+    tier: Mapped[str | None] = mapped_column(String(16))
+    risk_score: Mapped[int | None] = mapped_column(Integer)
+    patterns: Mapped[list] = mapped_column(JSONB, nullable=False, default=list, server_default=text("'[]'::jsonb"))
+    contract_ids: Mapped[list] = mapped_column(JSONB, nullable=False, default=list, server_default=text("'[]'::jsonb"))
+    adr_ids: Mapped[list] = mapped_column(JSONB, nullable=False, default=list, server_default=text("'[]'::jsonb"))
+    wave: Mapped[str | None] = mapped_column(String(8))
+    ec_ids: Mapped[list] = mapped_column(JSONB, nullable=False, default=list, server_default=text("'[]'::jsonb"))
+    baseline_ids: Mapped[list] = mapped_column(JSONB, nullable=False, default=list, server_default=text("'[]'::jsonb"))
+    target_path: Mapped[str | None] = mapped_column(Text)
+    target_branch: Mapped[str | None] = mapped_column(Text)
+    pr_url: Mapped[str | None] = mapped_column(Text)
+    review_verdict: Mapped[str | None] = mapped_column(String(24))
+    security_verdict: Mapped[str | None] = mapped_column(String(16))
+    equivalence_verdict: Mapped[str | None] = mapped_column(String(16))
+    perf_verdict: Mapped[str | None] = mapped_column(String(16))
+    cutover_state: Mapped[str | None] = mapped_column(String(24))
+    decommission_date: Mapped[date | None] = mapped_column(Date)
+    rejection_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0, server_default="0")
+    state: Mapped[str] = mapped_column(String(16), nullable=False)
+    blocked_from: Mapped[str | None] = mapped_column(String(16))
+    blocked_reason: Mapped[str | None] = mapped_column(Text)
+    state_changed_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    state_changed_by: Mapped[str | None] = mapped_column(String(255))
+    history: Mapped[list] = mapped_column(JSONB, nullable=False, default=list, server_default=text("'[]'::jsonb"))
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+
+    __table_args__ = (UniqueConstraint("project_id", "module_id", name="uq_modernization_module"),)
+
+
+class ProjectRepository(Base):
+    """Which repository plays which part on a Track 3 project (0069): `legacy` (read only,
+    by construction) or `target` (written only by the stages the role rule allows, through
+    `shared/services/repository_roles.assert_target_write`). FORCE RLS."""
+
+    __tablename__ = "project_repositories"
+
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    tenant_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), nullable=False, index=True)
+    project_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("projects.id", ondelete="CASCADE"), nullable=False, index=True)
+    role: Mapped[str] = mapped_column(String(8), nullable=False)
+    kind: Mapped[str] = mapped_column(String(32), nullable=False)
+    url: Mapped[str] = mapped_column(Text, nullable=False)
+    branch: Mapped[str] = mapped_column(String(255), nullable=False, default="", server_default="")
+    set_by: Mapped[str | None] = mapped_column(String(255))
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+
+    __table_args__ = (UniqueConstraint("project_id", "role", name="uq_project_repository_role"),)

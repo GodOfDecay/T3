@@ -122,6 +122,12 @@ _PHASES: frozenset[str] = frozenset({
     "requirements", "design", "plan", "development", "review", "security",
     "testing", "deployment", "documentation", "requirements_modernization",
     "discovery", "strategy", "migration_mapping", "validation", "data_engineering",
+    # Track 3 agents 3–10 (Phase B). Missing here, saving a custom role that gave any of
+    # them access failed with "unknown agent phase" — pinned to the frontend enum now by
+    # tests/test_custom_role_phases_match_frontend.py.
+    "design_modernization", "testing_modernization", "development_modernization",
+    "code_review_modernization", "security_modernization", "deployment_modernization",
+    "documentation_modernization",
 })
 _LEVELS: frozenset[str] = frozenset({"owner", "primary", "build", "requests", "use", "none"})
 

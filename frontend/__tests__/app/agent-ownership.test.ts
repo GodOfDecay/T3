@@ -73,20 +73,23 @@ describe("AGENT_OWNERSHIP invariants", () => {
     // Development; QA Testing; Security Engineer Security; DevOps Deployment.
     const reach = (role: PlatformRole) => roleAgentSplit(role).reachable.sort();
 
-    // + Track 3's first two agents, both the BA's (a product decision for Track 3).
+    // + Track 3's agents: the BA owns its first two and the Cutover Pack; each later
+    // agent goes to the role that owns the matching job (one agent, one role).
     expect(reach("ba")).toEqual(
-      ["discovery", "documentation", "requirements", "requirements_modernization"],
+      ["discovery", "documentation", "documentation_modernization", "requirements",
+        "requirements_modernization"],
     );
-    expect(reach("developer")).toEqual(["development"]);
-    expect(reach("qa")).toEqual(["testing", "validation"].sort());
-    expect(reach("security_engineer")).toEqual(["security"]);
-    expect(reach("devops_engineer")).toEqual(["deployment"]);
+    expect(reach("developer")).toEqual(["development", "development_modernization"]);
+    expect(reach("qa")).toEqual(["testing", "testing_modernization", "validation"].sort());
+    expect(reach("security_engineer")).toEqual(["security", "security_modernization"]);
+    expect(reach("devops_engineer")).toEqual(["deployment", "deployment_modernization"]);
     expect(reach("scrum_master")).toEqual(["plan"]);
     expect(reach("data_engineer")).toEqual(["data_engineering"]);
     // Architect holds the two greenfield agents plus the three modernization-track
     // ones it owns; those never appear on a Track 1 project.
     expect(reach("architect")).toEqual(
-      ["design", "review", "strategy", "migration_mapping"].sort(),
+      ["design", "review", "strategy", "migration_mapping", "design_modernization",
+        "code_review_modernization"].sort(),
     );
   });
 

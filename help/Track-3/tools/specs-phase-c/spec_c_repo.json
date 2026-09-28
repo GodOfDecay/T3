@@ -1,0 +1,10 @@
+{"target": "shared/services/repository_roles.py", "tests": ["tests/modernization_common/test_repository_roles_and_fallback.py"], "env_test": true,
+ "mutants": [
+  ["writers-widened", "_TARGET_WRITERS = frozenset({\"development_modernization\", \"deployment_modernization\"})", "_TARGET_WRITERS = frozenset(TRACK3_STAGES)"],
+  ["legacy-remote-allowed", "    if legacy is not None and normalize(legacy.url) == remote:", "    if False:"],
+  ["any-remote-allowed", "    if normalize(target.url) != remote:", "    if False:"],
+  ["level-not-checked", "    if not permits(level, \"write\"):", "    if False:"],
+  ["target-equals-legacy-allowed", "    if other is not None and normalize(other.url) == clean:", "    if False:"],
+  ["no-dotgit-strip", "    path = urllib.parse.unquote(parsed.path).rstrip(\"/\").removesuffix(\".git\").rstrip(\"/\")", "    path = urllib.parse.unquote(parsed.path).rstrip(\"/\")"],
+  ["http-allowed", "    if parsed.scheme != \"https\" or not parsed.hostname:", "    if not parsed.hostname:"]
+ ]}

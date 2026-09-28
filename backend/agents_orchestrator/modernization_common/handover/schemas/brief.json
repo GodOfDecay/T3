@@ -1,0 +1,391 @@
+{
+  "$defs": {
+    "BriefPayload": {
+      "additionalProperties": false,
+      "description": "The brief as later agents need it. `must_not_change` holds the user's own words\n(Target Architecture turns each into a CT-xx); a vague entry is a question the Migration\nIntent agent asks before recording, not something this model can judge.",
+      "properties": {
+        "budget": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Budget"
+        },
+        "business_owner": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Business Owner"
+        },
+        "constraints": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "title": "Constraints",
+          "type": "array"
+        },
+        "data_residency": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Data Residency"
+        },
+        "deadline": {
+          "anyOf": [
+            {
+              "format": "date",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Deadline"
+        },
+        "downtime_window": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Downtime Window"
+        },
+        "freeze_from": {
+          "anyOf": [
+            {
+              "format": "date",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Freeze From"
+        },
+        "goal": {
+          "minLength": 1,
+          "title": "Goal",
+          "type": "string"
+        },
+        "must_not_change": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "title": "Must Not Change",
+          "type": "array"
+        },
+        "open_questions": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "title": "Open Questions",
+          "type": "array"
+        },
+        "scope": {
+          "$ref": "#/$defs/Scope"
+        },
+        "success_measures": {
+          "items": {
+            "$ref": "#/$defs/SuccessMeasure"
+          },
+          "minItems": 1,
+          "title": "Success Measures",
+          "type": "array"
+        },
+        "system_name": {
+          "minLength": 1,
+          "title": "System Name",
+          "type": "string"
+        },
+        "target_stack": {
+          "items": {
+            "type": "string"
+          },
+          "minItems": 1,
+          "title": "Target Stack",
+          "type": "array"
+        }
+      },
+      "required": [
+        "system_name",
+        "goal",
+        "target_stack",
+        "scope",
+        "success_measures"
+      ],
+      "title": "BriefPayload",
+      "type": "object"
+    },
+    "BuiltFrom": {
+      "additionalProperties": false,
+      "description": "One input this artifact was built from, pinned to the version that was read.",
+      "properties": {
+        "artifact": {
+          "enum": [
+            "migration_intent_payload",
+            "discovery_artifacts",
+            "target_design_artifacts",
+            "strategy_artifacts",
+            "equivalence_artifacts",
+            "migration_artifacts",
+            "migration_review_artifacts",
+            "modernization_security_artifacts",
+            "cutover_artifacts",
+            "cutover_pack_artifacts"
+          ],
+          "title": "Artifact",
+          "type": "string"
+        },
+        "commit": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Commit"
+        },
+        "status": {
+          "enum": [
+            "draft",
+            "published",
+            "superseded",
+            "rejected"
+          ],
+          "title": "Status",
+          "type": "string"
+        },
+        "version": {
+          "minimum": 1,
+          "title": "Version",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "artifact",
+        "version",
+        "status"
+      ],
+      "title": "BuiltFrom",
+      "type": "object"
+    },
+    "ProducedBy": {
+      "additionalProperties": false,
+      "properties": {
+        "model": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Model"
+        },
+        "run_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Run Id"
+        },
+        "user_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "User Id"
+        }
+      },
+      "title": "ProducedBy",
+      "type": "object"
+    },
+    "Scope": {
+      "additionalProperties": false,
+      "properties": {
+        "in": {
+          "items": {
+            "type": "string"
+          },
+          "minItems": 1,
+          "title": "In",
+          "type": "array"
+        },
+        "out": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "title": "Out",
+          "type": "array"
+        }
+      },
+      "required": [
+        "in"
+      ],
+      "title": "Scope",
+      "type": "object"
+    },
+    "SuccessMeasure": {
+      "additionalProperties": false,
+      "properties": {
+        "kind": {
+          "enum": [
+            "equivalence",
+            "performance",
+            "security",
+            "schedule",
+            "cost"
+          ],
+          "title": "Kind",
+          "type": "string"
+        },
+        "metric": {
+          "minLength": 1,
+          "title": "Metric",
+          "type": "string"
+        },
+        "target": {
+          "minLength": 1,
+          "title": "Target",
+          "type": "string"
+        },
+        "today": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Today"
+        }
+      },
+      "required": [
+        "metric",
+        "target",
+        "kind"
+      ],
+      "title": "SuccessMeasure",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "agent_id": {
+      "const": "requirements_modernization",
+      "default": "requirements_modernization",
+      "title": "Agent Id",
+      "type": "string"
+    },
+    "artifact": {
+      "const": "migration_intent_payload",
+      "default": "migration_intent_payload",
+      "title": "Artifact",
+      "type": "string"
+    },
+    "built_from": {
+      "default": [],
+      "items": {
+        "$ref": "#/$defs/BuiltFrom"
+      },
+      "title": "Built From",
+      "type": "array"
+    },
+    "payload": {
+      "$ref": "#/$defs/BriefPayload"
+    },
+    "produced_at": {
+      "anyOf": [
+        {
+          "format": "date-time",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Produced At"
+    },
+    "produced_by": {
+      "$ref": "#/$defs/ProducedBy",
+      "default": {
+        "model": null,
+        "run_id": null,
+        "user_id": null
+      }
+    },
+    "schema_version": {
+      "const": 1,
+      "default": 1,
+      "title": "Schema Version",
+      "type": "integer"
+    },
+    "status": {
+      "enum": [
+        "draft",
+        "published",
+        "superseded",
+        "rejected"
+      ],
+      "title": "Status",
+      "type": "string"
+    },
+    "version": {
+      "minimum": 1,
+      "title": "Version",
+      "type": "integer"
+    }
+  },
+  "required": [
+    "version",
+    "status",
+    "payload"
+  ],
+  "title": "BriefPacket",
+  "type": "object"
+}

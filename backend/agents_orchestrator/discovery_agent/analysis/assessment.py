@@ -104,6 +104,12 @@ def _attribute_vulnerabilities(modules, manifests, vulnerabilities):
     return by_module
 
 
+def vulnerabilities_scanned(scanners: dict | None) -> bool:
+    """Did a vulnerability scan actually produce the counts? Only Trivy's `ok` says so;
+    `skipped`, `unavailable` and `error` mean the number was never measured."""
+    return (scanners or {}).get("trivy") == "ok"
+
+
 def assess_repository(
     root: Path,
     *,
@@ -135,6 +141,7 @@ def assess_repository(
                 tested[target] = True
 
     vulns_by_module = _attribute_vulnerabilities(modules, manifests, vulnerabilities)
+    scanned = vulnerabilities_scanned(scanners)
 
     flags: dict[str, list[dict]] = {"eol": [], "deprecated": [], "vulnerable": []}
     module_rows: list[dict] = []
@@ -200,6 +207,7 @@ def assess_repository(
             fan_in=len(dependents[m.name]),
             cross_language=cross_language(m.ecosystem, target_stack),
             tested=tested[m.name],
+            vulnerabilities_scanned=scanned,
         )
         module_rows.append({
             "name": m.name, "path": m.path, "ecosystem": m.ecosystem, "manifest": m.manifest,
@@ -344,9 +352,16 @@ def assessment_markdown(artifacts: dict, *, max_modules: int | None = None) -> s
         + ", ".join(f"{_TIER_LABEL[t]} **{tiers.get(t, 0)}**" for t in TIERS) + "."
     )
     fc = summary.get("flag_counts") or {}
+    scanner = artifacts.get("scanners") or {}
+    # NOT MEASURED IS NOT ZERO (Lessons R39): with no scan, "0 known vulnerabilities" is
+    # a confident number nobody measured — the Security agent's `vulnerabilities: 0` bug.
+    vulnerable = (
+        f"**{fc.get('vulnerable', 0)}** known vulnerabilit(ies)" if vulnerabilities_scanned(scanner)
+        else f"known vulnerabilities **not scanned** (Trivy: {scanner.get('trivy', 'skipped')})"
+    )
     lines.append(
         f"- Flags: **{fc.get('eol', 0)}** end-of-life runtime(s), **{fc.get('deprecated', 0)}** "
-        f"deprecated package(s), **{fc.get('vulnerable', 0)}** known vulnerabilit(ies)."
+        f"deprecated package(s), {vulnerable}."
     )
     riskiest = [m for m in modules if m["risk"]["tier"] == "manual"][:5] or modules[:3]
     if riskiest:
@@ -393,7 +408,6 @@ def assessment_markdown(artifacts: dict, *, max_modules: int | None = None) -> s
     else:
         lines.append("- None found.")
     lines += ["", "### Known vulnerabilities", ""]
-    scanner = artifacts.get("scanners") or {}
     if flags.get("vulnerable"):
         lines += _vulnerability_lines(flags["vulnerable"])
     else:

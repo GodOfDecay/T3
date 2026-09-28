@@ -1,0 +1,2 @@
+{"target": "shared/models/orm.py", "tests": ["tests/modernization_common/test_version_lineage.py"], "env_test": true,
+ "mutants": [["json-null", "    built_from: Mapped[list | None] = mapped_column(JSONB(none_as_null=True))", "    built_from: Mapped[list | None] = mapped_column(JSONB)"]]}

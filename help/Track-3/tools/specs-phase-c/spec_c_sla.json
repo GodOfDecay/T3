@@ -1,0 +1,10 @@
+{"target": "workers/approval_sla_sweeper.py", "tests": ["tests/modernization_common/test_approval_sla_sweeper.py"], "env_test": true,
+ "mutants": [
+  ["no-dedupe", "                \"WHERE v.status = 'draft' AND v.sla_notified_at IS NULL AND v.stage = ANY(:stages) \"", "                \"WHERE v.status = 'draft' AND v.stage = ANY(:stages) \""],
+  ["any-status", "                \"WHERE v.status = 'draft' AND v.sla_notified_at IS NULL AND v.stage = ANY(:stages) \"", "                \"WHERE v.sla_notified_at IS NULL AND v.stage = ANY(:stages) \""],
+  ["archived-too", "                \"AND p.track = 'modernization' AND NOT p.archived \"", "                \"AND p.track = 'modernization' \""],
+  ["any-track", "                \"AND p.track = 'modernization' AND NOT p.archived \"", "                \"AND NOT p.archived \""],
+  ["no-sla-wait", "                if now - r[\"created_at\"] < timedelta(hours=hours):", "                if False:"],
+  ["fixed-sla", "                hours = _sla_hours(r[\"stage\"])", "                hours = 48"],
+  ["wrong-audience", "                    recipient_role=\"project_admin\", recipient_scope_kind=\"project\",", "                    recipient_role=\"ba\", recipient_scope_kind=\"project\","]
+ ]}

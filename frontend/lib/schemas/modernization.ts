@@ -104,6 +104,9 @@ export const RiskFactor = z.object({
   factor: z.string(),
   points: z.number(),
   detail: z.string().default(""),
+  /** False when the input was never measured (no vulnerability scan ran): the factor
+   *  contributes nothing and must read "not measured", never "+0" (Lessons R39). */
+  measured: z.boolean().default(true),
 });
 
 export const AssessedModule = z.object({

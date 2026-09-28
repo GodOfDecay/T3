@@ -1,0 +1,7 @@
+{"root": "frontend", "target": "app/(app)/projects/[id]/modernization/page.tsx", "cmd": ["node", "node_modules/vitest/vitest.mjs", "run", "__tests__/app/track3-programme.test.tsx"],
+ "mutants": [
+  ["no-track-guard", "  if (projectQ.data && !isTrack3) {", "  if (false) {"],
+  ["ledger-always-fetched", "    queryFn: () => getLedger(projectId),\n    enabled: isTrack3,", "    queryFn: () => getLedger(projectId),"],
+  ["blocked-section-hidden", "          {blocked.length > 0 && (", "          {false && ("],
+  ["warnings-hidden", "      {warnings.length > 0 && (", "      {false && ("]
+ ]}

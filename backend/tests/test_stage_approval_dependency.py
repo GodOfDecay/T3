@@ -70,10 +70,19 @@ async def test_the_permissions_are_actually_distinct(recorded):
 
 @pytest.mark.parametrize("stage", [
     "strategy", "migration_mapping", "validation", "data_engineering",
+    # Track 3 agents 3–10: they HAVE approve permissions (migration 0066) but are not
+    # built, so the registered-stage rule must still refuse them.
+    "design_modernization",
+    "testing_modernization",
+    "development_modernization",
+    "code_review_modernization",
+    "security_modernization",
+    "deployment_modernization",
+    "documentation_modernization",
 ])
 async def test_a_track_agent_stage_is_refused(recorded, stage):
-    """These four appear in the UI catalogue with owners but are NOT in AGENT_REGISTRY,
-    so no `artifact:approve_*` exists for them. Fail closed rather than waving them
+    """These appear in the UI catalogue with owners but are NOT in AGENT_REGISTRY, so
+    there is nothing to approve — whether or not an `artifact:approve_*` exists for them. Fail closed rather than waving them
     through to a permission nobody can hold. (Discovery left this list when Track 3's
     Phase 1 built it: it now has `artifact:approve_discovery`, held by its owner.)"""
     with pytest.raises(HTTPException) as exc:

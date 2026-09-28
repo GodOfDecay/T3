@@ -1,0 +1,49 @@
+{
+  "schema_version": 1,
+  "agent_id": "code_review_modernization",
+  "artifact": "migration_review_artifacts",
+  "version": 1,
+  "status": "published",
+  "built_from": [
+    {"artifact": "migration_artifacts", "version": 1, "status": "published"},
+    {"artifact": "target_design_artifacts", "version": 1, "status": "published"},
+    {"artifact": "strategy_artifacts", "version": 2, "status": "published"}
+  ],
+  "produced_by": {"user_id": "fixture:architect", "model": "fixture (research §9 stage 7, first review, illustrative)", "run_id": null},
+  "produced_at": "2026-12-21T11:00:00Z",
+  "payload": {
+    "module_id": "M-05",
+    "pr": "claimtrack-modern!12",
+    "summary": "Python 2.7 → 3.12 by recipes plus two hand rewrites. One trap is not handled on one query, so this goes back for a fix; the unsafe YAML load the plan says is fixed in this move is still there.",
+    "merge_recommendation": "request_changes",
+    "findings": [
+      {"id": "F-003", "severity": "high", "category": "trap_unhandled", "file": "claimtrack-reports/sql/monthly_summary.sql", "line": 12,
+       "legacy_file": "claimtrack-reports/sql/monthly_summary.sql", "legacy_line": 12,
+       "description": "GROUP BY region without ORDER BY; legacy relied on MySQL 5.6's implicit sort.",
+       "recommendation": "Add ORDER BY region to match the legacy order.", "refs": ["TR-04", "EC-06"]},
+      {"id": "F-005", "severity": "medium", "category": "carried_over", "file": "claimtrack-reports/config.py", "line": 31,
+       "legacy_file": "claimtrack-reports/config.py", "legacy_line": 29,
+       "description": "yaml.load without a Loader; known debt, but the plan fixes unsafe YAML in this move.",
+       "recommendation": "Use yaml.safe_load.", "refs": []}
+    ],
+    "equivalence_coverage": [
+      {"ec_id": "EC-03", "status": "covered", "note": "py2_round() at every rounding site"},
+      {"ec_id": "EC-06", "status": "at_risk", "note": "F-003"}
+    ],
+    "contract_check": [{"ct_id": "CT-03", "status": "unchanged", "note": ""}],
+    "trap_check": [
+      {"tr_id": "TR-03", "status": "handled", "where": "cr4_return.py:88,141"},
+      {"tr_id": "TR-04", "status": "not_handled", "where": "sql/monthly_summary.sql:12"},
+      {"tr_id": "TR-06", "status": "handled", "where": "job.yaml TZ"}
+    ],
+    "traceability": [
+      {"legacy_path": "claimtrack-reports/cr4_return.py", "target_path": "claimtrack-reports/cr4_return.py", "status": "mapped"},
+      {"legacy_path": "claimtrack-reports/requirements.txt", "target_path": "claimtrack-reports/pyproject.toml", "status": "merged"}
+    ],
+    "known_debt": [],
+    "files_read": {
+      "target": ["claimtrack-reports/cr4_return.py", "claimtrack-reports/sql/monthly_summary.sql", "claimtrack-reports/config.py"],
+      "legacy": ["claimtrack-reports/cr4_return.py", "claimtrack-reports/sql/monthly_summary.sql", "claimtrack-reports/config.py"]
+    }
+  }
+}

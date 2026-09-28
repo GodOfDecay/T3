@@ -1,0 +1,620 @@
+{
+  "$defs": {
+    "BuiltFrom": {
+      "additionalProperties": false,
+      "description": "One input this artifact was built from, pinned to the version that was read.",
+      "properties": {
+        "artifact": {
+          "enum": [
+            "migration_intent_payload",
+            "discovery_artifacts",
+            "target_design_artifacts",
+            "strategy_artifacts",
+            "equivalence_artifacts",
+            "migration_artifacts",
+            "migration_review_artifacts",
+            "modernization_security_artifacts",
+            "cutover_artifacts",
+            "cutover_pack_artifacts"
+          ],
+          "title": "Artifact",
+          "type": "string"
+        },
+        "commit": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Commit"
+        },
+        "status": {
+          "enum": [
+            "draft",
+            "published",
+            "superseded",
+            "rejected"
+          ],
+          "title": "Status",
+          "type": "string"
+        },
+        "version": {
+          "minimum": 1,
+          "title": "Version",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "artifact",
+        "version",
+        "status"
+      ],
+      "title": "BuiltFrom",
+      "type": "object"
+    },
+    "CutoverPayload": {
+      "additionalProperties": false,
+      "description": "Refusals checked here: `go` with an unwaived red gate (the model cannot turn a red green);\ndowntime over the window not reported; a traffic shift that does not end at 100 or goes\nbackwards; two senders on one day; decommission before hypercare closed green or out of\norder; one person in both sign-off slots.\n\nChecked by the tools: readiness itself is computed by `readiness_check`, never supplied;\nno step runs without an approved request (`request_cutover_step`).",
+      "properties": {
+        "decommission": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/DecommissionItem"
+          },
+          "title": "Decommission",
+          "type": "array"
+        },
+        "downtime_exceeds_window": {
+          "default": false,
+          "title": "Downtime Exceeds Window",
+          "type": "boolean"
+        },
+        "downtime_limit_minutes": {
+          "minimum": 0,
+          "title": "Downtime Limit Minutes",
+          "type": "integer"
+        },
+        "go": {
+          "title": "Go",
+          "type": "boolean"
+        },
+        "hypercare": {
+          "default": "not_started",
+          "enum": [
+            "not_started",
+            "open",
+            "closed_green",
+            "closed_red"
+          ],
+          "title": "Hypercare",
+          "type": "string"
+        },
+        "parallel_runs": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/ParallelRunPlan"
+          },
+          "title": "Parallel Runs",
+          "type": "array"
+        },
+        "readiness": {
+          "items": {
+            "$ref": "#/$defs/Readiness"
+          },
+          "minItems": 1,
+          "title": "Readiness",
+          "type": "array"
+        },
+        "sign_off": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/SignOffSlot"
+          },
+          "title": "Sign Off",
+          "type": "array"
+        },
+        "steps": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/CutoverStep"
+          },
+          "title": "Steps",
+          "type": "array"
+        },
+        "traffic_shift": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/TrafficStep"
+          },
+          "title": "Traffic Shift",
+          "type": "array"
+        },
+        "wave_id": {
+          "pattern": "^W\\d+$",
+          "title": "Wave Id",
+          "type": "string"
+        },
+        "window": {
+          "minLength": 1,
+          "title": "Window",
+          "type": "string"
+        }
+      },
+      "required": [
+        "wave_id",
+        "window",
+        "downtime_limit_minutes",
+        "readiness",
+        "go"
+      ],
+      "title": "CutoverPayload",
+      "type": "object"
+    },
+    "CutoverStep": {
+      "additionalProperties": false,
+      "properties": {
+        "action": {
+          "minLength": 1,
+          "title": "Action",
+          "type": "string"
+        },
+        "at": {
+          "minLength": 1,
+          "title": "At",
+          "type": "string"
+        },
+        "counts_as_downtime": {
+          "default": false,
+          "title": "Counts As Downtime",
+          "type": "boolean"
+        },
+        "id": {
+          "pattern": "^CO-(\\d+|D)\\.\\d+$",
+          "title": "Id",
+          "type": "string"
+        },
+        "minutes": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Minutes"
+        },
+        "owner": {
+          "minLength": 1,
+          "title": "Owner",
+          "type": "string"
+        },
+        "rollback_action": {
+          "minLength": 1,
+          "title": "Rollback Action",
+          "type": "string"
+        },
+        "rollback_trigger": {
+          "minLength": 1,
+          "title": "Rollback Trigger",
+          "type": "string"
+        },
+        "status": {
+          "default": "planned",
+          "enum": [
+            "planned",
+            "requested",
+            "approved",
+            "done",
+            "rolled_back"
+          ],
+          "title": "Status",
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "action",
+        "owner",
+        "at",
+        "rollback_trigger",
+        "rollback_action"
+      ],
+      "title": "CutoverStep",
+      "type": "object"
+    },
+    "DecommissionItem": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "pattern": "^CO-(\\d+|D)\\.\\d+$",
+          "title": "Id",
+          "type": "string"
+        },
+        "item": {
+          "minLength": 1,
+          "title": "Item",
+          "type": "string"
+        },
+        "order": {
+          "minimum": 1,
+          "title": "Order",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "id",
+        "item",
+        "order"
+      ],
+      "title": "DecommissionItem",
+      "type": "object"
+    },
+    "ParallelRunPlan": {
+      "additionalProperties": false,
+      "description": "One entry per outbound file or call, one sender per day by construction.",
+      "properties": {
+        "days": {
+          "items": {
+            "$ref": "#/$defs/SenderDay"
+          },
+          "minItems": 1,
+          "title": "Days",
+          "type": "array"
+        },
+        "outbound": {
+          "minLength": 1,
+          "title": "Outbound",
+          "type": "string"
+        }
+      },
+      "required": [
+        "outbound",
+        "days"
+      ],
+      "title": "ParallelRunPlan",
+      "type": "object"
+    },
+    "ProducedBy": {
+      "additionalProperties": false,
+      "properties": {
+        "model": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Model"
+        },
+        "run_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Run Id"
+        },
+        "user_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "User Id"
+        }
+      },
+      "title": "ProducedBy",
+      "type": "object"
+    },
+    "Readiness": {
+      "additionalProperties": false,
+      "properties": {
+        "baseline": {
+          "enum": [
+            "green",
+            "red"
+          ],
+          "title": "Baseline",
+          "type": "string"
+        },
+        "closes_red": {
+          "additionalProperties": {
+            "type": "string"
+          },
+          "default": {},
+          "description": "gate \u2192 who closes it",
+          "title": "Closes Red",
+          "type": "object"
+        },
+        "equivalence": {
+          "enum": [
+            "green",
+            "red"
+          ],
+          "title": "Equivalence",
+          "type": "string"
+        },
+        "module_id": {
+          "pattern": "^M-\\d{2,}$",
+          "title": "Module Id",
+          "type": "string"
+        },
+        "pr_merged": {
+          "enum": [
+            "green",
+            "red"
+          ],
+          "title": "Pr Merged",
+          "type": "string"
+        },
+        "review": {
+          "enum": [
+            "green",
+            "red"
+          ],
+          "title": "Review",
+          "type": "string"
+        },
+        "security": {
+          "enum": [
+            "green",
+            "red"
+          ],
+          "title": "Security",
+          "type": "string"
+        },
+        "waivers": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/Waiver"
+          },
+          "title": "Waivers",
+          "type": "array"
+        }
+      },
+      "required": [
+        "module_id",
+        "baseline",
+        "review",
+        "security",
+        "equivalence",
+        "pr_merged"
+      ],
+      "title": "Readiness",
+      "type": "object"
+    },
+    "SenderDay": {
+      "additionalProperties": false,
+      "properties": {
+        "day": {
+          "format": "date",
+          "title": "Day",
+          "type": "string"
+        },
+        "sender": {
+          "enum": [
+            "legacy",
+            "new"
+          ],
+          "title": "Sender",
+          "type": "string"
+        }
+      },
+      "required": [
+        "day",
+        "sender"
+      ],
+      "title": "SenderDay",
+      "type": "object"
+    },
+    "SignOffSlot": {
+      "additionalProperties": false,
+      "properties": {
+        "approved_as": {
+          "anyOf": [
+            {
+              "enum": [
+                "owner",
+                "fallback:project_admin"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Approved As"
+        },
+        "role": {
+          "enum": [
+            "devops_engineer",
+            "business_owner"
+          ],
+          "title": "Role",
+          "type": "string"
+        },
+        "user_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "User Id"
+        }
+      },
+      "required": [
+        "role"
+      ],
+      "title": "SignOffSlot",
+      "type": "object"
+    },
+    "TrafficStep": {
+      "additionalProperties": false,
+      "properties": {
+        "guards": {
+          "items": {
+            "type": "string"
+          },
+          "minItems": 1,
+          "title": "Guards",
+          "type": "array"
+        },
+        "hold": {
+          "minLength": 1,
+          "title": "Hold",
+          "type": "string"
+        },
+        "percent": {
+          "maximum": 100,
+          "minimum": 0,
+          "title": "Percent",
+          "type": "integer"
+        },
+        "step_id": {
+          "pattern": "^CO-(\\d+|D)\\.\\d+$",
+          "title": "Step Id",
+          "type": "string"
+        }
+      },
+      "required": [
+        "step_id",
+        "percent",
+        "hold",
+        "guards"
+      ],
+      "title": "TrafficStep",
+      "type": "object"
+    },
+    "Waiver": {
+      "additionalProperties": false,
+      "properties": {
+        "approver": {
+          "minLength": 1,
+          "title": "Approver",
+          "type": "string"
+        },
+        "gate": {
+          "enum": [
+            "baseline",
+            "review",
+            "security",
+            "equivalence",
+            "pr_merged"
+          ],
+          "title": "Gate",
+          "type": "string"
+        },
+        "reason": {
+          "minLength": 1,
+          "title": "Reason",
+          "type": "string"
+        }
+      },
+      "required": [
+        "gate",
+        "approver",
+        "reason"
+      ],
+      "title": "Waiver",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "agent_id": {
+      "const": "deployment_modernization",
+      "default": "deployment_modernization",
+      "title": "Agent Id",
+      "type": "string"
+    },
+    "artifact": {
+      "const": "cutover_artifacts",
+      "default": "cutover_artifacts",
+      "title": "Artifact",
+      "type": "string"
+    },
+    "built_from": {
+      "default": [],
+      "items": {
+        "$ref": "#/$defs/BuiltFrom"
+      },
+      "title": "Built From",
+      "type": "array"
+    },
+    "payload": {
+      "$ref": "#/$defs/CutoverPayload"
+    },
+    "produced_at": {
+      "anyOf": [
+        {
+          "format": "date-time",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Produced At"
+    },
+    "produced_by": {
+      "$ref": "#/$defs/ProducedBy",
+      "default": {
+        "model": null,
+        "run_id": null,
+        "user_id": null
+      }
+    },
+    "schema_version": {
+      "const": 1,
+      "default": 1,
+      "title": "Schema Version",
+      "type": "integer"
+    },
+    "status": {
+      "enum": [
+        "draft",
+        "published",
+        "superseded",
+        "rejected"
+      ],
+      "title": "Status",
+      "type": "string"
+    },
+    "version": {
+      "minimum": 1,
+      "title": "Version",
+      "type": "integer"
+    }
+  },
+  "required": [
+    "version",
+    "status",
+    "payload"
+  ],
+  "title": "CutoverPacket",
+  "type": "object"
+}

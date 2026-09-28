@@ -1,0 +1,7 @@
+{"root": "frontend", "target": "components/modernization/modernization-settings-card.tsx", "cmd": ["node", "node_modules/vitest/vitest.mjs", "run", "__tests__/app/track3-programme.test.tsx"],
+ "mutants": [
+  ["branch-not-sent", "    mutationFn: () => setRepository(projectId, role, url.trim(), branch.trim()),", "    mutationFn: () => setRepository(projectId, role, url.trim(), \"\"),"],
+  ["refusal-swallowed", "    onError: (e: Error) => toast.error(e.message || `Could not save the ${role} repository`),", "    onError: () => toast.error(\"failed\"),"],
+  ["save-for-all", "        {canEdit && (\n          <Button type=\"submit\"", "        {true && (\n          <Button type=\"submit\""],
+  ["policy-not-sent", "    mutationFn: () => setApprovalSettings(projectId, mode, policy),", "    mutationFn: () => setApprovalSettings(projectId, mode, \"standard\"),"]
+ ]}

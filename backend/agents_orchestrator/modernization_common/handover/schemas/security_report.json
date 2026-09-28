@@ -1,0 +1,511 @@
+{
+  "$defs": {
+    "BuiltFrom": {
+      "additionalProperties": false,
+      "description": "One input this artifact was built from, pinned to the version that was read.",
+      "properties": {
+        "artifact": {
+          "enum": [
+            "migration_intent_payload",
+            "discovery_artifacts",
+            "target_design_artifacts",
+            "strategy_artifacts",
+            "equivalence_artifacts",
+            "migration_artifacts",
+            "migration_review_artifacts",
+            "modernization_security_artifacts",
+            "cutover_artifacts",
+            "cutover_pack_artifacts"
+          ],
+          "title": "Artifact",
+          "type": "string"
+        },
+        "commit": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Commit"
+        },
+        "status": {
+          "enum": [
+            "draft",
+            "published",
+            "superseded",
+            "rejected"
+          ],
+          "title": "Status",
+          "type": "string"
+        },
+        "version": {
+          "minimum": 1,
+          "title": "Version",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "artifact",
+        "version",
+        "status"
+      ],
+      "title": "BuiltFrom",
+      "type": "object"
+    },
+    "ContractAuthz": {
+      "additionalProperties": false,
+      "properties": {
+        "ct_id": {
+          "pattern": "^CT-\\d{2,}$",
+          "title": "Ct Id",
+          "type": "string"
+        },
+        "note": {
+          "default": "",
+          "title": "Note",
+          "type": "string"
+        },
+        "status": {
+          "enum": [
+            "same",
+            "stricter",
+            "weaker"
+          ],
+          "title": "Status",
+          "type": "string"
+        }
+      },
+      "required": [
+        "ct_id",
+        "status"
+      ],
+      "title": "ContractAuthz",
+      "type": "object"
+    },
+    "FixedFromLegacy": {
+      "additionalProperties": false,
+      "properties": {
+        "cve": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Cve"
+        },
+        "legacy_ref": {
+          "minLength": 1,
+          "title": "Legacy Ref",
+          "type": "string"
+        },
+        "package": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Package"
+        },
+        "title": {
+          "minLength": 1,
+          "title": "Title",
+          "type": "string"
+        }
+      },
+      "required": [
+        "title",
+        "legacy_ref"
+      ],
+      "title": "FixedFromLegacy",
+      "type": "object"
+    },
+    "ProducedBy": {
+      "additionalProperties": false,
+      "properties": {
+        "model": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Model"
+        },
+        "run_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Run Id"
+        },
+        "user_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "User Id"
+        }
+      },
+      "title": "ProducedBy",
+      "type": "object"
+    },
+    "Sbom": {
+      "additionalProperties": false,
+      "properties": {
+        "components": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "None = not generated.",
+          "title": "Components"
+        },
+        "vulnerabilities": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "None = not scanned, NEVER 0.",
+          "title": "Vulnerabilities"
+        }
+      },
+      "title": "Sbom",
+      "type": "object"
+    },
+    "SecurityFinding": {
+      "additionalProperties": false,
+      "properties": {
+        "cve": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Cve"
+        },
+        "file": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "File"
+        },
+        "id": {
+          "pattern": "^S-\\d{3,}$",
+          "title": "Id",
+          "type": "string"
+        },
+        "is_secret": {
+          "default": false,
+          "title": "Is Secret",
+          "type": "boolean"
+        },
+        "legacy_ref": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Legacy Ref"
+        },
+        "origin": {
+          "enum": [
+            "carried_over",
+            "introduced"
+          ],
+          "title": "Origin",
+          "type": "string"
+        },
+        "package": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Package"
+        },
+        "reachable": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "None = reachability not analysed.",
+          "title": "Reachable"
+        },
+        "remediation_due": {
+          "anyOf": [
+            {
+              "format": "date",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Remediation Due"
+        },
+        "remediation_plan": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Remediation Plan"
+        },
+        "severity": {
+          "enum": [
+            "critical",
+            "high",
+            "medium",
+            "low",
+            "info"
+          ],
+          "title": "Severity",
+          "type": "string"
+        },
+        "title": {
+          "minLength": 1,
+          "title": "Title",
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "title",
+        "severity",
+        "origin"
+      ],
+      "title": "SecurityFinding",
+      "type": "object"
+    },
+    "SecurityPayload": {
+      "additionalProperties": false,
+      "description": "The Track 3 sign-off policy (research \u00a76.8) is computed here by `required_verdict`, and a\nstated verdict that disagrees with it is refused. Two conservative readings, recorded in\nthe build log: unknown reachability on a critical/high counts as reachable; and a required\nscanner that did not run means the verdict cannot be PASS (not scanned is not clean).",
+      "properties": {
+        "contract_authz": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/ContractAuthz"
+          },
+          "title": "Contract Authz",
+          "type": "array"
+        },
+        "findings": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/SecurityFinding"
+          },
+          "title": "Findings",
+          "type": "array"
+        },
+        "fixed_from_legacy": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/FixedFromLegacy"
+          },
+          "title": "Fixed From Legacy",
+          "type": "array"
+        },
+        "legacy_commit": {
+          "minLength": 1,
+          "title": "Legacy Commit",
+          "type": "string"
+        },
+        "module_id": {
+          "pattern": "^M-\\d{2,}$",
+          "title": "Module Id",
+          "type": "string"
+        },
+        "pr": {
+          "minLength": 1,
+          "title": "Pr",
+          "type": "string"
+        },
+        "rationale": {
+          "minLength": 1,
+          "title": "Rationale",
+          "type": "string"
+        },
+        "sbom": {
+          "$ref": "#/$defs/Sbom",
+          "default": {
+            "components": null,
+            "vulnerabilities": null
+          }
+        },
+        "scans": {
+          "additionalProperties": {
+            "enum": [
+              "ran",
+              "cached",
+              "not_installed",
+              "failed",
+              "not_run"
+            ],
+            "type": "string"
+          },
+          "title": "Scans",
+          "type": "object"
+        },
+        "verdict": {
+          "enum": [
+            "FAIL",
+            "CONDITIONAL",
+            "PASS"
+          ],
+          "title": "Verdict",
+          "type": "string"
+        }
+      },
+      "required": [
+        "module_id",
+        "pr",
+        "legacy_commit",
+        "scans",
+        "verdict",
+        "rationale"
+      ],
+      "title": "SecurityPayload",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "agent_id": {
+      "const": "security_modernization",
+      "default": "security_modernization",
+      "title": "Agent Id",
+      "type": "string"
+    },
+    "artifact": {
+      "const": "modernization_security_artifacts",
+      "default": "modernization_security_artifacts",
+      "title": "Artifact",
+      "type": "string"
+    },
+    "built_from": {
+      "default": [],
+      "items": {
+        "$ref": "#/$defs/BuiltFrom"
+      },
+      "title": "Built From",
+      "type": "array"
+    },
+    "payload": {
+      "$ref": "#/$defs/SecurityPayload"
+    },
+    "produced_at": {
+      "anyOf": [
+        {
+          "format": "date-time",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Produced At"
+    },
+    "produced_by": {
+      "$ref": "#/$defs/ProducedBy",
+      "default": {
+        "model": null,
+        "run_id": null,
+        "user_id": null
+      }
+    },
+    "schema_version": {
+      "const": 1,
+      "default": 1,
+      "title": "Schema Version",
+      "type": "integer"
+    },
+    "status": {
+      "enum": [
+        "draft",
+        "published",
+        "superseded",
+        "rejected"
+      ],
+      "title": "Status",
+      "type": "string"
+    },
+    "version": {
+      "minimum": 1,
+      "title": "Version",
+      "type": "integer"
+    }
+  },
+  "required": [
+    "version",
+    "status",
+    "payload"
+  ],
+  "title": "SecurityPacket",
+  "type": "object"
+}

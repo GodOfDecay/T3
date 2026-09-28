@@ -1,0 +1,42 @@
+{
+  "schema_version": 1,
+  "agent_id": "discovery",
+  "artifact": "discovery_artifacts",
+  "version": 1,
+  "status": "published",
+  "built_from": [{"artifact": "migration_intent_payload", "version": 1, "status": "published"}],
+  "produced_by": {"user_id": "fixture:ba", "model": "deterministic (research §9 stage 2; scores illustrative)", "run_id": null},
+  "produced_at": "2026-09-11T11:00:00Z",
+  "payload": {
+    "repository": "https://dev.azure.com/srk02804/Project%202/_git/Project%202",
+    "commit": "a1b2c3d",
+    "modules": [
+      {"id": "M-01", "name": "claimtrack-core", "path": "claimtrack-core", "tier": "mechanical", "score": 24,
+       "runtime": {"name": "Java", "version": "8", "status": "legacy"}, "fan_in": 2, "flags": []},
+      {"id": "M-02", "name": "claimtrack-web", "path": "claimtrack-web", "tier": "llm_assisted", "score": 56,
+       "runtime": {"name": "Java", "version": "8", "status": "legacy"}, "fan_in": 0,
+       "flags": ["log4j-1.x", "spring4shell"]},
+      {"id": "M-03", "name": "claimtrack-batch", "path": "claimtrack-batch", "tier": "llm_assisted", "score": 49,
+       "runtime": {"name": "Java", "version": "7", "status": "eol", "eol_date": "2022-07-31"}, "fan_in": 0,
+       "flags": ["log4j-1.x", "quartz"]},
+      {"id": "M-04", "name": "claimtrack-agent-portal", "path": "claimtrack-agent-portal", "tier": "llm_assisted", "score": 52,
+       "runtime": {"name": "Node.js", "version": "8", "status": "eol", "eol_date": "2019-12-31"}, "fan_in": 0,
+       "flags": ["angularjs-1.5", "request", "moment", "node-sass", "gulp-util"]},
+      {"id": "M-05", "name": "claimtrack-reports", "path": "claimtrack-reports", "tier": "llm_assisted", "score": 41,
+       "runtime": {"name": "Python", "version": "2.7", "status": "eol", "eol_date": "2020-01-01"}, "fan_in": 0,
+       "flags": ["pycrypto", "nose", "pyyaml"]}
+    ],
+    "graph": [["M-02", "M-01"], ["M-03", "M-01"]],
+    "flags": {
+      "eol": ["Java 7 (M-03)", "Node.js 8 (M-04)", "Python 2.7 (M-05)"],
+      "deprecated": ["Log4j 1.x", "commons-httpclient 3", "request", "moment", "node-sass", "gulp-util", "pycrypto", "nose"],
+      "vulnerable": ["Log4j 1.x CVE-2019-17571", "Spring CVE-2022-22965", "commons-fileupload", "PyYAML", "pycrypto", "Quartz"]
+    },
+    "golden_master": {"status": "not_captured", "baselines": []},
+    "not_assessable_statically": [
+      "M-03 declares Java 7 but depends on M-01 (Java 8): production JRE must be 8+ — confirm",
+      "scheduler configuration held outside the repository",
+      "environment-specific configuration (hosts, credentials) not in the repository"
+    ]
+  }
+}

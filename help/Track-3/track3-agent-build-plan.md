@@ -1,5 +1,13 @@
 # Track 3 (Code Modernization) — what actually has to be built
 
+> **STATUS UPDATE 2026-09-28 — read before relying on the opening paragraph.**
+> The opening premise ("`TRACK_PORTFOLIOS["modernization"]` is empty; zero agents built, zero
+> mounted routers") is **stale**. Migration Intent (`requirements_modernization`) and Dependency
+> and Risk (`discovery`) are built, mounted and offered by the Orchestrator; the roster is
+> `["requirements_modernization", "discovery"]`; the migration head is `0065`. The verdicts below
+> for the other agents still hold. Build rules learned from Track 1/2 are in
+> `Track-3 Lessons from Track 1-2.md`; the step-by-step schedule is in `Development-Plan_track3.md`.
+
 Companion to `help/multi-track-agent-access-design.md` §Portfolio 2 (lines 358–376),
 which defines the 10-agent shape but doesn't say which of those 10 can reuse Track 1
 code. This doc answers that question directly, grounded in what's actually in the

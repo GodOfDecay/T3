@@ -1,0 +1,11 @@
+{"target": "shared/services/modernization_ledger.py",
+ "tests": ["tests/modernization_common/test_ledger.py"], "env_test": true,
+ "mutants": [
+  ["wrong-agent-allowed", "    if agent not in allowed:\n        raise LedgerRefused", "    if False:\n        raise LedgerRefused"],
+  ["skip-allowed", "    if allowed is None:\n        raise LedgerRefused(f\"{module_id} is {row.state}; it cannot move to {to}\")", "    if allowed is None:\n        allowed = frozenset({agent})"],
+  ["no-reason-needed", "    if not reason or not reason.strip():\n        raise LedgerRefused(\"a reason is required\")", "    if False:\n        raise LedgerRefused(\"a reason is required\")"],
+  ["anyone-unblocks", "    if role not in PERSON_ROLES:\n        raise LedgerRefused(f\"only an Architect or a Project Admin unblocks", "    if False:\n        raise LedgerRefused(f\"only an Architect or a Project Admin unblocks"],
+  ["never-blocks-on-rejection", "        if row.rejection_count >= MAX_REJECTIONS:", "        if False:"],
+  ["first-verdict-settles", "    elif row.review_verdict in REVIEW_GOOD and row.security_verdict in SECURITY_GOOD:", "    elif row.review_verdict in REVIEW_GOOD or row.security_verdict in SECURITY_GOOD:"],
+  ["reopen-anything", "    if row.state not in REOPENABLE:", "    if False:"]
+ ]}

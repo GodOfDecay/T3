@@ -22,9 +22,24 @@ was a bug in some Portfolio 1 wrapper before it was a line somewhere:
               Consequential action, never every later turn.
   model       project-scoped BYOK, resolved in the graph's agent node with the
               project id carried in state. No env-key fallback.
+
+And two rules about turns themselves, both copied from the Track 1 Development agent,
+which found them the hard way (Lessons R31, R32):
+
+  one at a time   a second turn for a session whose turn is still running is refused,
+                  visibly, and ended properly. Two turns driving one checkpoint at once
+                  produced duplicate replies and interleaved tool calls.
+  cancellable     each turn runs as a tracked task, cancelled when its socket goes, so
+                  an orphaned turn never keeps writing to a thread a new socket drives.
+  delivered       the system prompt counts as delivered when it is IN THE THREAD'S
+                  CHECKPOINT, not when a set in memory says so. The set said so before
+                  the turn ran, so a failed first turn left the session without its
+                  instructions until a restart; and after a restart the empty set
+                  re-sent the prompt into a thread that already had it.
 """
 from __future__ import annotations
 
+import asyncio
 import json
 import logging
 from contextlib import AsyncExitStack
@@ -37,6 +52,18 @@ from langchain_core.messages import HumanMessage, SystemMessage, ToolMessage
 logger = logging.getLogger(__name__)
 
 _MAX_MESSAGE_BYTES = 50_000
+
+#: (agent_id, session_id) of every turn running in this process, keyed by agent too. NOTE:
+#: this does NOT make one session id on two agents two threads — in enterprise mode every
+#: agent's checkpointer shares one Postgres store keyed by `thread_id` alone
+#: (`config/checkpoint.py`). What keeps one agent's instructions out of another's reasoning
+#: is `system_prompt_delivered` matching the system message to THIS agent.
+_INFLIGHT: set[tuple[str, str]] = set()
+
+STOPPED_NOTE = chr(10) * 2 + "_(stopped before it finished)_"
+
+BUSY_MESSAGE = ("Still working on your previous message — please wait for it to finish "
+                "before sending another.")
 
 
 def _text(content: Any) -> str:
@@ -116,6 +143,47 @@ async def _run_config(session_id: str, tenant_id: str, user_id: str, project_id:
             "callbacks": [audit, *callbacks], "metadata": metadata}
 
 
+def system_message_id(agent_id: str) -> str:
+    """The id this agent's system message carries in the thread (a re-sent message with the
+    same id replaces itself under `add_messages` rather than stacking up)."""
+    return f"system:{agent_id}"
+
+
+def _is_mine(message: Any, agent_id: str, system_prompt: str) -> bool:
+    """THIS agent's system message: tagged with its id, or — for a thread started before
+    messages were tagged — untagged and beginning with this agent's own prompt. Another
+    agent's system message in a shared thread (enterprise checkpoints are keyed by
+    thread id alone) is not this agent's instructions and does not count."""
+    if not isinstance(message, SystemMessage):
+        return False
+    if getattr(message, "id", None) == system_message_id(agent_id):
+        return True
+    head = (system_prompt or "")[:200]
+    return not getattr(message, "id", None) and bool(head) and str(message.content).startswith(head)
+
+
+async def system_prompt_delivered(graph: Any, session_id: str, initialized: set[str], *,
+                                  agent_id: str = "", system_prompt: str = "") -> bool:
+    """Is THIS agent's system prompt already in this session's thread? See the module docstring.
+
+    `initialized` is only a cache of "yes" answers. A thread whose checkpoint cannot be
+    read counts as not delivered: sending the prompt twice is recoverable, a turn with
+    no instructions at all is not.
+    """
+    if session_id in initialized:
+        return True
+    try:
+        snapshot = await graph.aget_state({"configurable": {"thread_id": session_id}})
+        messages = (getattr(snapshot, "values", None) or {}).get("messages") or []
+    except Exception:  # noqa: BLE001
+        logger.warning("could not read the checkpoint of session %s; sending the system prompt", session_id)
+        return False
+    if any(_is_mine(m, agent_id, system_prompt) for m in messages):
+        initialized.add(session_id)
+        return True
+    return False
+
+
 async def run_turn(
     websocket: WebSocket,
     message: dict,
@@ -128,7 +196,36 @@ async def run_turn(
     tenant_id: str,
     initialized: set[str],
 ) -> None:
-    """One chat turn. Never raises into the socket loop; always ends the turn."""
+    """One chat turn, or a visible refusal when this session already has one running."""
+    session_id = str(message.get("session_id") or uuid4())
+    message["session_id"] = session_id
+    key = (agent_id, session_id)
+    if key in _INFLIGHT:
+        await _send(websocket, {"type": "stream_chunk", "content": BUSY_MESSAGE, "session_id": session_id})
+        await _finish(websocket, session_id)
+        return
+    _INFLIGHT.add(key)
+    try:
+        await _turn(websocket, message, agent_id=agent_id, label=label, graph=graph,
+                    system_prompt=system_prompt, user_id=user_id, tenant_id=tenant_id,
+                    initialized=initialized)
+    finally:
+        _INFLIGHT.discard(key)
+
+
+async def _turn(
+    websocket: WebSocket,
+    message: dict,
+    *,
+    agent_id: str,
+    label: str,
+    graph: Any,
+    system_prompt: str,
+    user_id: str,
+    tenant_id: str,
+    initialized: set[str],
+) -> None:
+    """The turn itself. Never raises into the socket loop; always ends the turn."""
     from agents_orchestrator.orchestrator2 import connectors, mcp  # noqa: PLC0415
     from config.agent_context import build_agent_input_text  # noqa: PLC0415
     from config.ws_helper import (  # noqa: PLC0415
@@ -184,6 +281,7 @@ async def run_turn(
     set_consequential_approved(is_approval_message(task_intent))
     reply_parts: list[str] = []
     error: str | None = None
+    stopped = False
     try:
         set_run_id(await _chat_run(tenant_id, project_id, agent_id))
         try:
@@ -193,11 +291,15 @@ async def run_turn(
             pass
 
         messages: list[Any] = []
-        if session_id not in initialized:
+        if not await system_prompt_delivered(graph, session_id, initialized,
+                                             agent_id=agent_id, system_prompt=system_prompt):
             prompt, _skills = await resolve_agent_turn(agent_id, system_prompt, tenant_id or None, project_id)
-            messages.append(SystemMessage(content=prompt or system_prompt))
-            initialized.add(session_id)
-        upstream = await upstream_from_pages(project_id, tenant_id, agent_id)
+            messages.append(SystemMessage(content=prompt or system_prompt, id=system_message_id(agent_id)))
+        from config.ws_helper import get_run_id  # noqa: PLC0415
+
+        upstream = await upstream_from_pages(project_id, tenant_id, agent_id,
+                                             consumer_run_id=get_run_id(), consumed_by=str(user_id),
+                                             consumer_session=session_id)
         if upstream:
             messages.append(HumanMessage(content=(
                 "--- WORK ALREADY ON THIS PROJECT ---\n" + upstream + "\n--- END ---")))
@@ -230,11 +332,18 @@ async def run_turn(
                     reply_parts.append(text)
                     await _send(websocket, {"type": "stream_chunk", "content": text,
                                             "session_id": session_id})
-        if not reply_parts:
+        if reply_parts:
+            initialized.add(session_id)  # delivered: the turn that carried it completed
+        else:
             error = "The agent finished without producing a reply. Try again, or rephrase."
             await _send(websocket, {"type": "agent_response", "agent_name": "Error Agent",
                                     "message": error, "session_id": session_id})
     except WebSocketDisconnect:
+        # The turn runs in its own task now (R31), so re-raising would only surface as
+        # "Task exception was never retrieved". The socket loop cancels its turns itself.
+        logger.info("%s: the socket went during a turn (session=%s)", agent_id, session_id)
+    except asyncio.CancelledError:
+        stopped = True
         raise
     except Exception as exc:  # noqa: BLE001 — a failed turn is shown, never silent
         logger.exception("%s turn failed (session=%s)", agent_id, session_id)
@@ -243,7 +352,9 @@ async def run_turn(
                                 "message": f"An error occurred: {error}", "session_id": session_id})
     finally:
         if reply_parts:
-            await persist_turn(session_id, "agent", "".join(reply_parts),
+            # A reply cut off by a cancel is kept, but never passed off as a complete one.
+            text = "".join(reply_parts) + (STOPPED_NOTE if stopped else "")
+            await persist_turn(session_id, "agent", text,
                                tenant_id=tenant_id or None, author_id=agent_id,
                                model=message.get("model_id"))
         await _finish(websocket, session_id, error=error)
@@ -257,6 +368,9 @@ async def run_turn(
         set_run_id(None)
         set_consequential_approved(False)
         set_provider_kind("")
+        from agents_orchestrator.modernization_common.versions import reset_built_from  # noqa: PLC0415
+
+        reset_built_from()
 
 
 INVALID_TICKET_REASON = (
@@ -293,6 +407,14 @@ async def serve_agent_socket(
     await manager.connect(websocket)
     user_id = str(claims.get("user_id", ""))
     tenant_id = str(claims.get("tenant_id", "") or "")
+    # This connection's running turns, so a dropped socket cancels its orphan (R31).
+    turns: set[asyncio.Task] = set()
+
+    def _cancel_turns() -> None:
+        for task in list(turns):
+            if not task.done():
+                task.cancel()
+
     try:
         while True:
             raw = await websocket.receive_text()
@@ -309,23 +431,29 @@ async def serve_agent_socket(
             manager.register_session(websocket, session_id)
             set_websocket_context(manager, session_id)
             if message.get("type") == "user_message_with_files":
-                await run_turn(websocket, message, agent_id=agent_id, label=label, graph=graph,
-                               system_prompt=system_prompt, user_id=user_id,
-                               tenant_id=tenant_id, initialized=initialized)
+                task = asyncio.create_task(run_turn(
+                    websocket, message, agent_id=agent_id, label=label, graph=graph,
+                    system_prompt=system_prompt, user_id=user_id, tenant_id=tenant_id,
+                    initialized=initialized))
+                turns.add(task)
+                task.add_done_callback(turns.discard)
             elif message.get("type") == "session_cleanup":
                 initialized.discard(session_id)
             else:
                 await _send(websocket, {"type": "echo"})
     except WebSocketDisconnect:
+        _cancel_turns()
         manager.disconnect(websocket)
     except RuntimeError as exc:
         # The chat BFF closes its per-turn socket once the turn ends; Starlette reports
         # that as RuntimeError("WebSocket is not connected"). A normal end, not a fault.
         if "not connected" not in str(exc).lower() and "disconnect" not in str(exc).lower():
             logger.error("%s socket error: %s", agent_id, exc)
+        _cancel_turns()
         manager.disconnect(websocket)
     except Exception:  # noqa: BLE001
         logger.exception("%s socket closed on an unexpected error", agent_id)
+        _cancel_turns()
         manager.disconnect(websocket)
 
 
@@ -333,7 +461,18 @@ async def serve_agent_socket(
 _UPSTREAM_STAGE = {"migration_intent_payload": ("requirements_modernization", "Migration-intent brief")}
 
 
-async def upstream_from_pages(project_id: str, tenant_id: str, agent_id: str) -> str:
+#: (agent, session, producing stage) → the version this chat session already recorded
+#: reading. Without it every turn wrote another `artifact_consumptions` row for the same
+#: read, and "Read by" grew one line per chat message (Phase B review). Per process, and
+#: bounded: a forgotten entry only means one more (correct) row.
+_RECORDED: dict[tuple[str, str, str], object] = {}
+_RECORDED_CAP = 10_000
+
+
+async def upstream_from_pages(project_id: str, tenant_id: str, agent_id: str, *,
+                              consumer_run_id: str | None = None,
+                              consumed_by: str | None = None,
+                              consumer_session: str | None = None) -> str:
     """The work already on the AGENT PAGES that this agent builds on — for Discovery, the
     brief on the Migration Intent page.
 
@@ -342,9 +481,15 @@ async def upstream_from_pages(project_id: str, tenant_id: str, agent_id: str) ->
     captured there must not turn up as the context of a page's chat. Versions are only
     frozen by the pages, so reading them keeps the two apart.
 
-    Which version: the approved one when there is one; otherwise the newest draft,
-    labelled as a draft — unless the project enforces publication, in which case an
-    unapproved brief is not context at all (`artifact_versions.enforcement_enabled`).
+    Which version, and what is RECORDED:
+      published          through `read_upstream` — the platform's one reader of approved
+                         work — so the read is recorded in `artifact_consumptions`
+                         (who read which version, for which run). This is the evidence
+                         "what did this assessment build on" is answered from later.
+      none published,    the newest draft, labelled "not yet approved" (not recorded: a
+        not enforced     draft is not a version anyone signed off).
+      none published,    said, not silently absent: "no approved brief yet", so the agent
+        enforced         tells the user rather than acting as if the stage never ran.
     """
     from config.agent_registry import AGENT_REGISTRY  # noqa: PLC0415
     from config.context_broker import _ARTIFACT_FORMATTERS  # noqa: PLC0415
@@ -362,16 +507,47 @@ async def upstream_from_pages(project_id: str, tenant_id: str, agent_id: str) ->
             enforced = await svc.enforcement_enabled(db, project_id)
             for artifact in wanted:
                 stage, noun = _UPSTREAM_STAGE[artifact]
-                row = await svc.latest_published(db, project_id, stage)
-                if row is None and not enforced:
-                    row = await svc.latest_version(db, project_id, stage)
-                if row is None or not row.payload:
-                    continue
-                state = "approved" if row.status == "published" else f"{row.status}, not yet approved"
                 formatter = _ARTIFACT_FORMATTERS.get(artifact)
-                body = formatter(row.payload) if formatter else str(row.payload)
-                parts.append(f"{noun} v{row.version} ({state}):\n{body}")
+                # Record a read once per session and version (see `_RECORDED`).
+                key = (agent_id, consumer_session or "", stage)
+                peek = await svc.latest_published(db, project_id, stage)
+                seen = peek.version if peek is not None else "grant"
+                record = consumer_session is None or _RECORDED.get(key) != seen
+                read = await svc.read_upstream(
+                    db, tenant_id=tenant_id, project_id=project_id, stage=stage,
+                    consumer_stage=agent_id, consumer_run_id=consumer_run_id,
+                    consumed_by=consumed_by, record=record,
+                )
+                if read.payload and record and consumer_session:
+                    if len(_RECORDED) >= _RECORDED_CAP:
+                        _RECORDED.clear()
+                    _RECORDED[key] = seen
+                if read.payload:
+                    from agents_orchestrator.modernization_common.versions import note_input  # noqa: PLC0415
+
+                    # A read by consumption grant is of an UNPUBLISHED version: say so, frozen.
+                    note_input(artifact=artifact, stage=stage, version=read.version,
+                               status="granted" if read.via_grant else "published")
+                    state = "approved by exception (consumption grant)" if read.via_grant else "approved"
+                    body = formatter(read.payload) if formatter else str(read.payload)
+                    parts.append(f"{noun} v{read.version} ({state}):\n{body}")
+                    continue
+                if enforced:
+                    parts.append(f"{noun}: none approved yet. This project only builds on approved "
+                                 "work, so say that the brief must be approved first; do not use a draft.")
+                    continue
+                row = await svc.latest_version(db, project_id, stage)
+                if row is not None and row.payload:
+                    from agents_orchestrator.modernization_common.versions import note_input  # noqa: PLC0415
+
+                    note_input(artifact=artifact, stage=stage, version=row.version, status=row.status)
+                    body = formatter(row.payload) if formatter else str(row.payload)
+                    parts.append(f"{noun} v{row.version} ({row.status}, not yet approved):\n{body}")
+            # The consumption rows are committed when this session closes cleanly
+            # (`get_db_session_for_tenant` commits on exit) — verified by mutation: an
+            # explicit commit here changed nothing.
     except Exception:  # noqa: BLE001 — context is a help, never a reason to fail the turn
         logger.exception("modernization: reading upstream versions failed (project %s)", project_id)
-        return ""
+        return ("--- NOTE ---\nThe approved work this agent builds on could not be read for this "
+                "turn. Say so if it matters; do not treat it as 'nothing recorded yet'.")
     return "\n\n".join(parts)

@@ -335,6 +335,11 @@ class MigrationIntentArtifact(BaseModel):
     risks: List[str] = []
     open_questions: List[str] = []
     legacy_repository: Optional[LegacyRepository] = None
+    # The Agent Studio stack in force when the brief was recorded — set by the record tool
+    # from the project's effective stack, never by the model: {name, source ("project_selection"
+    # | "bu_default" | "none"), warning, departures: ["what departs from the stack, and why"]}.
+    # Optional so every brief recorded before it existed still reads.
+    tech_stack: Optional[dict] = None
     recorded_at: Optional[str] = None
     agent_session_id: Optional[str] = None
     version: int = 2

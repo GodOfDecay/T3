@@ -41,6 +41,9 @@ export const NotificationKind = z.enum([
    *  that person. */
   "document_approved",
   "document_rejected",
+  /** A Code Modernization version is still a draft past its stage's SLA —
+   *  addressed to the project's Project Admins, who may approve it as fallback. */
+  "approval_sla_passed",
 ]);
 export type NotificationKind = z.infer<typeof NotificationKind>;
 

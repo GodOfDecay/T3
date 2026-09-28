@@ -1,0 +1,1 @@
+{"target": "shared/services/version_lineage.py", "tests": ["tests/modernization_common/test_phase_c_review_fixes.py"], "env_test": true, "mutants": [["rejected-ignored", "        rejected = source is not None and source.status == \"rejected\"", "        rejected = False"], ["chain-not-walked", "        current = row.restored_from", "        current = None"]]}

@@ -1,0 +1,459 @@
+{
+  "$defs": {
+    "AssessedModule": {
+      "additionalProperties": false,
+      "properties": {
+        "blockers": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "title": "Blockers",
+          "type": "array"
+        },
+        "fan_in": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Fan In"
+        },
+        "flags": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "title": "Flags",
+          "type": "array"
+        },
+        "id": {
+          "pattern": "^M-\\d{2,}$",
+          "title": "Id",
+          "type": "string"
+        },
+        "loc": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Loc"
+        },
+        "name": {
+          "minLength": 1,
+          "title": "Name",
+          "type": "string"
+        },
+        "path": {
+          "minLength": 1,
+          "title": "Path",
+          "type": "string"
+        },
+        "runtime": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Runtime"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "score": {
+          "maximum": 100,
+          "minimum": 0,
+          "title": "Score",
+          "type": "integer"
+        },
+        "tier": {
+          "enum": [
+            "mechanical",
+            "llm_assisted",
+            "manual"
+          ],
+          "title": "Tier",
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "name",
+        "path",
+        "tier",
+        "score"
+      ],
+      "title": "AssessedModule",
+      "type": "object"
+    },
+    "AssessmentFlags": {
+      "additionalProperties": false,
+      "properties": {
+        "deprecated": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "title": "Deprecated",
+          "type": "array"
+        },
+        "eol": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "title": "Eol",
+          "type": "array"
+        },
+        "vulnerable": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "title": "Vulnerable",
+          "type": "array"
+        }
+      },
+      "title": "AssessmentFlags",
+      "type": "object"
+    },
+    "AssessmentPayload": {
+      "additionalProperties": false,
+      "description": "Stable M-xx ids (stable within a commit) are minted by Dependency and Risk (Step 1).",
+      "properties": {
+        "commit": {
+          "minLength": 1,
+          "title": "Commit",
+          "type": "string"
+        },
+        "flags": {
+          "$ref": "#/$defs/AssessmentFlags",
+          "default": {
+            "deprecated": [],
+            "eol": [],
+            "vulnerable": []
+          }
+        },
+        "golden_master": {
+          "$ref": "#/$defs/GoldenMaster",
+          "default": {
+            "baselines": [],
+            "status": "not_captured"
+          }
+        },
+        "graph": {
+          "default": [],
+          "items": {
+            "maxItems": 2,
+            "minItems": 2,
+            "prefixItems": [
+              {
+                "pattern": "^M-\\d{2,}$",
+                "type": "string"
+              },
+              {
+                "pattern": "^M-\\d{2,}$",
+                "type": "string"
+              }
+            ],
+            "type": "array"
+          },
+          "title": "Graph",
+          "type": "array"
+        },
+        "modules": {
+          "items": {
+            "$ref": "#/$defs/AssessedModule"
+          },
+          "minItems": 1,
+          "title": "Modules",
+          "type": "array"
+        },
+        "not_assessable_statically": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "title": "Not Assessable Statically",
+          "type": "array"
+        },
+        "repository": {
+          "minLength": 1,
+          "title": "Repository",
+          "type": "string"
+        }
+      },
+      "required": [
+        "repository",
+        "commit",
+        "modules"
+      ],
+      "title": "AssessmentPayload",
+      "type": "object"
+    },
+    "BuiltFrom": {
+      "additionalProperties": false,
+      "description": "One input this artifact was built from, pinned to the version that was read.",
+      "properties": {
+        "artifact": {
+          "enum": [
+            "migration_intent_payload",
+            "discovery_artifacts",
+            "target_design_artifacts",
+            "strategy_artifacts",
+            "equivalence_artifacts",
+            "migration_artifacts",
+            "migration_review_artifacts",
+            "modernization_security_artifacts",
+            "cutover_artifacts",
+            "cutover_pack_artifacts"
+          ],
+          "title": "Artifact",
+          "type": "string"
+        },
+        "commit": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Commit"
+        },
+        "status": {
+          "enum": [
+            "draft",
+            "published",
+            "superseded",
+            "rejected"
+          ],
+          "title": "Status",
+          "type": "string"
+        },
+        "version": {
+          "minimum": 1,
+          "title": "Version",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "artifact",
+        "version",
+        "status"
+      ],
+      "title": "BuiltFrom",
+      "type": "object"
+    },
+    "GoldenMaster": {
+      "additionalProperties": false,
+      "properties": {
+        "baselines": {
+          "default": [],
+          "items": {
+            "pattern": "^BL-\\d{2,}$",
+            "type": "string"
+          },
+          "title": "Baselines",
+          "type": "array"
+        },
+        "status": {
+          "enum": [
+            "not_captured",
+            "captured"
+          ],
+          "title": "Status",
+          "type": "string"
+        }
+      },
+      "required": [
+        "status"
+      ],
+      "title": "GoldenMaster",
+      "type": "object"
+    },
+    "ProducedBy": {
+      "additionalProperties": false,
+      "properties": {
+        "model": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Model"
+        },
+        "run_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Run Id"
+        },
+        "user_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "User Id"
+        }
+      },
+      "title": "ProducedBy",
+      "type": "object"
+    },
+    "Runtime": {
+      "additionalProperties": false,
+      "properties": {
+        "eol_date": {
+          "anyOf": [
+            {
+              "format": "date",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Eol Date"
+        },
+        "name": {
+          "minLength": 1,
+          "title": "Name",
+          "type": "string"
+        },
+        "status": {
+          "enum": [
+            "eol",
+            "approaching",
+            "legacy",
+            "supported",
+            "unknown"
+          ],
+          "title": "Status",
+          "type": "string"
+        },
+        "version": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Version"
+        }
+      },
+      "required": [
+        "name",
+        "status"
+      ],
+      "title": "Runtime",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "agent_id": {
+      "const": "discovery",
+      "default": "discovery",
+      "title": "Agent Id",
+      "type": "string"
+    },
+    "artifact": {
+      "const": "discovery_artifacts",
+      "default": "discovery_artifacts",
+      "title": "Artifact",
+      "type": "string"
+    },
+    "built_from": {
+      "default": [],
+      "items": {
+        "$ref": "#/$defs/BuiltFrom"
+      },
+      "title": "Built From",
+      "type": "array"
+    },
+    "payload": {
+      "$ref": "#/$defs/AssessmentPayload"
+    },
+    "produced_at": {
+      "anyOf": [
+        {
+          "format": "date-time",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Produced At"
+    },
+    "produced_by": {
+      "$ref": "#/$defs/ProducedBy",
+      "default": {
+        "model": null,
+        "run_id": null,
+        "user_id": null
+      }
+    },
+    "schema_version": {
+      "const": 1,
+      "default": 1,
+      "title": "Schema Version",
+      "type": "integer"
+    },
+    "status": {
+      "enum": [
+        "draft",
+        "published",
+        "superseded",
+        "rejected"
+      ],
+      "title": "Status",
+      "type": "string"
+    },
+    "version": {
+      "minimum": 1,
+      "title": "Version",
+      "type": "integer"
+    }
+  },
+  "required": [
+    "version",
+    "status",
+    "payload"
+  ],
+  "title": "AssessmentPacket",
+  "type": "object"
+}

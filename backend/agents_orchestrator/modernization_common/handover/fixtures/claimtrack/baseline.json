@@ -1,0 +1,32 @@
+{
+  "schema_version": 1,
+  "agent_id": "testing_modernization",
+  "artifact": "equivalence_artifacts",
+  "version": 1,
+  "status": "published",
+  "built_from": [
+    {"artifact": "strategy_artifacts", "version": 1, "status": "published"},
+    {"artifact": "target_design_artifacts", "version": 1, "status": "published"}
+  ],
+  "produced_by": {"user_id": "fixture:qa", "model": "fixture (research §9 stage 5, illustrative)", "run_id": null},
+  "produced_at": "2026-12-18T17:00:00Z",
+  "payload": {
+    "mode": "baseline",
+    "baselines": [
+      {"id": "BL-01", "ec_ids": ["EC-01"], "module_id": "M-01", "count": 10000, "unit": "cases", "sha256": "ccd5c5fa061ad8225ddfa52f9f83e4842616b5af8395b2bdac6ae34add54d337", "region": "eastus2"},
+      {"id": "BL-02", "ec_ids": ["EC-04"], "module_id": "M-02", "count": 25000, "unit": "cases", "sha256": "de59d086b1970731b9117db75ef918b0560c0caa07fd608c69e3759a3518fda5", "region": "eastus2", "noise_fields": ["error.requestId"]},
+      {"id": "BL-03", "ec_ids": ["EC-02", "EC-09"], "module_id": "M-03", "count": 20, "unit": "runs", "sha256": "15d8f71f96bfb040c5d771f6aa78be59ed7bd86b85ee03894823146547cb237a", "region": "eastus2"},
+      {"id": "BL-04", "ec_ids": ["EC-03", "EC-06"], "module_id": "M-05", "count": 4, "unit": "reports", "sha256": "31fa134cdfac89cc5ed90520fb8e49d51be1a73be4479aa53c17d82fc5738f21", "region": "eastus2"},
+      {"id": "BL-05", "ec_ids": ["EC-07"], "module_id": "M-04", "count": 42, "unit": "journeys", "sha256": "6833d5926616c22b680a2dc1a4b5b346c196fede8db15fa8e5e51ab9e5b2d6f5", "region": "eastus2"},
+      {"id": "BL-06", "ec_ids": ["EC-05"], "module_id": "M-02", "count": 1, "unit": "samples", "sha256": "cb7ccfe88a7fb7d34deed4baff0a6f227bb2fca61b9f44aebe6c75b2c9247d24", "region": "eastus2", "measurements": {"legacy_p95_ms": 812}}
+    ],
+    "noise": [
+      {"ec_id": "EC-04", "runs_compared": 2, "varying_fields": ["error.requestId"], "covered_by_rule": []},
+      {"ec_id": "EC-03", "runs_compared": 2, "varying_fields": ["generation timestamp"], "covered_by_rule": ["generation timestamp"]}
+    ],
+    "rule_proposals": [
+      {"ec_id": "EC-04", "field": "error.requestId", "rule": "ignore value, require presence", "evidence": "differs between two legacy runs on identical input in 25,000/25,000 cases"}
+    ],
+    "stubs": ["bank-gateway-acks", "risklens-score"]
+  }
+}

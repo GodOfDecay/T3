@@ -1,0 +1,107 @@
+{
+  "schema_version": 1,
+  "agent_id": "design_modernization",
+  "artifact": "target_design_artifacts",
+  "version": 1,
+  "status": "published",
+  "built_from": [
+    {"artifact": "migration_intent_payload", "version": 1, "status": "published"},
+    {"artifact": "discovery_artifacts", "version": 1, "status": "published", "commit": "a1b2c3d"}
+  ],
+  "produced_by": {"user_id": "fixture:architect", "model": "fixture (research §9 stage 3, illustrative)", "run_id": null},
+  "produced_at": "2026-10-05T10:00:00Z",
+  "payload": {
+    "summary": "ClaimTrack moves to Azure PaaS module by module: core and web upgraded in place (web strangled at the gateway), batch and reports upgraded and parallel-run, the broker portal rewritten in React and strangled route by route. Four frozen contracts and seven version traps carry the behaviour across.",
+    "layers": [
+      {"layer": "Hosting", "today": "Dallas VMs · Tomcat 8", "target": "Azure App Service (Linux) · Container Apps Jobs", "modules": ["M-02", "M-03", "M-05"]},
+      {"layer": "Runtime", "today": "Java 7/8 · Node 8 · Python 2.7", "target": "Java 21 · Node 22 · Python 3.12", "modules": ["M-01", "M-02", "M-03", "M-04", "M-05"]},
+      {"layer": "Framework", "today": "Spring MVC 4 · AngularJS 1.5", "target": "Spring Boot 3.3 · React 18", "modules": ["M-02", "M-04"]},
+      {"layer": "Database", "today": "MySQL 5.6", "target": "Azure MySQL Flexible Server 8.0", "modules": []},
+      {"layer": "Routing facade", "today": "none", "target": "Application Gateway (WAF v2)", "modules": ["M-02", "M-04"]},
+      {"layer": "Secrets", "today": "properties files", "target": "Azure Key Vault", "modules": []},
+      {"layer": "Observability", "today": "log files", "target": "Application Insights", "modules": []},
+      {"layer": "CI/CD", "today": "manual", "target": "Azure Pipelines", "modules": []}
+    ],
+    "modules": [
+      {"module_id": "M-01", "module": "claimtrack-core", "tier": "mechanical", "risk_score": 24, "patterns": ["in_place_upgrade"],
+       "rationale": "Mechanical tier, score 24, fan-in 2: upgrade in place, dual-built while M-03 still needs Java 8.", "adr_ids": ["ADR-02"], "contract_ids": []},
+      {"module_id": "M-02", "module": "claimtrack-web", "tier": "llm_assisted", "risk_score": 56, "patterns": ["in_place_upgrade", "strangler_fig"],
+       "rationale": "LLM-assisted, Log4j 1.x and Spring4Shell flagged; /api/v1 is external so traffic is strangled at the gateway.", "adr_ids": ["ADR-03", "ADR-05"], "contract_ids": ["CT-01"]},
+      {"module_id": "M-03", "module": "claimtrack-batch", "tier": "llm_assisted", "risk_score": 49, "patterns": ["in_place_upgrade", "parallel_run"],
+       "rationale": "Java 7 EOL; financial output to the bank, so parallel-run with legacy sending until exit.", "adr_ids": ["ADR-04"], "contract_ids": ["CT-02", "CT-04"]},
+      {"module_id": "M-04", "module": "claimtrack-agent-portal", "tier": "llm_assisted", "risk_score": 52, "patterns": ["rewrite", "strangler_fig"],
+       "rationale": "AngularJS 1.5 on Node 8 has no upgrade path; rewrite in React 18 and move route by route.", "adr_ids": ["ADR-01"], "contract_ids": []},
+      {"module_id": "M-05", "module": "claimtrack-reports", "tier": "llm_assisted", "risk_score": 41, "patterns": ["in_place_upgrade", "parallel_run"],
+       "rationale": "Python 2.7 EOL; read-only regulatory output, parallel-run over a month-end.", "adr_ids": ["ADR-07"], "contract_ids": ["CT-03"]}
+    ],
+    "interop": {
+      "routing": "Application Gateway in front of Dallas at 100% legacy from W0; /api/v1 and portal routes move by weight.",
+      "data": "One database: online replication Dallas → Azure MySQL; the primary moves with the first writer (ADR-06).",
+      "shared_libraries": "claimtrack-core dual-built (Java 8 + 21) until the batch moves (ADR-02).",
+      "jobs": "Only one side's cron sends the bank file or reports on any day (parallel run, legacy sends).",
+      "identity": "Adjuster sessions stay on the web app; brokers authenticate at the gateway."
+    },
+    "ordering_constraints": [
+      "M-01 dual-built (Java 8 + Java 21) until M-03 cuts over (ADR-02)",
+      "Database primary moves with the first writer that moves (M-02) (ADR-06)",
+      "M-04 calls CT-01 at runtime: its cutover needs M-02 on the new side"
+    ],
+    "frozen_contracts": [
+      {"id": "CT-01", "name": "/api/v1 claims API", "kind": "http", "legacy_location": "claimtrack-web/src/main/java/com/contoso/claimtrack/api/ClaimsApiController.java",
+       "consumers": ["broker partners", "claimtrack-agent-portal"], "proof": "EC-04 replay of 25,000 recorded calls", "status": "confirmed"},
+      {"id": "CT-02", "name": "bank payment file", "kind": "file", "legacy_location": "claimtrack-batch/src/main/java/com/contoso/claimtrack/batch/SettlementFileWriter.java",
+       "consumers": ["bank payment gateway"], "proof": "EC-02 byte-identical on 20 recorded nights", "status": "confirmed"},
+      {"id": "CT-03", "name": "CR-4 quarterly return", "kind": "report", "legacy_location": "claimtrack-reports/cr4_return.py",
+       "consumers": ["regulator"], "proof": "EC-03 byte-identical Q4 2026 return", "status": "confirmed"},
+      {"id": "CT-04", "name": "PolicyHub nightly extract (read)", "kind": "file", "legacy_location": "claimtrack-batch/src/main/java/com/contoso/claimtrack/batch/PolicyExtractReader.java",
+       "consumers": ["claimtrack-batch"], "proof": "same file accepted by both sides during the parallel run", "status": "confirmed"}
+    ],
+    "data_migration": {
+      "source": "MySQL 5.6 (Dallas)", "target": "Azure Database for MySQL Flexible Server 8.0 (US)",
+      "method": "online replication, then a switch inside a Sunday window",
+      "behaviour_changes": ["GROUP BY no longer sorts (TR-04)", "default collation utf8mb4_0900_ai_ci (TR-05)"],
+      "cutover": "read-only window, final sync, promote, switch connection strings (W2)"
+    },
+    "nfr": [
+      {"measure": "API p95", "target": "≤ 300 ms", "source": "brief"},
+      {"measure": "data residency", "target": "US Azure regions", "source": "brief"}
+    ],
+    "security_design": ["secrets to Key Vault", "Log4j 1.x → SLF4J/Logback", "TLS 1.2+ at the gateway"],
+    "traps": [
+      {"id": "TR-01", "change": "Spring 6 trailing-slash matching off", "affects": ["M-02"], "where": "claimtrack-web/.../api/ClaimsApiController.java", "effect": "/api/v1/claims/ returns 404", "contract_ids": ["CT-01"]},
+      {"id": "TR-02", "change": "HashMap order feeds settlement lines", "affects": ["M-03"], "where": "claimtrack-batch/.../SettlementFileWriter.java", "effect": "line order changes", "contract_ids": ["CT-02"]},
+      {"id": "TR-03", "change": "Python 3 round() and /", "affects": ["M-05"], "where": "claimtrack-reports/cr4_return.py", "effect": "banker's rounding, true division", "contract_ids": ["CT-03"]},
+      {"id": "TR-04", "change": "MySQL 8 GROUP BY no longer sorts", "affects": ["M-05"], "where": "claimtrack-reports/sql/*.sql", "effect": "row order changes", "contract_ids": ["CT-03"]},
+      {"id": "TR-05", "change": "MySQL 8 collation and reserved words", "affects": ["M-02", "M-03", "M-05"], "where": "queries across web, batch, reports", "effect": "comparison and sort changes", "contract_ids": []},
+      {"id": "TR-06", "change": "host time zone Dallas CT → Azure UTC", "affects": ["M-03", "M-05"], "where": "batch and reports job config", "effect": "file dates move", "contract_ids": ["CT-02", "CT-03"]},
+      {"id": "TR-07", "change": "javax→jakarta validation messages in API error bodies", "affects": ["M-02"], "where": "claimtrack-web validation", "effect": "error body field names change", "contract_ids": ["CT-01"]}
+    ],
+    "adrs": [
+      {"id": "ADR-01", "title": "Rewrite the portal in React 18 + TypeScript", "context": "AngularJS 1.5 on Node 8 is EOL with no upgrade path.",
+       "options": ["Upgrade to Angular 17", "Rewrite in React 18 + TypeScript"], "decision": "Rewrite in React 18 + TypeScript", "consequences": "Longest wave; strangled route by route.", "modules": ["M-04"], "contracts": []},
+      {"id": "ADR-02", "title": "Dual-build claimtrack-core", "context": "The legacy batch cannot load a Java 21 build.",
+       "options": ["Move core and batch together", "Dual-build core until the batch moves"], "decision": "Dual-build until M-03 cuts over", "consequences": "Two artifacts from one source for W2–W3.", "modules": ["M-01", "M-03"], "contracts": []},
+      {"id": "ADR-03", "title": "Strangle /api/v1 at the gateway", "context": "Broker partners call /api/v1.",
+       "options": ["Big-bang switch", "Weighted traffic shift at the gateway"], "decision": "Weighted shift 5→25→50→100%", "consequences": "Gateway in W0.", "modules": ["M-02"], "contracts": ["CT-01"]},
+      {"id": "ADR-04", "title": "Parallel-run the settlement batch", "context": "The bank file is financial output.",
+       "options": ["Direct switch", "Four-week parallel run, legacy sends"], "decision": "Parallel run, legacy sends until exit", "consequences": "One-sender switch at exit.", "modules": ["M-03"], "contracts": ["CT-02"]},
+      {"id": "ADR-05", "title": "Keep adjuster JSP screens as a separate server-rendered app", "context": "The brief left this to architecture.",
+       "options": ["Fold into the React portal", "Thymeleaf app beside the API"], "decision": "Thymeleaf app", "consequences": "No new UI scope for adjusters.", "modules": ["M-02"], "contracts": []},
+      {"id": "ADR-06", "title": "Database primary moves with the first writer", "context": "One database during the transition.",
+       "options": ["Dual-write", "Replicate, then promote with the first writer"], "decision": "Promote with M-02 in W2", "consequences": "Legacy writers re-pointed in the same window.", "modules": ["M-02", "M-03"], "contracts": []},
+      {"id": "ADR-07", "title": "Pin the time zone to America/Chicago for batch and reports", "context": "Azure hosts run UTC.",
+       "options": ["Convert to UTC and change file dates", "Pin America/Chicago"], "decision": "Pin America/Chicago", "consequences": "Dates in CT-02/CT-03 unchanged.", "modules": ["M-03", "M-05"], "contracts": ["CT-02", "CT-03"]},
+      {"id": "ADR-08", "title": "Container Apps Jobs for batch and reports", "context": "The brief suggested App Service.",
+       "options": ["App Service WebJobs", "Container Apps Jobs"], "decision": "Container Apps Jobs", "consequences": "Departs from the brief.", "modules": ["M-03", "M-05"], "contracts": []}
+    ],
+    "diagrams": [
+      {"title": "AS-IS container", "mermaid": "flowchart LR\n  brokers-->web[claimtrack-web]\n  web-->db[(MySQL 5.6)]\n  batch-->db"},
+      {"title": "TRANSITION", "mermaid": "flowchart LR\n  brokers-->gw[App Gateway]\n  gw-->web\n  gw-->newweb[web on App Service]"},
+      {"title": "TO-BE container", "mermaid": "flowchart LR\n  brokers-->gw[App Gateway]\n  gw-->api[Spring Boot 3]\n  api-->db[(Azure MySQL 8.0)]"}
+    ],
+    "departures_from_brief": [
+      {"brief_said": "App Service for all workloads (PaaS-first)", "design_says": "Container Apps Jobs for batch and reports", "adr_id": "ADR-08"}
+    ],
+    "open_questions": []
+  }
+}

@@ -1,0 +1,6 @@
+{"root": "frontend", "target": "components/modernization/programme-status-strip.tsx", "cmd": ["node", "node_modules/vitest/vitest.mjs", "run", "__tests__/app/track3-programme.test.tsx"],
+ "mutants": [
+  ["strip-always", "  if (modules.length === 0) return null;", "  if (false) return null;"],
+  ["strip-shows-empty-states", "  const states = (q.data?.states ?? []).filter((s) => s !== \"blocked\" && counts.get(s));", "  const states = (q.data?.states ?? []).filter((s) => s !== \"blocked\");"],
+  ["blocked-hidden", "      {blocked > 0 && (", "      {false && ("]
+ ]}

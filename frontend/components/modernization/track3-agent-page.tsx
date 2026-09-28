@@ -10,8 +10,10 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { ErrorState } from "@/components/ui/error-state";
 import { LoadingState } from "@/components/ui/loading-state";
 import { AgentChatDrawer } from "@/components/app/agent-chat-drawer";
+import { DocumentList } from "@/components/app/document-list";
 import { GeneratedDocuments } from "@/components/app/generated-documents";
 import { ModelSelector } from "@/components/app/model-selector";
+import { TechStackChip } from "@/components/app/tech-stack-chip";
 import { useAgentChat } from "@/hooks/use-agent-chat";
 import { useChatDeepLink } from "@/hooks/use-chat-deep-link";
 import { PHASE_LABEL } from "@/lib/agents";
@@ -24,6 +26,7 @@ import type { ProjectId } from "@/lib/schemas";
 import type { LegacyCodeRecord } from "@/lib/schemas/modernization";
 
 import { HowItWorks, type HowItWorksStep } from "./how-it-works";
+import { ProgrammeStatusStrip } from "./programme-status-strip";
 import {
   LegacyCodeStatus,
   PullLegacyCodeDialog,
@@ -39,7 +42,16 @@ import { VersionView } from "./version-view";
  *   header   the agent, its model, the project's pulled legacy code (and Pull legacy
  *            code), and the button that opens the agent's chat.
  *   left     every brief / assessment the agent has recorded, newest first — each a
- *            frozen version (`artifact_versions`), so an old one reads exactly as it was.
+ *            frozen version (`artifact_versions`), so an old one reads exactly as it was —
+ *            and, under it, the platform's DocumentList: the project's documents for this
+ *            stage (upload a legacy runbook, raise it, approve it; scope badge, who and
+ *            when). Approved ones are what the agent reads with `read_document`.
+ *
+ * ONE VERSION LIST, NOT TWO. Track 1 pages put `StageVersionPanel` in this rail; here the
+ * recorded brief or assessment IS the version, so the rail's own list opens it in the
+ * centre (with its Sign-off, its "Read by" evidence and why a producer cannot approve it)
+ * and a second list of the same versions would only repeat it — the duplication Design's
+ * page documents removing.
  *   center   "how it works" until a version is opened; then that version, with its
  *            Word/PDF download and the Sign-off.
  *
@@ -69,6 +81,7 @@ export function Track3AgentPage({
   guideTitle,
   guide,
   renderVersion,
+  showTechStack = false,
 }: {
   phase: Track3Stage;
   runLabel: string;
@@ -79,6 +92,8 @@ export function Track3AgentPage({
   guideTitle: string;
   guide: (actions: GuideActions) => HowItWorksStep[];
   renderVersion: (payload: unknown, detail: ArtifactVersionDetail) => React.ReactNode;
+  /** Show the project's approved tech stack — for an agent that recommends one. */
+  showTechStack?: boolean;
 }) {
   const params = useParams<{ id: string }>();
   const projectId = params.id as ProjectId;
@@ -165,8 +180,10 @@ export function Track3AgentPage({
             <h1 className="text-xl font-semibold tracking-tight">{PHASE_LABEL[phase]}</h1>
             <p className="text-muted-foreground text-xs">{intro}</p>
             {legacyStatus}
+            <ProgrammeStatusStrip projectId={projectId} />
           </div>
           <div className="flex flex-wrap items-center gap-2">
+            {showTechStack && <TechStackChip projectId={projectId} />}
             <ModelSelector
               aria-label={`${PHASE_LABEL[phase]} agent model`}
               projectId={projectId}
@@ -197,6 +214,14 @@ export function Track3AgentPage({
             selected={selected}
             onSelect={setSelected}
           />
+          <DocumentList
+            projectId={projectId}
+            stage={phase}
+            title="Documents"
+            description="Legacy specifications, runbooks and data dictionaries, and this agent's exports. The agent reads the approved ones."
+            emptyTitle="No documents yet"
+            emptyDescription="Upload a legacy document (a runbook, an interface spec). Once approved, the agent can read and cite it."
+          />
         </aside>
         <main className="min-h-0 overflow-auto p-4 md:p-6">
           {chat.documents.length > 0 && (
@@ -218,6 +243,8 @@ export function Track3AgentPage({
               noun={noun}
               version={selected}
               render={renderVersion}
+              latestVersion={versionsQ.data?.reduce((max, v) => Math.max(max, v.version), 0)}
+              onRestored={setSelected}
             />
           )}
         </main>

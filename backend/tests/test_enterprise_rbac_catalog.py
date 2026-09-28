@@ -125,7 +125,7 @@ def test_security_engineer_is_oversight_not_author():
     # catches the missing grant AND an accidental extra one, which the negation
     # could not.
     assert {p for p in perms if p.startswith("artifact:approve_")} == {
-        "artifact:approve_security"
+        "artifact:approve_security", "artifact:approve_security_modernization"
     }
     # Still not an author: it reviews and signs off, it does not start work.
     assert "run:create" not in perms
@@ -155,7 +155,7 @@ def test_developer_approves_only_the_stage_it_owns():
     perms = _ROLE_PERMISSIONS["developer"]
     assert "run:create" in perms
     approvals = {p for p in perms if p.startswith("artifact:approve_")}
-    assert approvals == {"artifact:approve_development"}
+    assert approvals == {"artifact:approve_development", "artifact:approve_development_modernization"}
 
 
 def test_connector_view_granted_broadly_manage_restricted():

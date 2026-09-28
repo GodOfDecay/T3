@@ -1,0 +1,758 @@
+{
+  "$defs": {
+    "Adr": {
+      "additionalProperties": false,
+      "properties": {
+        "consequences": {
+          "minLength": 1,
+          "title": "Consequences",
+          "type": "string"
+        },
+        "context": {
+          "minLength": 1,
+          "title": "Context",
+          "type": "string"
+        },
+        "contracts": {
+          "default": [],
+          "items": {
+            "pattern": "^CT-\\d{2,}$",
+            "type": "string"
+          },
+          "title": "Contracts",
+          "type": "array"
+        },
+        "decision": {
+          "minLength": 1,
+          "title": "Decision",
+          "type": "string"
+        },
+        "id": {
+          "pattern": "^ADR-\\d{2,}$",
+          "title": "Id",
+          "type": "string"
+        },
+        "modules": {
+          "default": [],
+          "items": {
+            "pattern": "^M-\\d{2,}$",
+            "type": "string"
+          },
+          "title": "Modules",
+          "type": "array"
+        },
+        "options": {
+          "description": "At least two options considered.",
+          "items": {
+            "type": "string"
+          },
+          "minItems": 2,
+          "title": "Options",
+          "type": "array"
+        },
+        "title": {
+          "minLength": 1,
+          "title": "Title",
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "title",
+        "context",
+        "options",
+        "decision",
+        "consequences"
+      ],
+      "title": "Adr",
+      "type": "object"
+    },
+    "BuiltFrom": {
+      "additionalProperties": false,
+      "description": "One input this artifact was built from, pinned to the version that was read.",
+      "properties": {
+        "artifact": {
+          "enum": [
+            "migration_intent_payload",
+            "discovery_artifacts",
+            "target_design_artifacts",
+            "strategy_artifacts",
+            "equivalence_artifacts",
+            "migration_artifacts",
+            "migration_review_artifacts",
+            "modernization_security_artifacts",
+            "cutover_artifacts",
+            "cutover_pack_artifacts"
+          ],
+          "title": "Artifact",
+          "type": "string"
+        },
+        "commit": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Commit"
+        },
+        "status": {
+          "enum": [
+            "draft",
+            "published",
+            "superseded",
+            "rejected"
+          ],
+          "title": "Status",
+          "type": "string"
+        },
+        "version": {
+          "minimum": 1,
+          "title": "Version",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "artifact",
+        "version",
+        "status"
+      ],
+      "title": "BuiltFrom",
+      "type": "object"
+    },
+    "DataMigration": {
+      "additionalProperties": false,
+      "properties": {
+        "behaviour_changes": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "title": "Behaviour Changes",
+          "type": "array"
+        },
+        "cutover": {
+          "minLength": 1,
+          "title": "Cutover",
+          "type": "string"
+        },
+        "method": {
+          "minLength": 1,
+          "title": "Method",
+          "type": "string"
+        },
+        "source": {
+          "minLength": 1,
+          "title": "Source",
+          "type": "string"
+        },
+        "target": {
+          "minLength": 1,
+          "title": "Target",
+          "type": "string"
+        }
+      },
+      "required": [
+        "source",
+        "target",
+        "method",
+        "cutover"
+      ],
+      "title": "DataMigration",
+      "type": "object"
+    },
+    "Departure": {
+      "additionalProperties": false,
+      "properties": {
+        "adr_id": {
+          "pattern": "^ADR-\\d{2,}$",
+          "title": "Adr Id",
+          "type": "string"
+        },
+        "brief_said": {
+          "minLength": 1,
+          "title": "Brief Said",
+          "type": "string"
+        },
+        "design_says": {
+          "minLength": 1,
+          "title": "Design Says",
+          "type": "string"
+        }
+      },
+      "required": [
+        "brief_said",
+        "design_says",
+        "adr_id"
+      ],
+      "title": "Departure",
+      "type": "object"
+    },
+    "DesignPayload": {
+      "additionalProperties": false,
+      "description": "Refusals checked here: a module with no pattern, a pattern outside the vocabulary, a\ncontract with no legacy location, an ADR with fewer than two options, and any reference\nto a contract/ADR/module the design does not define.\n\nChecked by `record_target_design` (needs other data): a version past end of life (the\nassessment's EOL table); every in-scope module present (the assessment); a contract not\nfound by `capture_legacy_interfaces` may only be `proposed`.",
+      "properties": {
+        "adrs": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/Adr"
+          },
+          "title": "Adrs",
+          "type": "array"
+        },
+        "data_migration": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/DataMigration"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "departures_from_brief": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/Departure"
+          },
+          "title": "Departures From Brief",
+          "type": "array"
+        },
+        "diagrams": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/Diagram"
+          },
+          "title": "Diagrams",
+          "type": "array"
+        },
+        "frozen_contracts": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/FrozenContract"
+          },
+          "title": "Frozen Contracts",
+          "type": "array"
+        },
+        "interop": {
+          "$ref": "#/$defs/Interop",
+          "default": {
+            "data": "",
+            "identity": "",
+            "jobs": "",
+            "routing": "",
+            "shared_libraries": ""
+          }
+        },
+        "layers": {
+          "items": {
+            "$ref": "#/$defs/Layer"
+          },
+          "minItems": 1,
+          "title": "Layers",
+          "type": "array"
+        },
+        "modules": {
+          "items": {
+            "$ref": "#/$defs/DesignedModule"
+          },
+          "minItems": 1,
+          "title": "Modules",
+          "type": "array"
+        },
+        "nfr": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/Nfr"
+          },
+          "title": "Nfr",
+          "type": "array"
+        },
+        "open_questions": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "title": "Open Questions",
+          "type": "array"
+        },
+        "ordering_constraints": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "title": "Ordering Constraints",
+          "type": "array"
+        },
+        "security_design": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "title": "Security Design",
+          "type": "array"
+        },
+        "summary": {
+          "minLength": 1,
+          "title": "Summary",
+          "type": "string"
+        },
+        "traps": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/Trap"
+          },
+          "title": "Traps",
+          "type": "array"
+        }
+      },
+      "required": [
+        "summary",
+        "layers",
+        "modules"
+      ],
+      "title": "DesignPayload",
+      "type": "object"
+    },
+    "DesignedModule": {
+      "additionalProperties": false,
+      "properties": {
+        "adr_ids": {
+          "default": [],
+          "items": {
+            "pattern": "^ADR-\\d{2,}$",
+            "type": "string"
+          },
+          "title": "Adr Ids",
+          "type": "array"
+        },
+        "contract_ids": {
+          "default": [],
+          "items": {
+            "pattern": "^CT-\\d{2,}$",
+            "type": "string"
+          },
+          "title": "Contract Ids",
+          "type": "array"
+        },
+        "module": {
+          "minLength": 1,
+          "title": "Module",
+          "type": "string"
+        },
+        "module_id": {
+          "pattern": "^M-\\d{2,}$",
+          "title": "Module Id",
+          "type": "string"
+        },
+        "patterns": {
+          "description": "From the fixed vocabulary; a module may combine two.",
+          "items": {
+            "enum": [
+              "in_place_upgrade",
+              "strangler_fig",
+              "branch_by_abstraction",
+              "parallel_run",
+              "rewrite",
+              "replatform",
+              "retire",
+              "keep"
+            ],
+            "type": "string"
+          },
+          "maxItems": 2,
+          "minItems": 1,
+          "title": "Patterns",
+          "type": "array"
+        },
+        "rationale": {
+          "minLength": 1,
+          "title": "Rationale",
+          "type": "string"
+        },
+        "risk_score": {
+          "maximum": 100,
+          "minimum": 0,
+          "title": "Risk Score",
+          "type": "integer"
+        },
+        "tier": {
+          "enum": [
+            "mechanical",
+            "llm_assisted",
+            "manual"
+          ],
+          "title": "Tier",
+          "type": "string"
+        }
+      },
+      "required": [
+        "module_id",
+        "module",
+        "tier",
+        "risk_score",
+        "patterns",
+        "rationale"
+      ],
+      "title": "DesignedModule",
+      "type": "object"
+    },
+    "Diagram": {
+      "additionalProperties": false,
+      "properties": {
+        "mermaid": {
+          "minLength": 1,
+          "title": "Mermaid",
+          "type": "string"
+        },
+        "title": {
+          "minLength": 1,
+          "title": "Title",
+          "type": "string"
+        }
+      },
+      "required": [
+        "title",
+        "mermaid"
+      ],
+      "title": "Diagram",
+      "type": "object"
+    },
+    "FrozenContract": {
+      "additionalProperties": false,
+      "properties": {
+        "consumers": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "title": "Consumers",
+          "type": "array"
+        },
+        "id": {
+          "pattern": "^CT-\\d{2,}$",
+          "title": "Id",
+          "type": "string"
+        },
+        "kind": {
+          "enum": [
+            "http",
+            "file",
+            "report",
+            "db",
+            "queue",
+            "event"
+          ],
+          "title": "Kind",
+          "type": "string"
+        },
+        "legacy_location": {
+          "description": "path[:line] in the legacy code",
+          "minLength": 1,
+          "title": "Legacy Location",
+          "type": "string"
+        },
+        "name": {
+          "minLength": 1,
+          "title": "Name",
+          "type": "string"
+        },
+        "proof": {
+          "minLength": 1,
+          "title": "Proof",
+          "type": "string"
+        },
+        "status": {
+          "enum": [
+            "confirmed",
+            "proposed"
+          ],
+          "title": "Status",
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "name",
+        "kind",
+        "legacy_location",
+        "proof",
+        "status"
+      ],
+      "title": "FrozenContract",
+      "type": "object"
+    },
+    "Interop": {
+      "additionalProperties": false,
+      "properties": {
+        "data": {
+          "default": "",
+          "title": "Data",
+          "type": "string"
+        },
+        "identity": {
+          "default": "",
+          "title": "Identity",
+          "type": "string"
+        },
+        "jobs": {
+          "default": "",
+          "title": "Jobs",
+          "type": "string"
+        },
+        "routing": {
+          "default": "",
+          "title": "Routing",
+          "type": "string"
+        },
+        "shared_libraries": {
+          "default": "",
+          "title": "Shared Libraries",
+          "type": "string"
+        }
+      },
+      "title": "Interop",
+      "type": "object"
+    },
+    "Layer": {
+      "additionalProperties": false,
+      "properties": {
+        "layer": {
+          "minLength": 1,
+          "title": "Layer",
+          "type": "string"
+        },
+        "modules": {
+          "default": [],
+          "items": {
+            "pattern": "^M-\\d{2,}$",
+            "type": "string"
+          },
+          "title": "Modules",
+          "type": "array"
+        },
+        "target": {
+          "minLength": 1,
+          "title": "Target",
+          "type": "string"
+        },
+        "today": {
+          "minLength": 1,
+          "title": "Today",
+          "type": "string"
+        }
+      },
+      "required": [
+        "layer",
+        "today",
+        "target"
+      ],
+      "title": "Layer",
+      "type": "object"
+    },
+    "Nfr": {
+      "additionalProperties": false,
+      "properties": {
+        "measure": {
+          "minLength": 1,
+          "title": "Measure",
+          "type": "string"
+        },
+        "source": {
+          "enum": [
+            "brief",
+            "design"
+          ],
+          "title": "Source",
+          "type": "string"
+        },
+        "target": {
+          "minLength": 1,
+          "title": "Target",
+          "type": "string"
+        }
+      },
+      "required": [
+        "measure",
+        "target",
+        "source"
+      ],
+      "title": "Nfr",
+      "type": "object"
+    },
+    "ProducedBy": {
+      "additionalProperties": false,
+      "properties": {
+        "model": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Model"
+        },
+        "run_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Run Id"
+        },
+        "user_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "User Id"
+        }
+      },
+      "title": "ProducedBy",
+      "type": "object"
+    },
+    "Trap": {
+      "additionalProperties": false,
+      "properties": {
+        "affects": {
+          "items": {
+            "pattern": "^M-\\d{2,}$",
+            "type": "string"
+          },
+          "minItems": 1,
+          "title": "Affects",
+          "type": "array"
+        },
+        "change": {
+          "minLength": 1,
+          "title": "Change",
+          "type": "string"
+        },
+        "contract_ids": {
+          "default": [],
+          "items": {
+            "pattern": "^CT-\\d{2,}$",
+            "type": "string"
+          },
+          "title": "Contract Ids",
+          "type": "array"
+        },
+        "effect": {
+          "minLength": 1,
+          "title": "Effect",
+          "type": "string"
+        },
+        "id": {
+          "pattern": "^TR-\\d{2,}$",
+          "title": "Id",
+          "type": "string"
+        },
+        "where": {
+          "minLength": 1,
+          "title": "Where",
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "change",
+        "affects",
+        "where",
+        "effect"
+      ],
+      "title": "Trap",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "agent_id": {
+      "const": "design_modernization",
+      "default": "design_modernization",
+      "title": "Agent Id",
+      "type": "string"
+    },
+    "artifact": {
+      "const": "target_design_artifacts",
+      "default": "target_design_artifacts",
+      "title": "Artifact",
+      "type": "string"
+    },
+    "built_from": {
+      "default": [],
+      "items": {
+        "$ref": "#/$defs/BuiltFrom"
+      },
+      "title": "Built From",
+      "type": "array"
+    },
+    "payload": {
+      "$ref": "#/$defs/DesignPayload"
+    },
+    "produced_at": {
+      "anyOf": [
+        {
+          "format": "date-time",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Produced At"
+    },
+    "produced_by": {
+      "$ref": "#/$defs/ProducedBy",
+      "default": {
+        "model": null,
+        "run_id": null,
+        "user_id": null
+      }
+    },
+    "schema_version": {
+      "const": 1,
+      "default": 1,
+      "title": "Schema Version",
+      "type": "integer"
+    },
+    "status": {
+      "enum": [
+        "draft",
+        "published",
+        "superseded",
+        "rejected"
+      ],
+      "title": "Status",
+      "type": "string"
+    },
+    "version": {
+      "minimum": 1,
+      "title": "Version",
+      "type": "integer"
+    }
+  },
+  "required": [
+    "version",
+    "status",
+    "payload"
+  ],
+  "title": "DesignPacket",
+  "type": "object"
+}

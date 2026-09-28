@@ -187,3 +187,46 @@ describe("the version-2 brief (the agent's recommendation, structured)", () => {
     expect(screen.getByText("Azure DevOps / Project 2")).toBeTruthy();
   });
 });
+
+describe("not scanned is not zero (R39)", () => {
+  const unscanned = DiscoveryResponse.parse({
+    projectId: "p1", runId: "r1", updatedAt: "2026-09-10T09:00:00Z",
+    payload: {
+      ...fixtures.assessment,
+      scanners: { trivy: "unavailable", note: "trivy is not installed" },
+      summary: { ...fixtures.assessment.summary, flag_counts: { ...fixtures.assessment.summary.flag_counts, vulnerable: 0 } },
+      modules: fixtures.assessment.modules.map((m) => ({
+        ...m,
+        risk: { ...m.risk, factors: [...m.risk.factors.filter((f) => f.factor !== "vulnerable_dependencies"),
+          { factor: "vulnerable_dependencies", points: 0,
+          measured: false, detail: "Not measured: no vulnerability scan ran, so this score leaves out up to 10 points." }] },
+      })),
+    },
+  }).payload!;
+
+  it("shows the vulnerable count as not scanned, never 0", () => {
+    render(<AssessmentView assessment={unscanned} />);
+    const summary = screen.getByRole("region", { name: "Assessment summary" });
+    const stat = within(summary).getByText("Vulnerable").parentElement!;
+    expect(within(stat).getByText("not scanned")).toBeTruthy();
+    expect(within(stat).queryByText("0")).toBeNull();
+    expect(screen.getByText(/Known vulnerabilities\s+were not measured/)).toBeTruthy();
+  });
+
+  it("marks an unmeasured factor n/m and says the score leaves inputs out", async () => {
+    const user = userEvent.setup();
+    render(<AssessmentView assessment={unscanned} />);
+    await user.click(screen.getByText("Billing.Web"));
+    const detail = screen.getByRole("complementary", { name: "Billing.Web detail" });
+    expect(within(detail).getByText("n/m")).toBeTruthy();
+    expect(within(detail).getByText("(some inputs not measured)")).toBeTruthy();
+    expect(within(detail).queryByText("+0")).toBeNull();
+  });
+
+  it("a scanned assessment still shows its count", () => {
+    render(<AssessmentView assessment={assessment} />);
+    const summary = screen.getByRole("region", { name: "Assessment summary" });
+    const stat = within(summary).getByText("Vulnerable").parentElement!;
+    expect(within(stat).queryByText("not scanned")).toBeNull();
+  });
+});

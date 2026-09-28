@@ -1,0 +1,28 @@
+{
+  "schema_version": 1,
+  "agent_id": "testing_modernization",
+  "artifact": "equivalence_artifacts",
+  "version": 2,
+  "status": "published",
+  "built_from": [
+    {"artifact": "strategy_artifacts", "version": 2, "status": "published"},
+    {"artifact": "migration_artifacts", "version": 2, "status": "published"}
+  ],
+  "produced_by": {"user_id": "fixture:qa", "model": "fixture (research §9 stage 8, run 2, illustrative)", "run_id": null},
+  "produced_at": "2027-01-02T16:00:00Z",
+  "payload": {
+    "mode": "verify",
+    "module_id": "M-05",
+    "pr": "claimtrack-modern!12",
+    "baselines_replayed": [{"id": "BL-04", "version": 1}],
+    "criteria": [
+      {"ec_id": "EC-03", "verdict": "passed", "cases_compared": 1, "normalization_applied": ["generation timestamp"]},
+      {"ec_id": "EC-06", "verdict": "passed", "cases_compared": 1212, "normalization_applied": []},
+      {"ec_id": "EC-08", "verdict": "passed", "cases_compared": 1, "normalization_applied": []}
+    ],
+    "differences": [],
+    "performance": [],
+    "rule_proposals": [],
+    "runs": 2
+  }
+}

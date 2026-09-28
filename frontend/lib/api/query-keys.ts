@@ -94,6 +94,13 @@ export const qk = {
     versionConsumers: (id: ProjectId, phase: string, version: number) =>
       ["artifact-versions", id, phase, version, "consumers"] as const,
   },
+  // Track 3's Programme view (`lib/api/modernization-programme.ts`).
+  modernizationProgramme: {
+    all: (id: ProjectId) => ["modernization-programme", id] as const,
+    ledger: (id: ProjectId) => ["modernization-programme", id, "ledger"] as const,
+    repositories: (id: ProjectId) => ["modernization-programme", id, "repositories"] as const,
+    approvalSettings: (id: ProjectId) => ["modernization-programme", id, "approval-settings"] as const,
+  },
   connectors: {
     list: (workspaceId?: string | null) => ["connectors", workspaceId ?? ""] as const,
     detail: (kind: string) => ["connectors", kind] as const,

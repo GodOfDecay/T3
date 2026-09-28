@@ -1,0 +1,804 @@
+{
+  "$defs": {
+    "BaselinePlanItem": {
+      "additionalProperties": false,
+      "properties": {
+        "data_source": {
+          "minLength": 1,
+          "title": "Data Source",
+          "type": "string"
+        },
+        "due": {
+          "format": "date",
+          "title": "Due",
+          "type": "string"
+        },
+        "ec_id": {
+          "pattern": "^EC-\\d{2,}$",
+          "title": "Ec Id",
+          "type": "string"
+        },
+        "environment": {
+          "minLength": 1,
+          "title": "Environment",
+          "type": "string"
+        },
+        "inputs": {
+          "minLength": 1,
+          "title": "Inputs",
+          "type": "string"
+        },
+        "masking": {
+          "minLength": 1,
+          "title": "Masking",
+          "type": "string"
+        }
+      },
+      "required": [
+        "ec_id",
+        "inputs",
+        "environment",
+        "data_source",
+        "masking",
+        "due"
+      ],
+      "title": "BaselinePlanItem",
+      "type": "object"
+    },
+    "BuiltFrom": {
+      "additionalProperties": false,
+      "description": "One input this artifact was built from, pinned to the version that was read.",
+      "properties": {
+        "artifact": {
+          "enum": [
+            "migration_intent_payload",
+            "discovery_artifacts",
+            "target_design_artifacts",
+            "strategy_artifacts",
+            "equivalence_artifacts",
+            "migration_artifacts",
+            "migration_review_artifacts",
+            "modernization_security_artifacts",
+            "cutover_artifacts",
+            "cutover_pack_artifacts"
+          ],
+          "title": "Artifact",
+          "type": "string"
+        },
+        "commit": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Commit"
+        },
+        "status": {
+          "enum": [
+            "draft",
+            "published",
+            "superseded",
+            "rejected"
+          ],
+          "title": "Status",
+          "type": "string"
+        },
+        "version": {
+          "minimum": 1,
+          "title": "Version",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "artifact",
+        "version",
+        "status"
+      ],
+      "title": "BuiltFrom",
+      "type": "object"
+    },
+    "CalendarConflict": {
+      "additionalProperties": false,
+      "properties": {
+        "conflict": {
+          "minLength": 1,
+          "title": "Conflict",
+          "type": "string"
+        },
+        "impact": {
+          "minLength": 1,
+          "title": "Impact",
+          "type": "string"
+        },
+        "options": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "title": "Options",
+          "type": "array"
+        },
+        "resolution": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Resolution"
+        }
+      },
+      "required": [
+        "conflict",
+        "impact"
+      ],
+      "title": "CalendarConflict",
+      "type": "object"
+    },
+    "Criterion": {
+      "additionalProperties": false,
+      "properties": {
+        "comparison": {
+          "enum": [
+            "exact",
+            "byte_identical",
+            "numeric_tolerance",
+            "schema_equal",
+            "set_equal",
+            "percentile_threshold"
+          ],
+          "title": "Comparison",
+          "type": "string"
+        },
+        "id": {
+          "pattern": "^EC-\\d{2,}$",
+          "title": "Id",
+          "type": "string"
+        },
+        "input_set": {
+          "minLength": 1,
+          "title": "Input Set",
+          "type": "string"
+        },
+        "module_id": {
+          "anyOf": [
+            {
+              "pattern": "^M-\\d{2,}$",
+              "type": "string"
+            },
+            {
+              "const": "all",
+              "type": "string"
+            }
+          ],
+          "title": "Module Id"
+        },
+        "normalization": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/NormalizationRule"
+          },
+          "title": "Normalization",
+          "type": "array"
+        },
+        "observable": {
+          "minLength": 1,
+          "title": "Observable",
+          "type": "string"
+        },
+        "protects": {
+          "default": [],
+          "items": {
+            "anyOf": [
+              {
+                "pattern": "^CT-\\d{2,}$",
+                "type": "string"
+              },
+              {
+                "pattern": "^TR-\\d{2,}$",
+                "type": "string"
+              }
+            ]
+          },
+          "title": "Protects",
+          "type": "array"
+        },
+        "protects_measures": {
+          "default": [],
+          "description": "Brief success measures protected, in the brief's words (they have no id).",
+          "items": {
+            "type": "string"
+          },
+          "title": "Protects Measures",
+          "type": "array"
+        },
+        "threshold": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Threshold"
+        }
+      },
+      "required": [
+        "id",
+        "module_id",
+        "observable",
+        "input_set",
+        "comparison"
+      ],
+      "title": "Criterion",
+      "type": "object"
+    },
+    "Effort": {
+      "additionalProperties": false,
+      "properties": {
+        "band": {
+          "minLength": 1,
+          "title": "Band",
+          "type": "string"
+        },
+        "basis": {
+          "minLength": 1,
+          "title": "Basis",
+          "type": "string"
+        },
+        "is_estimate": {
+          "const": true,
+          "default": true,
+          "title": "Is Estimate",
+          "type": "boolean"
+        },
+        "wave": {
+          "pattern": "^W\\d+$",
+          "title": "Wave",
+          "type": "string"
+        }
+      },
+      "required": [
+        "wave",
+        "band",
+        "basis"
+      ],
+      "title": "Effort",
+      "type": "object"
+    },
+    "FreezePolicy": {
+      "additionalProperties": false,
+      "properties": {
+        "allowed": {
+          "minLength": 1,
+          "title": "Allowed",
+          "type": "string"
+        },
+        "carry_forward": {
+          "minLength": 1,
+          "title": "Carry Forward",
+          "type": "string"
+        },
+        "from": {
+          "format": "date",
+          "title": "From",
+          "type": "string"
+        }
+      },
+      "required": [
+        "from",
+        "allowed",
+        "carry_forward"
+      ],
+      "title": "FreezePolicy",
+      "type": "object"
+    },
+    "NormalizationRule": {
+      "additionalProperties": false,
+      "properties": {
+        "field": {
+          "minLength": 1,
+          "title": "Field",
+          "type": "string"
+        },
+        "reason": {
+          "description": "Why this field may differ. Required.",
+          "minLength": 1,
+          "title": "Reason",
+          "type": "string"
+        },
+        "rule": {
+          "minLength": 1,
+          "title": "Rule",
+          "type": "string"
+        }
+      },
+      "required": [
+        "field",
+        "rule",
+        "reason"
+      ],
+      "title": "NormalizationRule",
+      "type": "object"
+    },
+    "ParallelRun": {
+      "additionalProperties": false,
+      "properties": {
+        "period": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Period"
+        },
+        "required": {
+          "title": "Required",
+          "type": "boolean"
+        },
+        "system_of_record": {
+          "default": "legacy",
+          "enum": [
+            "legacy",
+            "new"
+          ],
+          "title": "System Of Record",
+          "type": "string"
+        }
+      },
+      "required": [
+        "required"
+      ],
+      "title": "ParallelRun",
+      "type": "object"
+    },
+    "PlanPayload": {
+      "additionalProperties": false,
+      "description": "Refusals checked here: a module in two waves; no W0; a criterion without an observable,\nan input set or a comparison; a normalization rule without a reason; a wave without a\nrollback; a baseline-plan item for a criterion the plan does not define.\n\nChecked by `record_migration_strategy`: every in-scope module is in a wave (needs the\ndesign); the order respects the dependency graph (`propose_wave_order`).",
+      "properties": {
+        "baseline_plan": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/BaselinePlanItem"
+          },
+          "title": "Baseline Plan",
+          "type": "array"
+        },
+        "budget_fit": {
+          "default": "",
+          "title": "Budget Fit",
+          "type": "string"
+        },
+        "calendar_conflicts": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/CalendarConflict"
+          },
+          "title": "Calendar Conflicts",
+          "type": "array"
+        },
+        "critical_path": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "title": "Critical Path",
+          "type": "array"
+        },
+        "effort": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/Effort"
+          },
+          "title": "Effort",
+          "type": "array"
+        },
+        "equivalence_criteria": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/Criterion"
+          },
+          "title": "Equivalence Criteria",
+          "type": "array"
+        },
+        "freeze_policy": {
+          "$ref": "#/$defs/FreezePolicy"
+        },
+        "raid": {
+          "$ref": "#/$defs/Raid",
+          "default": {
+            "assumptions": [],
+            "dependencies": [],
+            "issues": [],
+            "risks": []
+          }
+        },
+        "summary": {
+          "minLength": 1,
+          "title": "Summary",
+          "type": "string"
+        },
+        "waves": {
+          "items": {
+            "$ref": "#/$defs/Wave"
+          },
+          "minItems": 1,
+          "title": "Waves",
+          "type": "array"
+        }
+      },
+      "required": [
+        "summary",
+        "waves",
+        "freeze_policy"
+      ],
+      "title": "PlanPayload",
+      "type": "object"
+    },
+    "ProducedBy": {
+      "additionalProperties": false,
+      "properties": {
+        "model": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Model"
+        },
+        "run_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Run Id"
+        },
+        "user_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "User Id"
+        }
+      },
+      "title": "ProducedBy",
+      "type": "object"
+    },
+    "Raid": {
+      "additionalProperties": false,
+      "properties": {
+        "assumptions": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "title": "Assumptions",
+          "type": "array"
+        },
+        "dependencies": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "title": "Dependencies",
+          "type": "array"
+        },
+        "issues": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "title": "Issues",
+          "type": "array"
+        },
+        "risks": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/Risk"
+          },
+          "title": "Risks",
+          "type": "array"
+        }
+      },
+      "title": "Raid",
+      "type": "object"
+    },
+    "Risk": {
+      "additionalProperties": false,
+      "properties": {
+        "evidence": {
+          "minLength": 1,
+          "title": "Evidence",
+          "type": "string"
+        },
+        "mitigation": {
+          "minLength": 1,
+          "title": "Mitigation",
+          "type": "string"
+        },
+        "risk": {
+          "minLength": 1,
+          "title": "Risk",
+          "type": "string"
+        }
+      },
+      "required": [
+        "risk",
+        "evidence",
+        "mitigation"
+      ],
+      "title": "Risk",
+      "type": "object"
+    },
+    "Rollback": {
+      "additionalProperties": false,
+      "properties": {
+        "max_time": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Max Time"
+        },
+        "method": {
+          "description": "How it rolls back.",
+          "minLength": 1,
+          "title": "Method",
+          "type": "string"
+        },
+        "trigger": {
+          "description": "What makes the wave roll back.",
+          "minLength": 1,
+          "title": "Trigger",
+          "type": "string"
+        }
+      },
+      "required": [
+        "trigger",
+        "method"
+      ],
+      "title": "Rollback",
+      "type": "object"
+    },
+    "Wave": {
+      "additionalProperties": false,
+      "properties": {
+        "cutover_window": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Cutover Window"
+        },
+        "date_status": {
+          "enum": [
+            "given",
+            "proposed"
+          ],
+          "title": "Date Status",
+          "type": "string"
+        },
+        "ends": {
+          "format": "date",
+          "title": "Ends",
+          "type": "string"
+        },
+        "entry_criteria": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "title": "Entry Criteria",
+          "type": "array"
+        },
+        "exit_criteria": {
+          "items": {
+            "type": "string"
+          },
+          "minItems": 1,
+          "title": "Exit Criteria",
+          "type": "array"
+        },
+        "id": {
+          "pattern": "^W\\d+$",
+          "title": "Id",
+          "type": "string"
+        },
+        "modules": {
+          "default": [],
+          "items": {
+            "pattern": "^M-\\d{2,}$",
+            "type": "string"
+          },
+          "title": "Modules",
+          "type": "array"
+        },
+        "name": {
+          "minLength": 1,
+          "title": "Name",
+          "type": "string"
+        },
+        "order_reason": {
+          "minLength": 1,
+          "title": "Order Reason",
+          "type": "string"
+        },
+        "owner": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Owner"
+        },
+        "parallel_run": {
+          "$ref": "#/$defs/ParallelRun",
+          "default": {
+            "period": null,
+            "required": false,
+            "system_of_record": "legacy"
+          }
+        },
+        "patterns": {
+          "default": {},
+          "patternProperties": {
+            "^M-\\d{2,}$": {
+              "items": {
+                "enum": [
+                  "in_place_upgrade",
+                  "strangler_fig",
+                  "branch_by_abstraction",
+                  "parallel_run",
+                  "rewrite",
+                  "replatform",
+                  "retire",
+                  "keep"
+                ],
+                "type": "string"
+              },
+              "type": "array"
+            }
+          },
+          "title": "Patterns",
+          "type": "object"
+        },
+        "rollback": {
+          "$ref": "#/$defs/Rollback"
+        },
+        "starts": {
+          "format": "date",
+          "title": "Starts",
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "name",
+        "starts",
+        "ends",
+        "date_status",
+        "exit_criteria",
+        "rollback",
+        "order_reason"
+      ],
+      "title": "Wave",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "agent_id": {
+      "const": "strategy",
+      "default": "strategy",
+      "title": "Agent Id",
+      "type": "string"
+    },
+    "artifact": {
+      "const": "strategy_artifacts",
+      "default": "strategy_artifacts",
+      "title": "Artifact",
+      "type": "string"
+    },
+    "built_from": {
+      "default": [],
+      "items": {
+        "$ref": "#/$defs/BuiltFrom"
+      },
+      "title": "Built From",
+      "type": "array"
+    },
+    "payload": {
+      "$ref": "#/$defs/PlanPayload"
+    },
+    "produced_at": {
+      "anyOf": [
+        {
+          "format": "date-time",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Produced At"
+    },
+    "produced_by": {
+      "$ref": "#/$defs/ProducedBy",
+      "default": {
+        "model": null,
+        "run_id": null,
+        "user_id": null
+      }
+    },
+    "schema_version": {
+      "const": 1,
+      "default": 1,
+      "title": "Schema Version",
+      "type": "integer"
+    },
+    "status": {
+      "enum": [
+        "draft",
+        "published",
+        "superseded",
+        "rejected"
+      ],
+      "title": "Status",
+      "type": "string"
+    },
+    "version": {
+      "minimum": 1,
+      "title": "Version",
+      "type": "integer"
+    }
+  },
+  "required": [
+    "version",
+    "status",
+    "payload"
+  ],
+  "title": "PlanPacket",
+  "type": "object"
+}

@@ -66,6 +66,11 @@ def test_every_delivery_role_reaches_only_what_it_owns():
         "security": "security_engineer", "deployment": "devops_engineer",
         "plan": "scrum_master",
         "requirements_modernization": "ba", "discovery": "ba",
+        # Track 3 agents 3–10 (Phase B owner rows; not built yet).
+        "design_modernization": "architect", "strategy": "architect",
+        "testing_modernization": "qa", "development_modernization": "developer",
+        "code_review_modernization": "architect", "security_modernization": "security_engineer",
+        "deployment_modernization": "devops_engineer", "documentation_modernization": "ba",
     }
     for agent_id, reach in AGENT_DEFAULT_REACH.items():
         for role, involvement in reach.items():

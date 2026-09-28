@@ -1,0 +1,6 @@
+{"target": "shared/authz/agent_access.py", "tests": ["tests/modernization_common/test_pa_reach_floor.py"], "env_test": true,
+ "mutants": [
+  ["resolver-no-floor", "    if role and not pa_floor_applies(role, agent_id):", "    if role:"],
+  ["floor-any-role", "    return role == \"project_admin\" and _agent_id(agent_id) in TRACK3_STAGES", "    return _agent_id(agent_id) in TRACK3_STAGES"],
+  ["floor-any-agent", "    return role == \"project_admin\" and _agent_id(agent_id) in TRACK3_STAGES", "    return role == \"project_admin\""]
+ ]}

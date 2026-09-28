@@ -80,6 +80,14 @@ export const ROLE_PERMISSIONS: Record<PlatformRole, readonly string[]> = {
     "artifact:approve_plan",
     "artifact:approve_requirements_modernization",
     "artifact:approve_discovery",
+    "artifact:approve_design_modernization",
+    "artifact:approve_strategy",
+    "artifact:approve_testing_modernization",
+    "artifact:approve_development_modernization",
+    "artifact:approve_code_review_modernization",
+    "artifact:approve_security_modernization",
+    "artifact:approve_deployment_modernization",
+    "artifact:approve_documentation_modernization",
     "skill:edit",
   ],
   // Onboarded, placed in a unit, and holding nothing until that unit's admin
@@ -111,6 +119,14 @@ export const ROLE_PERMISSIONS: Record<PlatformRole, readonly string[]> = {
     // Track 3's first two agents — fallback approver, as above (migration 0057).
     "artifact:approve_requirements_modernization",
     "artifact:approve_discovery",
+    "artifact:approve_design_modernization",
+    "artifact:approve_strategy",
+    "artifact:approve_testing_modernization",
+    "artifact:approve_development_modernization",
+    "artifact:approve_code_review_modernization",
+    "artifact:approve_security_modernization",
+    "artifact:approve_deployment_modernization",
+    "artifact:approve_documentation_modernization",
     "connector:view",
     "connector:manage",
     "cost:view",
@@ -119,6 +135,7 @@ export const ROLE_PERMISSIONS: Record<PlatformRole, readonly string[]> = {
     "governance:decide",
   ],
   ba: [
+    "artifact:approve_documentation_modernization",
     "run:create",
     "run:view",
     "artifact:view",
@@ -153,6 +170,9 @@ export const ROLE_PERMISSIONS: Record<PlatformRole, readonly string[]> = {
     "governance:decide",
   ],
   architect: [
+    "artifact:approve_design_modernization",
+    "artifact:approve_strategy",
+    "artifact:approve_code_review_modernization",
     "run:create",
     "run:view",
     "artifact:view",
@@ -174,6 +194,7 @@ export const ROLE_PERMISSIONS: Record<PlatformRole, readonly string[]> = {
     "governance:decide",
   ],
   developer: [
+    "artifact:approve_development_modernization",
     "run:create",
     "run:view",
     "artifact:view",
@@ -193,6 +214,7 @@ export const ROLE_PERMISSIONS: Record<PlatformRole, readonly string[]> = {
     "skill:edit",
   ],
   qa: [
+    "artifact:approve_testing_modernization",
     "run:view",
     "artifact:view",
     "artifact:export",
@@ -207,6 +229,7 @@ export const ROLE_PERMISSIONS: Record<PlatformRole, readonly string[]> = {
     "governance:decide",
   ],
   security_engineer: [
+    "artifact:approve_security_modernization",
     "run:view",
     "artifact:view",
     "artifact:export",
@@ -228,6 +251,7 @@ export const ROLE_PERMISSIONS: Record<PlatformRole, readonly string[]> = {
     "governance:decide",
   ],
   devops_engineer: [
+    "artifact:approve_deployment_modernization",
     "run:view",
     "artifact:view",
     "artifact:export",

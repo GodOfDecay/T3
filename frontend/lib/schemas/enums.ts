@@ -27,7 +27,9 @@ export type Status = z.infer<typeof Status>;
  *
  *  - `requirements_modernization`  Requirements, migration-intent mode — Track 3 (PRD §23.1)
  *  - `discovery`         Dependency and Risk — Tracks 3 & 4 (PRD §23.2, §24.2)
- *  - `strategy`          Strategy               — Track 3    (PRD §23.4)
+ *  - `strategy`          Migration Strategy     — Track 3    (PRD §23.4)
+ *  - `*_modernization`   Track 3's own Target Architecture, Equivalence Testing, Migration
+ *                       Development, Migration Review, Security, Cutover and Cutover Pack
  *  - `migration_mapping` Migration Mapping      — Track 4    (PRD §24.3)
  *  - `validation`        Validation             — Track 4    (PRD §24.6)
  *  - `data_engineering`  Data Engineering       — Track 5    (PRD §25.2)
@@ -49,6 +51,15 @@ export const AgentType = z.enum([
   "requirements_modernization",
   "discovery",
   "strategy",
+  // Track 3 agents 3–10 (Phase B). Listed so every table keyed on Phase names them;
+  // each stays a locked tile until it is built (BUILT_AGENTS_BY_TRACK).
+  "design_modernization",
+  "testing_modernization",
+  "development_modernization",
+  "code_review_modernization",
+  "security_modernization",
+  "deployment_modernization",
+  "documentation_modernization",
   "migration_mapping",
   "validation",
   "data_engineering",
@@ -71,6 +82,15 @@ export const Phase = z.enum([
   "requirements_modernization",
   "discovery",
   "strategy",
+  // Track 3 agents 3–10 (Phase B). Listed so every table keyed on Phase names them;
+  // each stays a locked tile until it is built (BUILT_AGENTS_BY_TRACK).
+  "design_modernization",
+  "testing_modernization",
+  "development_modernization",
+  "code_review_modernization",
+  "security_modernization",
+  "deployment_modernization",
+  "documentation_modernization",
   "migration_mapping",
   "validation",
   "data_engineering",

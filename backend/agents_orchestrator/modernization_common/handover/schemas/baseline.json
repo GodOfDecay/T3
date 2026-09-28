@@ -1,0 +1,397 @@
+{
+  "$defs": {
+    "Baseline": {
+      "additionalProperties": false,
+      "properties": {
+        "captured_at": {
+          "anyOf": [
+            {
+              "format": "date-time",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Captured At"
+        },
+        "count": {
+          "description": "How many recorded cases/runs/reports/journeys.",
+          "minimum": 1,
+          "title": "Count",
+          "type": "integer"
+        },
+        "ec_ids": {
+          "items": {
+            "pattern": "^EC-\\d{2,}$",
+            "type": "string"
+          },
+          "minItems": 1,
+          "title": "Ec Ids",
+          "type": "array"
+        },
+        "id": {
+          "pattern": "^BL-\\d{2,}$",
+          "title": "Id",
+          "type": "string"
+        },
+        "measurements": {
+          "additionalProperties": {
+            "type": "number"
+          },
+          "default": {},
+          "title": "Measurements",
+          "type": "object"
+        },
+        "module_id": {
+          "anyOf": [
+            {
+              "pattern": "^M-\\d{2,}$",
+              "type": "string"
+            },
+            {
+              "const": "all",
+              "type": "string"
+            }
+          ],
+          "title": "Module Id"
+        },
+        "noise_fields": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "title": "Noise Fields",
+          "type": "array"
+        },
+        "region": {
+          "minLength": 1,
+          "title": "Region",
+          "type": "string"
+        },
+        "sha256": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Sha256",
+          "type": "string"
+        },
+        "unit": {
+          "enum": [
+            "cases",
+            "runs",
+            "reports",
+            "journeys",
+            "samples"
+          ],
+          "title": "Unit",
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "ec_ids",
+        "module_id",
+        "count",
+        "unit",
+        "sha256",
+        "region"
+      ],
+      "title": "Baseline",
+      "type": "object"
+    },
+    "BaselinePayload": {
+      "additionalProperties": false,
+      "properties": {
+        "baselines": {
+          "items": {
+            "$ref": "#/$defs/Baseline"
+          },
+          "minItems": 1,
+          "title": "Baselines",
+          "type": "array"
+        },
+        "mode": {
+          "const": "baseline",
+          "default": "baseline",
+          "title": "Mode",
+          "type": "string"
+        },
+        "noise": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/NoiseReport"
+          },
+          "title": "Noise",
+          "type": "array"
+        },
+        "rule_proposals": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/RuleProposal"
+          },
+          "title": "Rule Proposals",
+          "type": "array"
+        },
+        "stubs": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "title": "Stubs",
+          "type": "array"
+        }
+      },
+      "required": [
+        "baselines"
+      ],
+      "title": "BaselinePayload",
+      "type": "object"
+    },
+    "BuiltFrom": {
+      "additionalProperties": false,
+      "description": "One input this artifact was built from, pinned to the version that was read.",
+      "properties": {
+        "artifact": {
+          "enum": [
+            "migration_intent_payload",
+            "discovery_artifacts",
+            "target_design_artifacts",
+            "strategy_artifacts",
+            "equivalence_artifacts",
+            "migration_artifacts",
+            "migration_review_artifacts",
+            "modernization_security_artifacts",
+            "cutover_artifacts",
+            "cutover_pack_artifacts"
+          ],
+          "title": "Artifact",
+          "type": "string"
+        },
+        "commit": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Commit"
+        },
+        "status": {
+          "enum": [
+            "draft",
+            "published",
+            "superseded",
+            "rejected"
+          ],
+          "title": "Status",
+          "type": "string"
+        },
+        "version": {
+          "minimum": 1,
+          "title": "Version",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "artifact",
+        "version",
+        "status"
+      ],
+      "title": "BuiltFrom",
+      "type": "object"
+    },
+    "NoiseReport": {
+      "additionalProperties": false,
+      "properties": {
+        "covered_by_rule": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "title": "Covered By Rule",
+          "type": "array"
+        },
+        "ec_id": {
+          "pattern": "^EC-\\d{2,}$",
+          "title": "Ec Id",
+          "type": "string"
+        },
+        "runs_compared": {
+          "description": "Legacy is run twice at least.",
+          "minimum": 2,
+          "title": "Runs Compared",
+          "type": "integer"
+        },
+        "varying_fields": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "title": "Varying Fields",
+          "type": "array"
+        }
+      },
+      "required": [
+        "ec_id",
+        "runs_compared"
+      ],
+      "title": "NoiseReport",
+      "type": "object"
+    },
+    "ProducedBy": {
+      "additionalProperties": false,
+      "properties": {
+        "model": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Model"
+        },
+        "run_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Run Id"
+        },
+        "user_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "User Id"
+        }
+      },
+      "title": "ProducedBy",
+      "type": "object"
+    },
+    "RuleProposal": {
+      "additionalProperties": false,
+      "description": "A normalization rule PROPOSED to Migration Strategy. Testing never applies one.",
+      "properties": {
+        "ec_id": {
+          "pattern": "^EC-\\d{2,}$",
+          "title": "Ec Id",
+          "type": "string"
+        },
+        "evidence": {
+          "minLength": 1,
+          "title": "Evidence",
+          "type": "string"
+        },
+        "field": {
+          "minLength": 1,
+          "title": "Field",
+          "type": "string"
+        },
+        "rule": {
+          "minLength": 1,
+          "title": "Rule",
+          "type": "string"
+        }
+      },
+      "required": [
+        "ec_id",
+        "field",
+        "rule",
+        "evidence"
+      ],
+      "title": "RuleProposal",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "agent_id": {
+      "const": "testing_modernization",
+      "default": "testing_modernization",
+      "title": "Agent Id",
+      "type": "string"
+    },
+    "artifact": {
+      "const": "equivalence_artifacts",
+      "default": "equivalence_artifacts",
+      "title": "Artifact",
+      "type": "string"
+    },
+    "built_from": {
+      "default": [],
+      "items": {
+        "$ref": "#/$defs/BuiltFrom"
+      },
+      "title": "Built From",
+      "type": "array"
+    },
+    "payload": {
+      "$ref": "#/$defs/BaselinePayload"
+    },
+    "produced_at": {
+      "anyOf": [
+        {
+          "format": "date-time",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Produced At"
+    },
+    "produced_by": {
+      "$ref": "#/$defs/ProducedBy",
+      "default": {
+        "model": null,
+        "run_id": null,
+        "user_id": null
+      }
+    },
+    "schema_version": {
+      "const": 1,
+      "default": 1,
+      "title": "Schema Version",
+      "type": "integer"
+    },
+    "status": {
+      "enum": [
+        "draft",
+        "published",
+        "superseded",
+        "rejected"
+      ],
+      "title": "Status",
+      "type": "string"
+    },
+    "version": {
+      "minimum": 1,
+      "title": "Version",
+      "type": "integer"
+    }
+  },
+  "required": [
+    "version",
+    "status",
+    "payload"
+  ],
+  "title": "BaselinePacket",
+  "type": "object"
+}

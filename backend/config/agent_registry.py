@@ -388,6 +388,16 @@ _OWNER_OF: dict[str, str] = {
     # One agent, one role still holds: the Architect does not reach Discovery.
     "requirements_modernization": "ba",
     "discovery": "ba",
+    # Agents 3–10 (Phase B). Reach only — the track check still refuses any id not in
+    # TRACK_PORTFOLIOS, so an unbuilt agent is unreachable whatever this says.
+    "design_modernization": "architect",
+    "strategy": "architect",
+    "testing_modernization": "qa",
+    "development_modernization": "developer",
+    "code_review_modernization": "architect",
+    "security_modernization": "security_engineer",
+    "deployment_modernization": "devops_engineer",
+    "documentation_modernization": "ba",
 }
 
 _DELIVERY_ROLES = (

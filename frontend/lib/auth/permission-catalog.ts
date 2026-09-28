@@ -131,6 +131,54 @@ export const PERMISSION_CATALOG: PermGroup[] = [
         grants:
           "Accept a Code Modernization project's assessment as the planning baseline. Held by the BA, who owns the agent, and Project Admin as fallback approver.",
       },
+      {
+        id: "artifact:approve_design_modernization",
+        label: "Approve Target Architecture",
+        grants:
+          "Accept a Code Modernization project's target design. Held by the Architect, who owns the agent, and Project Admin as fallback approver.",
+      },
+      {
+        id: "artifact:approve_strategy",
+        label: "Approve Migration Strategy",
+        grants:
+          "Accept a Code Modernization project's migration plan: waves, equivalence criteria and baseline plan. Held by the Architect, who owns the agent, and Project Admin as fallback approver.",
+      },
+      {
+        id: "artifact:approve_testing_modernization",
+        label: "Approve Equivalence Testing",
+        grants:
+          "Accept a module's legacy baseline and, later, its equivalence results — both mandatory. Held by QA, who owns the agent, and Project Admin as fallback approver.",
+      },
+      {
+        id: "artifact:approve_development_modernization",
+        label: "Approve Migration Development",
+        grants:
+          "Accept a migrated module's record and file map. Held by the Developer, who owns the agent, and Project Admin as fallback approver.",
+      },
+      {
+        id: "artifact:approve_code_review_modernization",
+        label: "Approve Migration Review",
+        grants:
+          "Accept the review of a module's migration pull request. Held by the Architect, who owns the agent, and Project Admin as fallback approver.",
+      },
+      {
+        id: "artifact:approve_security_modernization",
+        label: "Approve Security (Modernization)",
+        grants:
+          "Give a migrated module its mandatory security sign-off. Held by the Security Engineer, who owns the agent, and Project Admin as fallback approver.",
+      },
+      {
+        id: "artifact:approve_deployment_modernization",
+        label: "Approve Cutover",
+        grants:
+          "Give a wave's mandatory release sign-off (with the business owner). Held by the DevOps Engineer, who owns the agent, and Project Admin as fallback approver.",
+      },
+      {
+        id: "artifact:approve_documentation_modernization",
+        label: "Approve Cutover Pack",
+        grants:
+          "Override the automatic acceptance of the cutover pack. Held by the BA, who owns the agent, and Project Admin as fallback approver.",
+      },
     ],
   },
   {

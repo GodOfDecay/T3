@@ -1,0 +1,51 @@
+{
+  "schema_version": 1,
+  "agent_id": "requirements_modernization",
+  "artifact": "migration_intent_payload",
+  "version": 1,
+  "status": "published",
+  "built_from": [],
+  "produced_by": {"user_id": "fixture:ba", "model": "fixture (research §9 stage 1)", "run_id": null},
+  "produced_at": "2026-09-11T10:00:00Z",
+  "payload": {
+    "system_name": "ClaimTrack",
+    "goal": "Move ClaimTrack off the Dallas data centre onto supported Azure services by 30 June 2027 without changing payouts, bank files or the regulator return.",
+    "target_stack": [
+      "Java 21 · Spring Boot 3",
+      "React 18 · TypeScript",
+      "Python 3.12",
+      "Azure Database for MySQL Flexible Server (US regions)"
+    ],
+    "scope": {
+      "in": ["claimtrack-core", "claimtrack-web", "claimtrack-batch", "claimtrack-agent-portal", "claimtrack-reports", "MySQL 5.6 database move"],
+      "out": ["PolicyHub (nightly extract consumed only)", "RiskLens fraud service", "bank payment gateway", "data warehouse", "new features"]
+    },
+    "constraints": [
+      "off Dallas by 30 Jun 2027",
+      "freeze from 1 Feb 2027 except P1",
+      "Sunday ≤ 2h downtime per cutover",
+      "US regions only"
+    ],
+    "deadline": "2027-06-30",
+    "budget": "$450,000",
+    "freeze_from": "2027-02-01",
+    "downtime_window": "Sunday night, at most 2 hours per cutover",
+    "data_residency": "US Azure regions",
+    "must_not_change": [
+      "/api/v1 claims API our broker partners call",
+      "bank payment file format",
+      "the regulator's CR-4 quarterly return"
+    ],
+    "success_measures": [
+      {"metric": "payouts on 10,000 recorded claims", "target": "100% identical", "kind": "equivalence"},
+      {"metric": "bank files and Q4 2026 CR-4 return", "target": "identical", "kind": "equivalence"},
+      {"metric": "API p95", "today": "~800 ms", "target": "≤ 300 ms", "kind": "performance"},
+      {"metric": "critical/high vulnerabilities at go-live", "target": "0", "kind": "security"},
+      {"metric": "old servers switched off", "target": "by 30 Sep 2027", "kind": "schedule"}
+    ],
+    "business_owner": "Priya Raman, Head of Claims Operations",
+    "open_questions": [
+      "adjuster JSP screens: into the React portal or a separate app — Architecture decides"
+    ]
+  }
+}

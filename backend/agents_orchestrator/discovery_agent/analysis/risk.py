@@ -17,7 +17,7 @@ Factors and weights (caps in brackets):
   coupling      2 per module in the repository that depends on this one            [10]
   tests         5 when nothing in the repository tests this module                  [5]
 
-Tiers — which kind of work moves the module (help/track3-agent-build-plan.md):
+Tiers — which kind of work moves the module (help/Track-3/track3-agent-build-plan.md):
 
   manual        a hard platform blocker (WebForms, WCF server, Remoting — a rewrite,
                 not a port) or a score of 70 and above
@@ -79,9 +79,15 @@ def score_module(
     fan_in: int,
     cross_language: bool,
     tested: bool | None = None,
+    vulnerabilities_scanned: bool = True,
 ) -> ModuleRisk:
     """Score one module. `tested` overrides `facts.has_tests` when another module
-    in the repository is known to test this one."""
+    in the repository is known to test this one.
+
+    `vulnerabilities_scanned=False` means no scan produced the vulnerability counts. The
+    factor is then recorded as NOT MEASURED with no points — never as "0 known
+    vulnerabilities" (Lessons R39), so whoever accepts the score sees that up to 10 of
+    its points were never looked for."""
     factors: list[dict] = []
 
     def add(factor: str, points: int, detail: str) -> None:
@@ -100,8 +106,14 @@ def score_module(
         f"{dependency_count} external packages, each needing a target-stack equivalent.")
     add("deprecated_dependencies", min(10, 5 * deprecated),
         f"{deprecated} deprecated package(s) must be replaced, not upgraded.")
-    add("vulnerable_dependencies", min(10, 10 * vulnerable_high + 4 * vulnerable_other),
-        f"{vulnerable_high} high/critical and {vulnerable_other} other known vulnerabilities.")
+    if vulnerabilities_scanned:
+        add("vulnerable_dependencies", min(10, 10 * vulnerable_high + 4 * vulnerable_other),
+            f"{vulnerable_high} high/critical and {vulnerable_other} other known vulnerabilities.")
+    else:
+        factors.append({
+            "factor": "vulnerable_dependencies", "points": 0, "measured": False,
+            "detail": "Not measured: no vulnerability scan ran, so this score leaves out up to 10 points.",
+        })
     add("coupling", min(10, 2 * fan_in),
         f"{fan_in} other module(s) depend on this one — a change here ripples.")
 

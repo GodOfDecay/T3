@@ -688,6 +688,10 @@ async def lifespan(app: FastAPI):
     from workers.run_sweeper import RunSweeper
     run_sweeper_task = asyncio.create_task(RunSweeper().run())
     logger.info("RunSweeper started")
+    # ApprovalSlaSweeper — tells a Track 3 project's Project Admins, once per version, when a
+    # draft has waited past its stage's SLA (they are the fallback approver).
+    from workers.approval_sla_sweeper import ApprovalSlaSweeper
+    approval_sla_task = asyncio.create_task(ApprovalSlaSweeper().run())
     # Start artifact event listener (routes pipeline stage transitions via Redis pub/sub)
     artifact_listener_task = asyncio.create_task(_artifact_event_listener())
     # Start connector health probe (re-probes connector health every 30s).
@@ -759,6 +763,11 @@ async def lifespan(app: FastAPI):
     run_sweeper_task.cancel()
     try:
         await run_sweeper_task
+    except asyncio.CancelledError:
+        pass
+    approval_sla_task.cancel()
+    try:
+        await approval_sla_task
     except asyncio.CancelledError:
         pass
     artifact_listener_task.cancel()
@@ -1241,6 +1250,13 @@ app.include_router(testing_suites_router, prefix="/testing", tags=["testing-suit
 # stage's own permission, and a blanket view gate would say nothing about that.
 from shared.routers.artifact_versions import artifact_versions_router
 app.include_router(artifact_versions_router, prefix="/artifact-versions", tags=["artifact-versions"])
+# Restore / compare / staleness (Track 3 backbone). Same prefix and project-scope floor.
+from shared.routers.version_lineage import version_lineage_router
+app.include_router(version_lineage_router, prefix="/artifact-versions", tags=["artifact-versions"])
+# Code Modernization programme: ledger, repositories, approval settings (Track 3 Phase C).
+# Per-route permission gates and the project-scope floor live in the router itself.
+from shared.routers.modernization_programme import modernization_programme_router
+app.include_router(modernization_programme_router, prefix="/modernization-programme", tags=["modernization"])
 # MCP server registry (P-MCP). Per-route connector:view / connector:manage gates baked
 # into the router, so NO _VIEW_DEP floor here. Mounted only when MCP_ENABLED so the
 # feature is dark-launchable; absent flag → no MCP surface at all.

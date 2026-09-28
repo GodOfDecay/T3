@@ -7,10 +7,21 @@ from __future__ import annotations
 
 from agents_orchestrator.discovery_agent.prompts.discovery_prompt import DISCOVERY_SYS_MESSAGE
 from agents_orchestrator.discovery_agent.tools.assessment_tools import TOOLS
+from shared.tools.document_approval import make_approval_tools
+from shared.tools.project_documents import make_document_tools
 from agents_orchestrator.modernization_common.graph import build_tool_agent_graph
 
 AGENT_ID = "discovery"
 
-app = build_tool_agent_graph(agent_type=AGENT_ID, tools=TOOLS, checkpoint_name=AGENT_ID)
+#: The platform's document system, bound to THIS stage (never a tool argument, or a prompt
+#: could claim another agent): `list_project_documents` / `read_document` read the project's
+#: APPROVED documents — for a modernization, its legacy specs, runbooks and data
+#: dictionaries — and every read is recorded as evidence; `raise_document_for_approval`
+#: puts this agent's own draft document forward, exactly like the Documents panel's button.
+#: Binding the reader also makes the standalone prompt layer add the approved-documents
+#: block (`has_document_tools`), so the prompt only names tools that are really bound.
+DOCUMENT_TOOLS = [*make_document_tools(AGENT_ID), *make_approval_tools(AGENT_ID)]
 
-__all__ = ["AGENT_ID", "DISCOVERY_SYS_MESSAGE", "TOOLS", "app"]
+app = build_tool_agent_graph(agent_type=AGENT_ID, tools=[*TOOLS, *DOCUMENT_TOOLS], checkpoint_name=AGENT_ID)
+
+__all__ = ["DOCUMENT_TOOLS", "AGENT_ID", "DISCOVERY_SYS_MESSAGE", "TOOLS", "app"]

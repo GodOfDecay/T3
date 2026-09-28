@@ -1,0 +1,3 @@
+{"root": "frontend", "target": "lib/api/artifact-versions.ts",
+ "cmd": ["node", "node_modules/vitest/vitest.mjs", "run", "__tests__/app/track3-pages-retrofit.test.tsx"],
+ "mutants": [["refusal-not-recognised", "  err instanceof Error && /fallback needs a reason/i.test(err.message);", "  false;"]]}

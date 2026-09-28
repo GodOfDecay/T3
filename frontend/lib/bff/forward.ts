@@ -27,7 +27,7 @@ export async function forward(
   req: NextRequest,
   path: string,
   opts: {
-    method?: "GET" | "POST";
+    method?: "GET" | "POST" | "PUT";
     withBody?: boolean;
     /**
      * Append this request's query string to the forwarded path.

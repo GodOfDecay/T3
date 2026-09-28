@@ -118,20 +118,24 @@ const TRACK_AGENTS: Record<DeliveryTrack, readonly Phase[]> = {
     "deployment",
     "documentation",
   ],
-  // PRD §9 — 10 agents: Track 1's eight plus Dependency and Risk and Strategy.
-  // Its Requirements agent is its OWN (migration-intent mode), not Portfolio 1's —
-  // each track owns its agents (multi-track design §1.4).
+  // PRD §9 — Track 3's ten agents, ALL its own (multi-track design §1.4): none is a
+  // Portfolio 1 agent, even where one shares a job. This list used to name Portfolio 1's
+  // `design`, `development`, `review`, `security`, `testing`, `deployment` and
+  // `documentation` here, so a Code Modernization project showed Track 1's agents as its
+  // stages 3–10. Hand-off order: Equivalence Testing records the baseline BEFORE the
+  // Migration Development agent, because no module is migrated without one; Migration
+  // Review and Security run side by side on the same pull request.
   modernization: [
     "requirements_modernization",
     "discovery",
-    "design",
+    "design_modernization",
     "strategy",
-    "development",
-    "review",
-    "security",
-    "testing",
-    "deployment",
-    "documentation",
+    "testing_modernization",
+    "development_modernization",
+    "code_review_modernization",
+    "security_modernization",
+    "deployment_modernization",
+    "documentation_modernization",
   ],
   // PRD §10 — 8 agents: four migration-specific plus four shared.
   rpa_infra: [

@@ -37,6 +37,8 @@ from agents_orchestrator.requirements_modernization_agent.brief import (
 )
 from shared.models.artifacts import LegacyRepository, MigrationIntentArtifact
 
+from agents_orchestrator.modernization_common.tech_stack import get_project_tech_stack
+
 logger = logging.getLogger(__name__)
 
 STAGE = "requirements_modernization"
@@ -141,6 +143,7 @@ async def record_migration_intent(
     legacy_repository_name: str = "",
     legacy_repository_project: str = "",
     legacy_repository_provider: str = "",
+    stack_departures: list[str] | None = None,
 ) -> str:
     """Record the migration-intent brief once the user has confirmed it.
 
@@ -181,6 +184,9 @@ async def record_migration_intent(
                     "kind": "start|freeze|compliance|deadline|cutover|decommission|other"}]
       success_measures: [{"metric": "API p95 latency", "current": "~800 ms", "target": "<= 300 ms"}]
       stakeholders: [{"name": "...", "role": "..."}]
+      stack_departures: ["what in the recommendation is outside the project's approved tech
+                         stack, and why"] — empty when it stays within the stack or none
+                         applies. The stack itself and its source are recorded for you.
     """
     layer_items = layers or []
     driver_items = drivers or []
@@ -238,6 +244,11 @@ async def record_migration_intent(
                 + ". Ask the user for these (at most three questions at a time).")
 
     _enrich_from_code(brief)
+    # The stack in force is a FACT about the project, read by code; only the departures
+    # (a judgement the user agreed to) come from the model.
+    from agents_orchestrator.modernization_common.tech_stack import applied_stack, effective_stack  # noqa: PLC0415
+
+    brief.tech_stack = applied_stack(await effective_stack(), stack_departures)
     if brief.legacy_repository is None:
         from agents_orchestrator.modernization_common.legacy_code import (  # noqa: PLC0415
             current_scope,
@@ -398,6 +409,7 @@ async def create_migration_work_items(project: str, epic_title: str, items_json:
 from agents_orchestrator.modernization_common.legacy_code import LEGACY_TOOLS, pull_tools  # noqa: E402
 
 TOOLS = [
+    get_project_tech_stack,
     record_migration_intent,
     export_migration_brief,
     list_board_projects,

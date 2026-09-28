@@ -1,0 +1,9 @@
+{"target": "shared/routers/modernization_programme.py", "tests": ["tests/modernization_common/test_modernization_programme_api.py"], "env_test": true,
+ "mutants": [
+  ["track-not-checked", "    if track != TRACK:", "    if False:"],
+  ["no-administer-check", "    await assert_can_administer_project(db, request, request.state.project)", "    pass"],
+  ["repo-refusal-not-400", "        raise HTTPException(status_code=400, detail=str(exc)) from exc", "        raise HTTPException(status_code=409, detail=str(exc)) from exc"],
+  ["settings-not-written", "        {\"m\": body.fallbackMode, \"pol\": body.policy, \"p\": resolved})", "        {\"m\": \"always\", \"pol\": \"standard\", \"p\": resolved})"],
+  ["write-needs-view-only", "    \"/{project_id}/repositories/{role}\", dependencies=[Depends(require_permission(\"project:update\"))],", "    \"/{project_id}/repositories/{role}\", dependencies=[Depends(require_permission(\"artifact:view\"))],"],
+  ["read-ungated", "    \"/{project_id}/ledger\", dependencies=[Depends(require_permission(\"artifact:view\"))],", "    \"/{project_id}/ledger\","]
+ ]}

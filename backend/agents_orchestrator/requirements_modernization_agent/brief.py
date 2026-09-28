@@ -67,6 +67,31 @@ def _value(brief: MigrationIntentArtifact, path: str):
     return value
 
 
+_STACK_SOURCE = {"project_selection": "chosen for this project", "bu_default": "the Business Unit default"}
+
+
+def _stack_line(stack: dict | None) -> str:
+    """Which approved tech stack the recommendation followed, and where it came from. A brief
+    recorded before the stack was read says so, rather than implying there was none."""
+    if not stack:
+        return "**Approved tech stack:** not recorded (this brief pre-dates the check)."
+    if stack.get("source") == "unreadable":
+        line = "**Approved tech stack:** could not be read when this brief was recorded."
+    elif not stack.get("name"):
+        line = "**Approved tech stack:** none — the target was recommended freely."
+    else:
+        line = (f"**Approved tech stack:** {stack['name']} "
+                f"({_STACK_SOURCE.get(stack.get('source', ''), stack.get('source', ''))}).")
+    departures = stack.get("departures") or []
+    if departures:
+        line += " Departures: " + "; ".join(departures) + "."
+    elif stack.get("name"):
+        line += " The recommendation stays within it."
+    if stack.get("warning"):
+        line += f" Note: {stack['warning']}"
+    return line
+
+
 def missing_sections(brief: MigrationIntentArtifact) -> list[str]:
     """The labels of every required section still unanswered."""
     missing: list[str] = []
@@ -230,6 +255,7 @@ def brief_markdown(brief: MigrationIntentArtifact) -> str:
               "accepted when this brief is signed off." if rec.recommended_by == "agent"
               else "Set by the business.")
         lines += [f"_{by}_", ""]
+        lines += [_stack_line(brief.tech_stack), ""]
         if rec.summary:
             lines += [rec.summary.strip(), ""]
         if rec.rationale:

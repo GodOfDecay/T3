@@ -125,9 +125,13 @@ def require_stage_approval(param: str = "stage"):
     near-identical routes.
 
     FAILS CLOSED ON AN UNKNOWN STAGE. A stage with no entry in `_PHASE_PERMISSION` is
-    refused rather than waved through — the same rule `runs.py` applies to run gates,
-    and the reason the five track agents (which have no approve permission because
-    they are not in AGENT_REGISTRY) cannot be published to by accident.
+    refused rather than waved through — the same rule `runs.py` applies to run gates.
+
+    AND ON AN UNBUILT ONE. A stage must also be REGISTERED (`STAGE_ORDER`, derived from
+    AGENT_REGISTRY). This used to follow from the first rule, because an agent got its
+    approve permission only when it was built; Track 3's owner rows now land before its
+    agents do (migration 0066), so a permission existing no longer means the agent does.
+    An unbuilt agent has no runs and no versions to sign off.
 
     Delegates to `require_permission` once resolved, so the denial metric, the audit
     row and the opaque 403 body are identical to every other protected route.
@@ -137,14 +141,16 @@ def require_stage_approval(param: str = "stage"):
         if conn.scope.get("type") == "websocket":
             return
         from shared.authz.permissions import _PHASE_PERMISSION  # noqa: PLC0415
+        from shared.services.orchestrator.progression import STAGE_ORDER  # noqa: PLC0415
 
         stage = conn.path_params.get(param) or ""
         perm = _PHASE_PERMISSION.get(stage)
-        if not perm:
+        if not perm or stage not in STAGE_ORDER:
             # Deliberately the same opaque 403 as a permission denial: telling the
             # caller "that stage does not exist" is a probe oracle for the pipeline.
             logger.warning(
-                "stage approval refused: %r has no entry in _PHASE_PERMISSION", stage,
+                "stage approval refused: %r is not a registered stage with an approve "
+                "permission", stage,
             )
             raise HTTPException(status_code=403, detail="Forbidden")
         await require_permission(perm)(conn)

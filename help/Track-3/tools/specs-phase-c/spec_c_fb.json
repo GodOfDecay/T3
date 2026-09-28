@@ -1,0 +1,11 @@
+{"target": "shared/services/fallback_approval.py", "tests": ["tests/modernization_common/test_repository_roles_and_fallback.py"], "env_test": true,
+ "mutants": [
+  ["producer-may-approve", "    if is_producer:\n        raise ApprovalRefused", "    if False:\n        raise ApprovalRefused"],
+  ["no-reason-needed", "    if not (reason or \"\").strip():\n        raise ApprovalRefused", "    if False:\n        raise ApprovalRefused"],
+  ["anyone-is-fallback", "    if \"project_admin\" not in roles:", "    if False:"],
+  ["strict-ignored", "    if slot == BUSINESS_OWNER_SLOT and policy == \"strict\":", "    if False:"],
+  ["two-slots", "    if slot is not None and fallback_slots_held >= 1:", "    if False:"],
+  ["sla-ignored", "    if mode == \"after_sla\" and owner_staffed and not sla_passed:", "    if False:"],
+  ["roles-anywhere", "\"AND scope_kind = 'project' AND scope_id = CAST(:p AS uuid) AND status = 'active'\"),\n        {\"t\": tenant_id, \"u\": user_id, \"p\": project_id})", "\"AND status = 'active' AND CAST(:p AS text) IS NOT NULL\"),\n        {\"t\": tenant_id, \"u\": user_id, \"p\": project_id})"],
+  ["sla-never-passes", "    sla_passed = version_created_at is None or now - version_created_at >= timedelta(hours=_sla_hours(stage))", "    sla_passed = False"]
+ ]}

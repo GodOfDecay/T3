@@ -37,6 +37,7 @@ import { Textarea } from "@/components/ui/textarea";
 
 import { RequirePermission } from "@/components/auth/restricted-access";
 import { ProjectModelSelectionCard } from "@/components/app/project-model-selection-card";
+import { ModernizationSettingsCard } from "@/components/modernization/modernization-settings-card";
 import { ToolsStagePicker, type AccessModeMap, type StageMap } from "@/components/app/tools-stage-picker";
 import { useRawSession } from "@/components/auth/session-provider";
 import { hasPermission } from "@/lib/auth/permissions";
@@ -134,7 +135,7 @@ export default function ProjectSettingsPage() {
   // `?tab=model` — an unknown value falls back to General rather than
   // rendering an empty tab panel for a name that no longer exists.
   const tabParam = useSearchParams().get("tab");
-  const initialTab = ["general", "connectors", "policies", "model"].includes(tabParam ?? "")
+  const initialTab = ["general", "connectors", "policies", "model", "modernization"].includes(tabParam ?? "")
     ? tabParam!
     : "general";
   const queryClient = useQueryClient();
@@ -325,12 +326,15 @@ export default function ProjectSettingsPage() {
       {/* Deep-linkable, so the sidebar's project-scoped "Models" entry can
           land on the Model tab rather than dropping you on General to hunt
           for it. `defaultValue` alone made the tab unaddressable. */}
-      <Tabs defaultValue={initialTab}>
+      <Tabs defaultValue={initialTab === "modernization" && project.track !== "modernization" ? "general" : initialTab}>
         <TabsList>
           <TabsTrigger value="general">General</TabsTrigger>
           <TabsTrigger value="connectors">Connectors</TabsTrigger>
           <TabsTrigger value="policies">Policies</TabsTrigger>
           <TabsTrigger value="model">Model</TabsTrigger>
+          {project.track === "modernization" && (
+            <TabsTrigger value="modernization">Code Modernization</TabsTrigger>
+          )}
         </TabsList>
 
         {/* ─── General ─── */}
@@ -625,6 +629,13 @@ export default function ProjectSettingsPage() {
             </CardContent>
           </Card>
         </TabsContent>
+
+        {/* ─── Code Modernization (Track 3 only) ─── */}
+        {project.track === "modernization" && (
+          <TabsContent value="modernization" className="space-y-4">
+            <ModernizationSettingsCard projectId={projectId} canEdit={canUpdate} />
+          </TabsContent>
+        )}
 
         {/* ─── Policies ─── */}
         <TabsContent value="policies" className="space-y-4">

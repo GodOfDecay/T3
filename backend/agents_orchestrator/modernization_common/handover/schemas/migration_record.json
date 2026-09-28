@@ -1,0 +1,435 @@
+{
+  "$defs": {
+    "BuildResult": {
+      "additionalProperties": false,
+      "properties": {
+        "failing": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Failing"
+        },
+        "rounds": {
+          "maximum": 5,
+          "minimum": 0,
+          "title": "Rounds",
+          "type": "integer"
+        },
+        "status": {
+          "enum": [
+            "green",
+            "red",
+            "not_run"
+          ],
+          "title": "Status",
+          "type": "string"
+        }
+      },
+      "required": [
+        "status",
+        "rounds"
+      ],
+      "title": "BuildResult",
+      "type": "object"
+    },
+    "BuiltFrom": {
+      "additionalProperties": false,
+      "description": "One input this artifact was built from, pinned to the version that was read.",
+      "properties": {
+        "artifact": {
+          "enum": [
+            "migration_intent_payload",
+            "discovery_artifacts",
+            "target_design_artifacts",
+            "strategy_artifacts",
+            "equivalence_artifacts",
+            "migration_artifacts",
+            "migration_review_artifacts",
+            "modernization_security_artifacts",
+            "cutover_artifacts",
+            "cutover_pack_artifacts"
+          ],
+          "title": "Artifact",
+          "type": "string"
+        },
+        "commit": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Commit"
+        },
+        "status": {
+          "enum": [
+            "draft",
+            "published",
+            "superseded",
+            "rejected"
+          ],
+          "title": "Status",
+          "type": "string"
+        },
+        "version": {
+          "minimum": 1,
+          "title": "Version",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "artifact",
+        "version",
+        "status"
+      ],
+      "title": "BuiltFrom",
+      "type": "object"
+    },
+    "FileMapEntry": {
+      "additionalProperties": false,
+      "properties": {
+        "disposition": {
+          "enum": [
+            "mapped",
+            "merged",
+            "dropped"
+          ],
+          "title": "Disposition",
+          "type": "string"
+        },
+        "legacy_path": {
+          "minLength": 1,
+          "title": "Legacy Path",
+          "type": "string"
+        },
+        "reason": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Reason"
+        },
+        "target_path": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Target Path"
+        }
+      },
+      "required": [
+        "legacy_path",
+        "disposition"
+      ],
+      "title": "FileMapEntry",
+      "type": "object"
+    },
+    "MigrationRecordPayload": {
+      "additionalProperties": false,
+      "description": "`outcome` resolves a disagreement between the documents: the Flow document says the\nrecord tool refuses a red build, and research \u00a76.6 says a build still red after five\nrounds is \"recorded\". Both hold with an outcome: `ready_for_review` requires green;\n`build_failed` records the red build and why; `blocked` is the manual tier's hand-off,\nwith no code written.\n\nRefusals checked here: a file-map entry without a target or (when dropped) a reason; a\nlegacy path outside the module's legacy path; more than five build rounds; an unpinned\nrecipe; `ready_for_review` without a green build or without a file map.\n\nChecked by `record_module_migration`: the map covers EVERY legacy file in the module (needs\nthe checkout); nothing was written outside the module's target path (needs the diff).",
+      "properties": {
+        "build": {
+          "$ref": "#/$defs/BuildResult"
+        },
+        "file_map": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/FileMapEntry"
+          },
+          "title": "File Map",
+          "type": "array"
+        },
+        "handoff_note": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Handoff Note"
+        },
+        "legacy_module_path": {
+          "minLength": 1,
+          "title": "Legacy Module Path",
+          "type": "string"
+        },
+        "llm_rewritten": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/Rewritten"
+          },
+          "title": "Llm Rewritten",
+          "type": "array"
+        },
+        "manual_follow_ups": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "title": "Manual Follow Ups",
+          "type": "array"
+        },
+        "module_id": {
+          "pattern": "^M-\\d{2,}$",
+          "title": "Module Id",
+          "type": "string"
+        },
+        "outcome": {
+          "enum": [
+            "ready_for_review",
+            "build_failed",
+            "blocked"
+          ],
+          "title": "Outcome",
+          "type": "string"
+        },
+        "pr_url": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Pr Url"
+        },
+        "recipes": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/Recipe"
+          },
+          "title": "Recipes",
+          "type": "array"
+        },
+        "target_branch": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Target Branch"
+        },
+        "traps_handled": {
+          "default": {},
+          "patternProperties": {
+            "^TR-\\d{2,}$": {
+              "type": "string"
+            }
+          },
+          "title": "Traps Handled",
+          "type": "object"
+        },
+        "vault_references": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "title": "Vault References",
+          "type": "array"
+        }
+      },
+      "required": [
+        "module_id",
+        "outcome",
+        "legacy_module_path",
+        "build"
+      ],
+      "title": "MigrationRecordPayload",
+      "type": "object"
+    },
+    "ProducedBy": {
+      "additionalProperties": false,
+      "properties": {
+        "model": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Model"
+        },
+        "run_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Run Id"
+        },
+        "user_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "User Id"
+        }
+      },
+      "title": "ProducedBy",
+      "type": "object"
+    },
+    "Recipe": {
+      "additionalProperties": false,
+      "properties": {
+        "args": {
+          "default": "",
+          "title": "Args",
+          "type": "string"
+        },
+        "tool": {
+          "minLength": 1,
+          "title": "Tool",
+          "type": "string"
+        },
+        "version": {
+          "description": "Pinned; never 'latest'.",
+          "minLength": 1,
+          "title": "Version",
+          "type": "string"
+        }
+      },
+      "required": [
+        "tool",
+        "version"
+      ],
+      "title": "Recipe",
+      "type": "object"
+    },
+    "Rewritten": {
+      "additionalProperties": false,
+      "properties": {
+        "file": {
+          "minLength": 1,
+          "title": "File",
+          "type": "string"
+        },
+        "reason": {
+          "minLength": 1,
+          "title": "Reason",
+          "type": "string"
+        }
+      },
+      "required": [
+        "file",
+        "reason"
+      ],
+      "title": "Rewritten",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "agent_id": {
+      "const": "development_modernization",
+      "default": "development_modernization",
+      "title": "Agent Id",
+      "type": "string"
+    },
+    "artifact": {
+      "const": "migration_artifacts",
+      "default": "migration_artifacts",
+      "title": "Artifact",
+      "type": "string"
+    },
+    "built_from": {
+      "default": [],
+      "items": {
+        "$ref": "#/$defs/BuiltFrom"
+      },
+      "title": "Built From",
+      "type": "array"
+    },
+    "payload": {
+      "$ref": "#/$defs/MigrationRecordPayload"
+    },
+    "produced_at": {
+      "anyOf": [
+        {
+          "format": "date-time",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Produced At"
+    },
+    "produced_by": {
+      "$ref": "#/$defs/ProducedBy",
+      "default": {
+        "model": null,
+        "run_id": null,
+        "user_id": null
+      }
+    },
+    "schema_version": {
+      "const": 1,
+      "default": 1,
+      "title": "Schema Version",
+      "type": "integer"
+    },
+    "status": {
+      "enum": [
+        "draft",
+        "published",
+        "superseded",
+        "rejected"
+      ],
+      "title": "Status",
+      "type": "string"
+    },
+    "version": {
+      "minimum": 1,
+      "title": "Version",
+      "type": "integer"
+    }
+  },
+  "required": [
+    "version",
+    "status",
+    "payload"
+  ],
+  "title": "MigrationRecordPacket",
+  "type": "object"
+}

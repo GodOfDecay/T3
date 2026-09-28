@@ -324,6 +324,13 @@ const ALL_NONE: Record<Phase, Involvement> = {
   requirements_modernization: "none",
   discovery: "none",
   strategy: "none",
+  design_modernization: "none",
+  testing_modernization: "none",
+  development_modernization: "none",
+  code_review_modernization: "none",
+  security_modernization: "none",
+  deployment_modernization: "none",
+  documentation_modernization: "none",
   migration_mapping: "none",
   validation: "none",
   data_engineering: "none",
@@ -342,6 +349,13 @@ const ALL_OWNER: Record<Phase, Involvement> = {
   requirements_modernization: "owner",
   discovery: "owner",
   strategy: "owner",
+  design_modernization: "owner",
+  testing_modernization: "owner",
+  development_modernization: "owner",
+  code_review_modernization: "owner",
+  security_modernization: "owner",
+  deployment_modernization: "owner",
+  documentation_modernization: "owner",
   migration_mapping: "owner",
   validation: "owner",
   data_engineering: "owner",
@@ -408,6 +422,7 @@ export const AGENT_OWNERSHIP: Record<PlatformRole, Record<Phase, Involvement>> =
     documentation: "owner",
     requirements_modernization: "owner",
     discovery: "owner",
+    documentation_modernization: "owner",
   },
 
   // Owns Design and Code Review.
@@ -420,6 +435,8 @@ export const AGENT_OWNERSHIP: Record<PlatformRole, Record<Phase, Involvement>> =
     // (Discovery moved to the BA with Track 3's Phase 1 — see `ba` above.)
     strategy: "owner",
     migration_mapping: "owner",
+    design_modernization: "owner",
+    code_review_modernization: "owner",
   },
 
   // Owns Development. NOTE: `AGENT_OWNER_ROLE.development` moved to this role to
@@ -428,6 +445,7 @@ export const AGENT_OWNERSHIP: Record<PlatformRole, Record<Phase, Involvement>> =
   developer: {
     ...ALL_NONE,
     development: "owner",
+    development_modernization: "owner",
   },
 
   // Owns Testing.
@@ -435,18 +453,21 @@ export const AGENT_OWNERSHIP: Record<PlatformRole, Record<Phase, Involvement>> =
     ...ALL_NONE,
     testing: "owner",
     validation: "owner",
+    testing_modernization: "owner",
   },
 
   // Owns Security.
   security_engineer: {
     ...ALL_NONE,
     security: "owner",
+    security_modernization: "owner",
   },
 
   // Owns Deployment.
   devops_engineer: {
     ...ALL_NONE,
     deployment: "owner",
+    deployment_modernization: "owner",
   },
 
   // Owns Data Engineering, on the tracks that run it.
@@ -496,6 +517,13 @@ export const AGENT_OWNER_ROLE: Record<Phase, PlatformRole> = {
   requirements_modernization: "ba",
   discovery: "ba",
   strategy: "architect",
+  design_modernization: "architect",
+  testing_modernization: "qa",
+  development_modernization: "developer",
+  code_review_modernization: "architect",
+  security_modernization: "security_engineer",
+  deployment_modernization: "devops_engineer",
+  documentation_modernization: "ba",
   migration_mapping: "architect",
   validation: "qa",
   data_engineering: "data_engineer",

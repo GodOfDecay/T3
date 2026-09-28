@@ -43,6 +43,13 @@ export const PHASE_ALL: readonly Phase[] = [
   "requirements_modernization",
   "discovery",
   "strategy",
+  "design_modernization",
+  "testing_modernization",
+  "development_modernization",
+  "code_review_modernization",
+  "security_modernization",
+  "deployment_modernization",
+  "documentation_modernization",
   "migration_mapping",
   "validation",
   "data_engineering",
@@ -65,7 +72,14 @@ export const PHASE_LABEL: Record<Phase, string> = {
   documentation: "Documentation",
   requirements_modernization: "Migration Intent",
   discovery: "Dependency and Risk",
-  strategy: "Strategy",
+  strategy: "Migration Strategy",
+  design_modernization: "Target Architecture",
+  testing_modernization: "Equivalence Testing",
+  development_modernization: "Migration Development",
+  code_review_modernization: "Migration Review",
+  security_modernization: "Security (Modernization)",
+  deployment_modernization: "Cutover",
+  documentation_modernization: "Cutover Pack",
   migration_mapping: "Migration Mapping",
   validation: "Validation",
   data_engineering: "Data Engineering",
@@ -87,7 +101,21 @@ export const PHASE_DESCRIPTION: Record<Phase, string> = {
   requirements_modernization:
     "Captures why the modernization is happening, from what to what, scope, constraints and success criteria (Track 3).",
   discovery: "Clones the legacy repo read-only; maps dependencies, flags EOL/vulnerable ones, scores module risk (Tracks 3–4).",
-  strategy: "Turns the assessment into a risk-sequenced execution plan (Track 3).",
+  strategy: "Sequences the target design into waves with measurable equivalence criteria, a baseline plan and rollback per wave (Track 3).",
+  design_modernization:
+    "Designs the target per layer, the migration pattern per module, frozen contracts, version traps and ADRs (Track 3).",
+  testing_modernization:
+    "Records legacy behaviour as baselines before code changes, then proves each migrated module equivalent (Track 3).",
+  development_modernization:
+    "Migrates one module at a time into the target repository: upgrade recipes first, then file-by-file rewrite (Track 3).",
+  code_review_modernization:
+    "Reviews each migration pull request side by side with the legacy code, its contracts, traps and criteria (Track 3).",
+  security_modernization:
+    "Scans the migrated module and its legacy counterpart; every finding is carried over, fixed or introduced (Track 3).",
+  deployment_modernization:
+    "Plans and requests each wave's cutover step by step — readiness, traffic shift, parallel run, rollback, decommission (Track 3).",
+  documentation_modernization:
+    "Compiles the closing evidence: as-built design, legacy-to-target traceability map, equivalence and security evidence (Track 3).",
   migration_mapping: "Maps each legacy item to its target platform, item by item (Track 4).",
   validation: "Runs parallel-parity validation and accepts cutover-readiness (Track 4).",
   data_engineering: "Builds and registers the data pipeline — ingest, transform, schema (Track 5).",
@@ -237,6 +265,20 @@ export function phaseRoute(phase: Phase): string {
       return "requirements-modernization";
     case "migration_mapping":
       return "migration-mapping";
+    case "design_modernization":
+      return "target-architecture";
+    case "testing_modernization":
+      return "equivalence-testing";
+    case "development_modernization":
+      return "migration-development";
+    case "code_review_modernization":
+      return "migration-review";
+    case "security_modernization":
+      return "modernization-security";
+    case "deployment_modernization":
+      return "cutover";
+    case "documentation_modernization":
+      return "cutover-pack";
     case "data_engineering":
       return "data-engineering";
     default:
@@ -449,6 +491,69 @@ export const GATE_POLICY: Record<Phase, GatePolicy> = {
     title: "Gate: accept the migration plan",
     description:
       "The Architect accepts the risk-sequenced execution plan and its per-module equivalence criteria (PRD §23.4).",
+    mandatory: false,
+  },
+  design_modernization: {
+    type: "approval_required",
+    capabilityClass: "signoff",
+    ownerLabel: owner("design_modernization"),
+    title: "Gate: accept the target design",
+    description:
+      "The Architect accepts the target per layer, the pattern per module, the frozen contracts, traps and ADRs.",
+    mandatory: false,
+  },
+  testing_modernization: {
+    type: "mandatory",
+    capabilityClass: "signoff",
+    ownerLabel: owner("testing_modernization"),
+    title: "Gate: accept the baseline, then the equivalence results",
+    description:
+      "Two mandatory sign-offs by QA: the legacy baseline before any module is migrated, and each module's equivalence results before it can be cut over. Running a capture or a verification is itself Consequential.",
+    mandatory: true,
+  },
+  development_modernization: {
+    type: "approval_required",
+    capabilityClass: "signoff",
+    ownerLabel: owner("development_modernization"),
+    title: "Gate: accept the migrated module",
+    description:
+      "Accepts the module's migration record and file map. Pushing the branch and opening the pull request is a separate Consequential approval.",
+    mandatory: false,
+  },
+  code_review_modernization: {
+    type: "approval_required",
+    capabilityClass: "signoff",
+    ownerLabel: owner("code_review_modernization"),
+    title: "Gate: accept the migration review",
+    description:
+      "The Architect accepts the side-by-side review of the module's pull request against its legacy code, contracts and traps.",
+    mandatory: false,
+  },
+  security_modernization: {
+    type: "mandatory",
+    capabilityClass: "signoff",
+    ownerLabel: owner("security_modernization"),
+    title: "Gate: security sign-off",
+    description:
+      "Mandatory before the module's wave can cut over: FAIL on any reachable critical or high issue that is introduced or carried over, or any carried-over secret.",
+    mandatory: true,
+  },
+  deployment_modernization: {
+    type: "mandatory",
+    capabilityClass: "signoff",
+    ownerLabel: owner("deployment_modernization"),
+    title: "Gate: release sign-off per wave",
+    description:
+      "Mandatory, two people: the DevOps Engineer and the business owner. Every cutover and decommission step is its own Consequential approval; a red readiness gate cannot be overridden.",
+    mandatory: true,
+  },
+  documentation_modernization: {
+    type: "auto_approve",
+    capabilityClass: "signoff",
+    ownerLabel: owner("documentation_modernization"),
+    title: "Gate: cutover pack",
+    description:
+      "Acceptance is automatic; the BA or a Project Admin can override. Opening the documentation pull request is a Consequential action.",
     mandatory: false,
   },
   migration_mapping: {

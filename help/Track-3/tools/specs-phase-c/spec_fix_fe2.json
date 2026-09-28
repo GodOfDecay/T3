@@ -1,0 +1,4 @@
+{"root": "frontend", "target": "components/modernization/assessment-view.tsx",
+ "cmd": ["node", "node_modules/vitest/vitest.mjs", "run", "components/modernization/__tests__/track3-views.test.tsx"],
+ "mutants": [["zero-when-unscanned", "          {assessment.scanners.trivy === \"ok\" ? (", "          {true ? ("],
+             ["plus-zero", "                {f.measured ? `+${f.points}` : \"n/m\"}", "                {`+${f.points}`}"]]}

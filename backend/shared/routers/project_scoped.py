@@ -188,6 +188,15 @@ async def set_override(
             status_code=422, detail=f"involvement must be one of {INVOLVEMENT}"
         )
 
+    from shared.authz.agent_access import pa_floor_applies  # noqa: PLC0415
+
+    if pa_floor_applies(body.role, body.phase) and body.involvement != "owner":
+        raise HTTPException(
+            status_code=409,
+            detail="A Project Admin keeps owner reach on Code Modernization agents: they are "
+                   "every stage's fallback approver, so this cannot be lowered.",
+        )
+
     await db.execute(
         text(
             "INSERT INTO agent_access_overrides "

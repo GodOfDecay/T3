@@ -1,0 +1,1 @@
+{"target": "agents_orchestrator/modernization_common/standalone.py", "tests": ["tests/modernization_common/test_phase_c_review_fixes.py"], "env_test": true, "mutants": [["grant-as-published", "                               status=\"granted\" if read.via_grant else \"published\")", "                               status=\"published\")"]]}

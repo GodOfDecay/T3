@@ -1,0 +1,11 @@
+{"target": "agents_orchestrator/modernization_common/standalone.py",
+ "tests": ["tests/modernization_common/test_standalone_turns.py", "tests/modernization_common/test_upstream_from_pages.py"],
+ "env_test": true,
+ "mutants": [
+  ["any-system-message-counts", "    if any(_is_mine(m, agent_id, system_prompt) for m in messages):", "    if any(isinstance(m, SystemMessage) for m in messages):"],
+  ["untagged-message-sent", "            messages.append(SystemMessage(content=prompt or system_prompt, id=system_message_id(agent_id)))", "            messages.append(SystemMessage(content=prompt or system_prompt))"],
+  ["legacy-untagged-ignored", "    return not getattr(message, \"id\", None) and bool(head) and str(message.content).startswith(head)", "    return False"],
+  ["records-every-turn", "                record = consumer_session is None or _RECORDED.get(key) != seen", "                record = True"],
+  ["never-rerecords-new-version", "                seen = peek.version if peek is not None else \"grant\"", "                seen = \"any\""],
+  ["stopped-not-marked", "            text = \"\".join(reply_parts) + (STOPPED_NOTE if stopped else \"\")", "            text = \"\".join(reply_parts)"]
+ ]}

@@ -98,11 +98,20 @@ describe("Track 3 in the Orchestrator", () => {
 });
 
 describe("Track 3 tool wiring", () => {
-  it("lists the track's own stages, so Discovery can be given a repository connector", () => {
+  it("lists the track's own ten stages, so each can be given its own connectors", () => {
+    // Track 3's stages are ALL its own agents. This list used to include Portfolio 1's
+    // `design`, `development`, `code_review` … — so a connector wired "to Development"
+    // on a Code Modernization project went to the Track 1 agent's stage.
     const ids = toolStagesForTrack("modernization").map((s) => s.id);
-    expect(ids.slice(0, 2)).toEqual(["requirements_modernization", "discovery"]);
-    // Portfolio 1's `review` phase is the `code_review` agent id.
-    expect(ids).toContain("code_review");
+    expect(ids).toEqual([
+      "requirements_modernization", "discovery", "design_modernization", "strategy",
+      "testing_modernization", "development_modernization", "code_review_modernization",
+      "security_modernization", "deployment_modernization", "documentation_modernization",
+    ]);
+    for (const portfolio1 of ["design", "plan", "development", "code_review", "security",
+      "testing", "deployment", "documentation"]) {
+      expect(ids).not.toContain(portfolio1);
+    }
   });
 
   it("keeps the Greenfield stages exactly as before", () => {
@@ -111,5 +120,67 @@ describe("Track 3 tool wiring", () => {
       "requirements", "design", "plan", "development", "code_review",
       "security", "testing", "deployment", "documentation",
     ]);
+  });
+});
+
+/**
+ * Track 3 agents 3–10 (Phase B of the Track 3 build): every table knows them, their owner
+ * is fixed once, and nothing about them is clickable until each is built.
+ */
+describe("Track 3 agents 3–10", () => {
+  const LATER: Record<string, { owner: string; label: string; route: string }> = {
+    design_modernization: { owner: "architect", label: "Target Architecture", route: "target-architecture" },
+    strategy: { owner: "architect", label: "Migration Strategy", route: "strategy" },
+    testing_modernization: { owner: "qa", label: "Equivalence Testing", route: "equivalence-testing" },
+    development_modernization: { owner: "developer", label: "Migration Development", route: "migration-development" },
+    code_review_modernization: { owner: "architect", label: "Migration Review", route: "migration-review" },
+    security_modernization: { owner: "security_engineer", label: "Security (Modernization)", route: "modernization-security" },
+    deployment_modernization: { owner: "devops_engineer", label: "Cutover", route: "cutover" },
+    documentation_modernization: { owner: "ba", label: "Cutover Pack", route: "cutover-pack" },
+  };
+
+  it("are the roster's stages 3–10, baseline before migration", () => {
+    expect(agentsForTrack("modernization").slice(2)).toEqual([
+      "design_modernization", "strategy", "testing_modernization", "development_modernization",
+      "code_review_modernization", "security_modernization", "deployment_modernization",
+      "documentation_modernization",
+    ]);
+  });
+
+  it("each has one owner, its own approve permission, a label, a route and a gate", () => {
+    for (const [phase, want] of Object.entries(LATER)) {
+      const p = phase as keyof typeof AGENT_OWNER_ROLE;
+      expect(AGENT_OWNER_ROLE[p], phase).toBe(want.owner);
+      expect(AGENT_OWNERSHIP[want.owner as keyof typeof AGENT_OWNERSHIP][p], phase).toBe("owner");
+      expect(approvePermissionForPhase(p), phase).toBe(`artifact:approve_${phase}`);
+      expect(PHASE_LABEL[p], phase).toBe(want.label);
+      expect(phaseRoute(p), phase).toBe(want.route);
+      expect(GATE_POLICY[p].ownerLabel, phase).toBeTruthy();
+    }
+  });
+
+  it("the mandatory gates are the ones the flow document makes mandatory", () => {
+    expect(GATE_POLICY.testing_modernization.mandatory).toBe(true);
+    expect(GATE_POLICY.security_modernization.mandatory).toBe(true);
+    expect(GATE_POLICY.deployment_modernization.mandatory).toBe(true);
+    expect(GATE_POLICY.documentation_modernization.type).toBe("auto_approve");
+  });
+
+  it("stay locked, even for their owner and the Project Admin, until each is built", () => {
+    const built = builtAgentsForTrack("modernization");
+    for (const [phase, want] of Object.entries(LATER)) {
+      const p = phase as keyof typeof AGENT_OWNER_ROLE;
+      expect(built).not.toContain(p);
+      expect(tileStateFor(want.owner as never, p, "modernization", built), phase).toBe("coming_soon");
+      expect(tileStateFor("project_admin", p, "modernization", built), phase).toBe("coming_soon");
+    }
+  });
+
+  it("never appear on another track", () => {
+    for (const track of ["greenfield", "enhancement", "rpa_infra", "data_engineering"] as const) {
+      for (const phase of Object.keys(LATER)) {
+        expect(trackHasAgent(track, phase as never), `${track}/${phase}`).toBe(false);
+      }
+    }
   });
 });

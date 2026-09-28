@@ -109,7 +109,12 @@ export function AssessmentView({ assessment }: { assessment: DiscoveryAssessment
           <Stat label="LLM-assisted" value={summary.tier_counts.llm_assisted} />
           <Stat label="Manual-only" value={summary.tier_counts.manual} emphasis={summary.tier_counts.manual > 0} />
           <Stat label="End-of-life" value={summary.flag_counts.eol} emphasis={summary.flag_counts.eol > 0} />
-          <Stat label="Vulnerable" value={summary.flag_counts.vulnerable} emphasis={summary.flag_counts.vulnerable > 0} />
+          {/* NOT SCANNED IS NOT ZERO (R39): with no Trivy result the count was never measured. */}
+          {assessment.scanners.trivy === "ok" ? (
+            <Stat label="Vulnerable" value={summary.flag_counts.vulnerable} emphasis={summary.flag_counts.vulnerable > 0} />
+          ) : (
+            <Stat label="Vulnerable" value={<span className="text-muted-foreground text-sm">not scanned</span>} />
+          )}
         </dl>
         {summary.vendored_files > 0 && (
           <p className="text-muted-foreground text-xs">
@@ -120,8 +125,8 @@ export function AssessmentView({ assessment }: { assessment: DiscoveryAssessment
         {assessment.scanners.trivy !== "ok" && (
           <p className="text-muted-foreground text-xs">
             Vulnerability scanner: {assessment.scanners.trivy}
-            {assessment.scanners.note ? ` — ${assessment.scanners.note}` : ""}. Known-vulnerability
-            counts may be incomplete.
+            {assessment.scanners.note ? ` — ${assessment.scanners.note}` : ""}. Known vulnerabilities
+            were not measured, and each module&apos;s risk score leaves out up to 10 points for them.
           </p>
         )}
       </section>
@@ -247,11 +252,17 @@ function ModuleDetail({ module }: { module: AssessedModule | null }) {
       <section className="space-y-1.5">
         <h4 className="text-muted-foreground text-xs font-semibold tracking-wider uppercase">
           Risk {module.risk.score}/100 — why
+          {module.risk.factors.some((f) => !f.measured) && (
+            <span className="ml-1 normal-case tracking-normal">(some inputs not measured)</span>
+          )}
         </h4>
         <ul className="space-y-1.5 text-sm">
           {[...module.risk.factors].sort((a, b) => b.points - a.points).map((f) => (
             <li key={f.factor} className="flex gap-2">
-              <span className="font-mono text-xs tabular-nums text-muted-foreground w-8 shrink-0 pt-0.5">+{f.points}</span>
+              <span className="font-mono text-xs tabular-nums text-muted-foreground w-8 shrink-0 pt-0.5"
+                title={f.measured ? undefined : "not measured"}>
+                {f.measured ? `+${f.points}` : "n/m"}
+              </span>
               <span><span className="font-medium">{f.factor.replace(/_/g, " ")}</span> — {f.detail}</span>
             </li>
           ))}

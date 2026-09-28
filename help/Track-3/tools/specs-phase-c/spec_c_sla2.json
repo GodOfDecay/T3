@@ -1,0 +1,1 @@
+{"target": "workers/approval_sla_sweeper.py", "tests": ["tests/modernization_common/test_approval_sla_sweeper.py"], "env_test": true, "mutants": [["any-track", "                \"AND p.track = 'modernization' AND NOT p.archived \"", "                \"AND NOT p.archived \""]]}

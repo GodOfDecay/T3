@@ -122,6 +122,14 @@ _ROLE_PERMISSIONS: dict[str, list[str]] = {
         # Track 3 (migration 0057).
         "artifact:approve_requirements_modernization",
         "artifact:approve_discovery",
+        "artifact:approve_design_modernization",
+        "artifact:approve_strategy",
+        "artifact:approve_testing_modernization",
+        "artifact:approve_development_modernization",
+        "artifact:approve_code_review_modernization",
+        "artifact:approve_security_modernization",
+        "artifact:approve_deployment_modernization",
+        "artifact:approve_documentation_modernization",
         "skill:edit",
     ],
     # Onboarded into a unit and holding nothing until that unit's admin assigns a real
@@ -146,6 +154,14 @@ _ROLE_PERMISSIONS: dict[str, list[str]] = {
         # Track 3's first two agents (migration 0057) — fallback approver, as above.
         "artifact:approve_requirements_modernization",
         "artifact:approve_discovery",
+        "artifact:approve_design_modernization",
+        "artifact:approve_strategy",
+        "artifact:approve_testing_modernization",
+        "artifact:approve_development_modernization",
+        "artifact:approve_code_review_modernization",
+        "artifact:approve_security_modernization",
+        "artifact:approve_deployment_modernization",
+        "artifact:approve_documentation_modernization",
         "connector:view", "connector:manage",
         "cost:view", "trace:view",
         # Tier 1 of routing.REQUEST_ESCALATION_CHAIN — the first approver a request
@@ -165,6 +181,7 @@ _ROLE_PERMISSIONS: dict[str, list[str]] = {
         # planning baseline, are both this role's Sign-offs.
         "artifact:approve_requirements_modernization",
         "artifact:approve_discovery",
+        "artifact:approve_documentation_modernization",
         "connector:view",
         # AGENT_OWNER_ROLE.requirements is ba, so this is stage two's approver for
         # an agent_access request on that phase. Scoped by decide()'s own
@@ -184,6 +201,9 @@ _ROLE_PERMISSIONS: dict[str, list[str]] = {
         "governance:decide",
     ],
     "architect": [
+        "artifact:approve_design_modernization",
+        "artifact:approve_strategy",
+        "artifact:approve_code_review_modernization",
         "run:create", "run:view",
         "artifact:view", "artifact:export", "artifact:delete",
         "agent:invoke", "approve",
@@ -202,6 +222,7 @@ _ROLE_PERMISSIONS: dict[str, list[str]] = {
         "governance:decide",
     ],
     "developer": [
+        "artifact:approve_development_modernization",
         # OWNS the Development gate since frontend/lib/roles.ts moved it here
         # ("One agent, one role"). Without this the named owner could not
         # approve — the exact defect the ownership boot guard exists to catch.
@@ -217,6 +238,7 @@ _ROLE_PERMISSIONS: dict[str, list[str]] = {
         "skill:edit",
     ],
     "qa": [
+        "artifact:approve_testing_modernization",
         "run:view",
         "artifact:view", "artifact:export", "artifact:delete",
         "agent:invoke", "approve",
@@ -228,6 +250,7 @@ _ROLE_PERMISSIONS: dict[str, list[str]] = {
         "governance:decide",
     ],
     "security_engineer": [
+        "artifact:approve_security_modernization",
         "run:view",
         "artifact:view", "artifact:export", "artifact:delete",
         "agent:invoke", "approve",
@@ -243,6 +266,7 @@ _ROLE_PERMISSIONS: dict[str, list[str]] = {
         "governance:decide",
     ],
     "devops_engineer": [
+        "artifact:approve_deployment_modernization",
         "run:view",
         "artifact:view", "artifact:export", "artifact:delete",
         "agent:invoke", "approve",
@@ -305,6 +329,14 @@ _PHASE_PERMISSION: dict[str, str] = {
     # Track 3 — Code Modernization.
     "requirements_modernization": "artifact:approve_requirements_modernization",
     "discovery": "artifact:approve_discovery",
+    "design_modernization": "artifact:approve_design_modernization",
+    "strategy": "artifact:approve_strategy",
+    "testing_modernization": "artifact:approve_testing_modernization",
+    "development_modernization": "artifact:approve_development_modernization",
+    "code_review_modernization": "artifact:approve_code_review_modernization",
+    "security_modernization": "artifact:approve_security_modernization",
+    "deployment_modernization": "artifact:approve_deployment_modernization",
+    "documentation_modernization": "artifact:approve_documentation_modernization",
 }
 
 # The permission catalog is the universe of valid leaf permission strings.
@@ -342,6 +374,14 @@ _PERMISSION_CATALOG: list[str] = [
     "artifact:approve_documentation",
     "artifact:approve_requirements_modernization",
     "artifact:approve_discovery",
+    "artifact:approve_design_modernization",
+    "artifact:approve_strategy",
+    "artifact:approve_testing_modernization",
+    "artifact:approve_development_modernization",
+    "artifact:approve_code_review_modernization",
+    "artifact:approve_security_modernization",
+    "artifact:approve_deployment_modernization",
+    "artifact:approve_documentation_modernization",
     # Agents
     "agent:invoke",
     # Connectors

@@ -1,0 +1,5 @@
+{"target": "shared/routers/project_scoped.py", "tests": ["tests/modernization_common/test_pa_reach_floor.py"], "env_test": true,
+ "mutants": [
+  ["write-no-floor", "    if pa_floor_applies(body.role, body.phase) and body.involvement != \"owner\":", "    if False:"],
+  ["write-refuses-owner", "    if pa_floor_applies(body.role, body.phase) and body.involvement != \"owner\":", "    if pa_floor_applies(body.role, body.phase):"]
+ ]}

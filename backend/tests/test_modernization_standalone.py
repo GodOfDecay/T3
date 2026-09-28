@@ -6,6 +6,7 @@ test_ws_access.py drives the Orchestrator's, so no network or model is involved.
 """
 from __future__ import annotations
 
+import asyncio
 import json
 import uuid as _uuid
 
@@ -44,7 +45,14 @@ class _FakeWebSocket:
         self.closed = (code, reason)
 
     async def receive_text(self):
+        # Like the chat BFF: after its last frame it keeps the socket open until the turn
+        # has ended (the terminal activity_update), and only then disconnects. A fake that
+        # disconnected at once would have its turn cancelled as an orphan, correctly.
         if not self._inbound:
+            for _ in range(2000):
+                if any(m.get("type") == "activity_update" for m in self.sent):
+                    break
+                await asyncio.sleep(0.005)
             raise WebSocketDisconnect()
         return self._inbound.pop(0)
 

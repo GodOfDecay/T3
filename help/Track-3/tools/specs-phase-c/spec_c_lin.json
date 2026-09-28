@@ -1,0 +1,11 @@
+{"target": "shared/services/version_lineage.py", "tests": ["tests/modernization_common/test_version_lineage.py"], "env_test": true,
+ "mutants": [
+  ["drafts-count-as-newer", "        latest = await svc.latest_published(db, project_id, stage)\n        if latest is not None and latest.version > pinned:", "        latest = await svc.latest_version(db, project_id, stage)\n        if latest is not None and latest.version > pinned:"],
+  ["never-stale", "        if latest is not None and latest.version > pinned:", "        if False:"],
+  ["no-reason", "    if not reason:\n        raise RestoreRefused(\"say why", "    if False:\n        raise RestoreRefused(\"say why"],
+  ["restore-latest-allowed", "    if latest is not None and latest.version == version:", "    if False:"],
+  ["restore-not-marked", "        restored_from=source.version, restore_reason=reason,", "        restored_from=None, restore_reason=None,"],
+  ["restorer-not-producer", "        produced_by=restorer, covers=list(source.covers or []), dedupe=False,", "        produced_by=source.produced_by, covers=list(source.covers or []), dedupe=False,"],
+  ["compare-misses-removed", "        elif path not in b:", "        elif False:"],
+  ["no-truncation-marker", "        return value[:_VALUE_CAP] + f\"… [{len(value) - _VALUE_CAP} more characters]\"", "        return value[:_VALUE_CAP]"]
+ ]}

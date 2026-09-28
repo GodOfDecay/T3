@@ -42,6 +42,12 @@ export const ArtifactVersion = z.object({
   covers: z.array(z.unknown()).default([]),
   createdAt: z.string().nullable().optional(),
   runId: z.string().nullable().optional(),
+  // Migration 0068 (Track 3 backbone): provenance and the approver's capacity.
+  builtFrom: z.array(z.record(z.unknown())).nullable().optional(),
+  restoredFrom: z.number().nullable().optional(),
+  restoreReason: z.string().nullable().optional(),
+  approvedAs: z.enum(["owner", "fallback:project_admin"]).nullable().optional(),
+  fallbackReason: z.string().nullable().optional(),
 });
 export type ArtifactVersion = z.infer<typeof ArtifactVersion>;
 
@@ -98,11 +104,63 @@ export const publishStageVersion = (
   projectId: ProjectId,
   phase: string,
   version: number,
+  /** Track 3: a Project Admin approving as FALLBACK must say why (recorded, audited). */
+  fallbackReason?: string,
 ) =>
   api(`${base(projectId, phase)}/${version}/publish`, {
     method: "POST",
+    ...(fallbackReason ? { body: { fallbackReason } } : {}),
     schema: ArtifactVersion,
   });
+
+/** The backend's refusal when a Project Admin approves a Track 3 version with no reason. */
+export const needsFallbackReason = (err: unknown): boolean =>
+  err instanceof Error && /fallback needs a reason/i.test(err.message);
+
+/** Bring an earlier version back as a NEW draft (reason required; the restorer cannot approve it). */
+export const restoreStageVersion = (projectId: ProjectId, phase: string, version: number, reason: string) =>
+  api(`${base(projectId, phase)}/${version}/restore`, {
+    method: "POST",
+    body: { reason },
+    schema: z.object({ stage: z.string(), version: z.number(), status: z.string(), restoredFrom: z.number(),
+      note: z.string() }),
+  });
+
+export const VersionComparison = z.object({
+  stage: z.string(),
+  from: z.number(),
+  to: z.number(),
+  differences: z.array(z.object({
+    path: z.string(),
+    change: z.enum(["added", "removed", "changed"]),
+    before: z.unknown(),
+    after: z.unknown(),
+  })),
+});
+export type VersionComparison = z.infer<typeof VersionComparison>;
+
+/** What differs between two versions of a stage, leaf by leaf. */
+export const compareStageVersions = (projectId: ProjectId, phase: string, from: number, to: number) =>
+  api(`/artifact-versions/${encodeURIComponent(projectId)}/stages/${encodeURIComponent(toBackendStage(phase))}/compare`, {
+    query: { from: String(from), to: String(to) },
+    schema: VersionComparison,
+  });
+
+export const VersionStaleness = z.object({
+  stage: z.string(),
+  version: z.number(),
+  /** False when the version recorded no inputs — "not known", never "fresh". */
+  pinned: z.boolean(),
+  stale: z.boolean(),
+  /** `latest`: a newer APPROVED version (null when there is none); `rejected`: the pinned
+   *  version itself was rejected after this one was built on it. */
+  inputs: z.array(z.object({ stage: z.string(), artifact: z.string().nullable().optional(),
+    pinned: z.number(), latest: z.number().nullable(), rejected: z.boolean().optional() })),
+});
+
+/** Whether an input this version was built from has a newer APPROVED version. */
+export const getVersionStaleness = (projectId: ProjectId, phase: string, version: number) =>
+  api(`${base(projectId, phase)}/${version}/staleness`, { schema: VersionStaleness });
 
 export const rejectStageVersion = (
   projectId: ProjectId,
@@ -228,3 +286,21 @@ export const getVersionConsumers = (
   api(`${base(projectId, phase)}/${version}/consumers`, {
     schema: VersionConsumers,
   });
+
+/**
+ * Did the signed-in person produce this version?
+ *
+ * `producedBy` is RELABELLED by the backend before it reaches the browser: the stored user
+ * id becomes that user's email (`shared/routers/artifact_versions._labelled`), and stays the
+ * raw id only when the user cannot be resolved. Comparing against the session's id alone
+ * therefore never matched a real user, and the "you produced this" explanation never
+ * showed (found in the Track 3 Phase B review). Match either, case-insensitively.
+ */
+export function producedByMe(
+  producedBy: string | null | undefined,
+  user: { id?: string | null; email?: string | null } | null | undefined,
+): boolean {
+  if (!producedBy || !user) return false;
+  const who = producedBy.trim().toLowerCase();
+  return [user.id, user.email].some((v) => !!v && v.trim().toLowerCase() === who);
+}

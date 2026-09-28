@@ -168,9 +168,15 @@ def test_the_track3_prompt_starts_with_migration_intent_and_names_the_unbuilt_ag
     assert "ASSESSING the legacy code is Dependency and Risk work" in prompt
     assert "proceed to" in prompt
     unbuilt = prompt.split("Not built for this track yet:", 1)[1].split(".", 1)[0]
-    for name in ("Design", "Strategy", "Development", "Documentation"):
-        assert name in unbuilt
-    assert "Discovery" not in unbuilt
+    # Track 3's OWN agents 3–10 (not Portfolio 1's Design, Development, … — Phase B).
+    assert [n.strip() for n in unbuilt.split(",")] == [
+        "Target Architecture", "Migration Strategy", "Equivalence Testing", "Migration Development",
+        "Migration Review", "Security", "Cutover", "Cutover Pack",
+    ]
+    assert "Discovery" not in unbuilt and "Dependency and Risk" not in unbuilt
+    # The hand-off order puts the baseline before any code changes.
+    order = prompt.split("in hand-off order, is", 1)[1]
+    assert order.index("Equivalence Testing (baseline)") < order.index("Migration Development")
 
 
 def test_continuity_on_a_modernization_turn_keeps_the_track3_voice():

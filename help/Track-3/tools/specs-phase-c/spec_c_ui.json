@@ -1,0 +1,10 @@
+{"root": "frontend", "target": "components/modernization/version-view.tsx",
+ "cmd": ["node", "node_modules/vitest/vitest.mjs", "run", "__tests__/app/track3-pages-retrofit.test.tsx"],
+ "mutants": [
+  ["no-reason-dialog", "      if (needsFallbackReason(e)) {", "      if (false) {"],
+  ["reason-not-sent", "            <Button onClick={() => publish.mutate(fallbackReason.trim())}", "            <Button onClick={() => publish.mutate(undefined)}"],
+  ["restore-on-latest", "          {canProduce && latestVersion !== undefined && version < latestVersion && (", "          {canProduce && ("],
+  ["stale-hidden", "  if (!q.data || !q.data.stale) return null;", "  return null;"],
+  ["stale-always", "  if (!q.data || !q.data.stale) return null;", "  if (!q.data) return null;"],
+  ["fallback-badge-missing", "          {detail.approvedAs === \"fallback:project_admin\" && (\n            <Badge", "          {false && (\n            <Badge"]
+ ]}

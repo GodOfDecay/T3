@@ -1,0 +1,95 @@
+{
+  "schema_version": 1,
+  "agent_id": "strategy",
+  "artifact": "strategy_artifacts",
+  "version": 2,
+  "status": "published",
+  "built_from": [
+    {"artifact": "migration_intent_payload", "version": 1, "status": "published"},
+    {"artifact": "discovery_artifacts", "version": 1, "status": "published", "commit": "a1b2c3d"},
+    {"artifact": "target_design_artifacts", "version": 1, "status": "published"}
+  ],
+  "produced_by": {"user_id": "fixture:architect", "model": "fixture (research §9 stage 4 + plan v2 rule, illustrative)", "run_id": null},
+  "produced_at": "2026-10-07T10:00:00Z",
+  "payload": {
+    "summary": "Foundation plus four waves. Reports first to prove the harness cheaply; core, web and the database pulled ahead of batch so Log4j 1.x is out before the March 2027 SOC 2 audit; the batch parallel-runs four weeks; the portal rewrite runs longest.",
+    "waves": [
+      {"id": "W0", "name": "Foundation", "modules": [], "patterns": {}, "starts": "2026-11-02", "ends": "2026-12-11", "date_status": "proposed",
+       "entry_criteria": ["landing zone provided by the Cloud Platform team"],
+       "exit_criteria": ["pipelines green", "gateway in front of Dallas at 100% legacy", "baselines BL-01..BL-06 accepted"],
+       "parallel_run": {"required": false, "system_of_record": "legacy"}, "cutover_window": null,
+       "rollback": {"trigger": "foundation component unhealthy", "method": "gateway stays at 100% legacy; nothing to roll back", "max_time": "0"},
+       "owner": "DevOps", "order_reason": "Wave 0 is always the foundation, including baseline capture."},
+      {"id": "W1", "name": "Reports", "modules": ["M-05"], "patterns": {"M-05": ["in_place_upgrade", "parallel_run"]},
+       "starts": "2026-11-30", "ends": "2027-01-31", "date_status": "proposed",
+       "entry_criteria": ["BL-04 accepted"], "exit_criteria": ["EC-03", "EC-06", "EC-08", "security sign-off", "January month-end parallel run identical"],
+       "parallel_run": {"required": true, "period": "January 2027 month-end", "system_of_record": "legacy"}, "cutover_window": "Sun 31 Jan 2027 08:00",
+       "rollback": {"trigger": "report diff on EC-06 or job failure", "method": "re-enable the legacy cron", "max_time": "10 min"},
+       "owner": "Developer lead", "order_reason": "Nothing depends on it, it only reads, and its outputs diff exactly: proves the harness cheaply."},
+      {"id": "W2", "name": "Core, web and database", "modules": ["M-01", "M-02"], "patterns": {"M-01": ["in_place_upgrade"], "M-02": ["in_place_upgrade", "strangler_fig"]},
+       "starts": "2027-01-04", "ends": "2027-02-28", "date_status": "proposed",
+       "entry_criteria": ["BL-01, BL-02, BL-06 accepted"], "exit_criteria": ["EC-01", "EC-04", "EC-05", "EC-08", "security sign-off"],
+       "parallel_run": {"required": false, "system_of_record": "legacy"}, "cutover_window": "Sun 14 Feb 2027 00:00–02:00",
+       "rollback": {"trigger": "error rate > legacy + 0.1 pt or p95 > 300 ms", "method": "gateway weight back to legacy; re-point to Dallas and reverse replication", "max_time": "30 min"},
+       "owner": "Architect", "order_reason": "Pulled ahead of the tool's order and of batch so Log4j 1.x is out of production before the SOC 2 audit in March 2027."},
+      {"id": "W3", "name": "Settlement batch", "modules": ["M-03"], "patterns": {"M-03": ["in_place_upgrade", "parallel_run"]},
+       "starts": "2027-03-01", "ends": "2027-04-25", "date_status": "proposed",
+       "entry_criteria": ["BL-03 accepted", "W2 cut over"], "exit_criteria": ["EC-02", "EC-09", "EC-08", "security sign-off", "28 consecutive identical nights"],
+       "parallel_run": {"required": true, "period": "4 weeks", "system_of_record": "legacy"}, "cutover_window": "Sun 25 Apr 2027",
+       "rollback": {"trigger": "any settlement difference after the send switch", "method": "switch sending back to legacy", "max_time": "same night"},
+       "owner": "Developer lead", "order_reason": "Depends on M-01 (dual-built until here); financial output needs the parallel run."},
+      {"id": "W4", "name": "Broker portal", "modules": ["M-04"], "patterns": {"M-04": ["rewrite", "strangler_fig"]},
+       "starts": "2027-02-15", "ends": "2027-06-13", "date_status": "proposed",
+       "entry_criteria": ["BL-05 accepted", "M-02 on the new side for CT-01"], "exit_criteria": ["EC-07", "EC-08", "security sign-off"],
+       "parallel_run": {"required": false, "system_of_record": "legacy"}, "cutover_window": "route by route 24 May – 13 Jun 2027",
+       "rollback": {"trigger": "journey failure on a moved route", "method": "gateway route back to legacy", "max_time": "5 min"},
+       "owner": "Frontend lead", "order_reason": "The rewrite takes longest; started 15 Feb (user decision) to leave slack before the lease ends."}
+    ],
+    "equivalence_criteria": [
+      {"id": "EC-01", "module_id": "M-01", "protects_measures": ["payouts on 10,000 recorded claims"], "observable": "payout per claim", "input_set": "10,000 recorded claims, Jan 2025 – Jun 2026", "comparison": "exact", "normalization": []},
+      {"id": "EC-02", "module_id": "M-03", "protects": ["CT-02", "TR-02", "TR-06"], "observable": "bank payment file", "input_set": "20 recorded nights", "comparison": "byte_identical",
+       "normalization": [{"field": "HDR-07 creation time", "rule": "ignore value, require format", "reason": "written at run time"},
+                         {"field": "file sequence number", "rule": "ignore value, require increment", "reason": "generated per run"}]},
+      {"id": "EC-03", "module_id": "M-05", "protects": ["CT-03", "TR-03", "TR-06"], "observable": "CR-4 Q4 2026 return", "input_set": "Q4 2026 snapshot", "comparison": "byte_identical",
+       "normalization": [{"field": "generation timestamp", "rule": "ignore value", "reason": "written at run time"}]},
+      {"id": "EC-04", "module_id": "M-02", "protects": ["CT-01", "TR-01", "TR-07"], "observable": "/api/v1 status and body", "input_set": "25,000 recorded calls", "comparison": "exact",
+       "normalization": [{"field": "object key order", "rule": "ignore", "reason": "JSON objects are unordered"},
+                         {"field": "error.requestId", "rule": "ignore value, require presence", "reason": "UUID generated per request (legacy noise floor 100%)"}]},
+      {"id": "EC-05", "module_id": "M-02", "protects_measures": ["API p95"], "observable": "API p95 latency", "input_set": "recorded peak profile", "comparison": "percentile_threshold", "threshold": "p95 ≤ 300 ms", "normalization": []},
+      {"id": "EC-06", "module_id": "M-05", "protects": ["TR-04"], "observable": "monthly reports: rows and totals", "input_set": "Sep – Oct 2026 monthly reports", "comparison": "set_equal", "normalization": []},
+      {"id": "EC-07", "module_id": "M-04", "protects": ["CT-01"], "observable": "broker journeys: API calls and visible values", "input_set": "42 scripted broker journeys", "comparison": "exact",
+       "normalization": [{"field": "layout", "rule": "excluded", "reason": "the rewrite changes layout by design (ADR-01)"}]},
+      {"id": "EC-08", "module_id": "all", "protects_measures": ["critical/high vulnerabilities at go-live"], "observable": "critical/high vulnerabilities", "input_set": "security scan per module", "comparison": "numeric_tolerance", "threshold": "0", "normalization": []},
+      {"id": "EC-09", "module_id": "M-03", "protects": ["CT-02"], "observable": "settlement totals per run", "input_set": "20 recorded nights", "comparison": "exact", "normalization": []}
+    ],
+    "baseline_plan": [
+      {"ec_id": "EC-01", "inputs": "10,000 claims Jan 2025 – Jun 2026", "environment": "legacy sandbox, Java 8", "data_source": "Dallas MySQL snapshot", "masking": "tokenize policyholder PII", "due": "2026-12-11"},
+      {"ec_id": "EC-02", "inputs": "20 nightly settlement runs", "environment": "legacy sandbox, Java 7/8", "data_source": "nightly snapshots + recorded bank acks (stubbed)", "masking": "tokenize account holder fields", "due": "2026-12-18"},
+      {"ec_id": "EC-03", "inputs": "Q4 2026 CR-4", "environment": "legacy sandbox, Python 2.7", "data_source": "snapshot at run", "masking": "tokenize claimant fields", "due": "2027-01-08"},
+      {"ec_id": "EC-04", "inputs": "25,000 mirrored /api/v1 calls via gateway (W0)", "environment": "legacy sandbox, Tomcat 8", "data_source": "gateway mirror", "masking": "tokenize claimant fields", "due": "2026-12-18"},
+      {"ec_id": "EC-06", "inputs": "Sep – Oct 2026 monthly reports", "environment": "legacy sandbox, Python 2.7", "data_source": "month-end snapshots", "masking": "tokenize claimant fields", "due": "2026-11-27"},
+      {"ec_id": "EC-07", "inputs": "42 scripted broker journeys", "environment": "legacy sandbox, Node 8", "data_source": "synthetic broker accounts", "masking": "synthetic data only", "due": "2027-01-08"}
+    ],
+    "freeze_policy": {"from": "2027-02-01", "allowed": "P1 fixes only", "carry_forward": "each P1 fix carried to the target within 5 working days and re-baselined"},
+    "critical_path": ["W0 baselines", "W2 database switch 14 Feb 2027", "W3 send switch 25 Apr 2027", "W4 last route 13 Jun 2027", "lease end 30 Jun 2027"],
+    "calendar_conflicts": [
+      {"conflict": "brief says off the old servers by end of June and switched off by end of September", "impact": "no rollback copy after the lease ends", "options": ["keep stopped Azure VMs until 30 Sep"], "resolution": "stopped VMs until 30 Sep (user)"},
+      {"conflict": "W4 hypercare ends 27 Jun, three days before the lease ends", "impact": "no slack", "options": ["accept", "start W4 in February"], "resolution": "start W4 on 15 Feb (user)"},
+      {"conflict": "Q4 2026 CR-4 baseline depends on legacy producing the return in early January", "impact": "EC-03 baseline date", "options": ["confirm the date with Finance Reporting"], "resolution": "Finance Reporting confirms 8 Jan (user)"}
+    ],
+    "raid": {
+      "risks": [{"risk": "batch and web have no automated tests", "evidence": "assessment: no tests factor on M-02, M-03", "mitigation": "baselines are the test oracle"}],
+      "assumptions": ["Azure landing zone provided by the Cloud Platform team", "brokers get 60 days' notice of any cutover"],
+      "issues": [],
+      "dependencies": ["Finance Reporting for the CR-4 run", "Cloud Platform team for the landing zone"]
+    },
+    "effort": [
+      {"wave": "W0", "band": "40–55 ed", "basis": "foundation checklist", "is_estimate": true},
+      {"wave": "W1", "band": "15–25 ed", "basis": "llm_assisted × 1 module × in_place_upgrade", "is_estimate": true},
+      {"wave": "W2", "band": "60–85 ed", "basis": "mechanical + llm_assisted + database", "is_estimate": true},
+      {"wave": "W3", "band": "35–50 ed", "basis": "llm_assisted × parallel_run", "is_estimate": true},
+      {"wave": "W4", "band": "90–130 ed", "basis": "rewrite", "is_estimate": true}
+    ],
+    "budget_fit": "Fits $450,000 with about 11% contingency; first-year run costs are a stated assumption."
+  }
+}
