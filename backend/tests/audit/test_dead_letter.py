@@ -16,6 +16,7 @@ ever deleting an entry.
 """
 from __future__ import annotations
 
+import asyncio
 from unittest.mock import AsyncMock, patch
 
 import pytest
@@ -182,3 +183,62 @@ async def test_retry_worker_keeps_entry_when_reemit_fails(mock_audit_service, mo
     await worker.process_one()
 
     mock_redis_client.xdel.assert_not_called()
+
+
+# ── the worker survives an idle wait (the 2 s socket timeout vs the 5 s block) ──
+
+async def test_the_retry_worker_reads_longer_than_it_blocks():
+    """Its own client may wait out the whole xread block. With the shared 2 s socket
+    timeout under a 5 s block, every idle read timed out and the worker died at startup."""
+    from workers import audit_retry_worker as w
+
+    assert w._READ_TIMEOUT_S > w._BLOCK_MS / 1000
+    made = {}
+
+    class Client:
+        async def xread(self, **_kw):
+            raise asyncio.CancelledError
+
+        async def aclose(self):
+            pass
+
+    def fake_from_url(**kw):
+        made.update(kw)
+        return Client()
+
+    with patch.object(w, "redis_from_url", fake_from_url):
+        await w.AuditRetryWorker(audit_service=AsyncMock()).run()
+    assert made["socket_timeout"] == w._READ_TIMEOUT_S
+
+
+async def test_a_timed_out_idle_read_does_not_end_the_worker(mock_audit_service, mock_redis_client):
+    import redis.asyncio as aioredis
+
+    from workers.audit_retry_worker import AuditRetryWorker
+
+    calls = []
+
+    async def xread(**_kw):
+        calls.append(1)
+        if len(calls) < 3:
+            raise aioredis.TimeoutError("Timeout reading from socket")
+        raise asyncio.CancelledError
+
+    mock_redis_client.xread = xread
+    await AuditRetryWorker(audit_service=mock_audit_service, redis_client=mock_redis_client).run()
+    assert len(calls) == 3
+
+
+def test_every_long_lived_redis_reader_outlasts_its_wait():
+    """The 2 s operation timeout is for commands. A reader that waits on purpose must not
+    time out while waiting (audit retry worker, pipeline workers, artifact listener)."""
+    import inspect
+
+    import process_api
+    from shared.redis_client import OPERATION_TIMEOUT_S, blocking_read_timeout
+    from workers import audit_retry_worker, base_worker
+
+    assert blocking_read_timeout(5) == 5 + OPERATION_TIMEOUT_S
+    assert audit_retry_worker._READ_TIMEOUT_S > audit_retry_worker._BLOCK_MS / 1000
+    assert "socket_timeout=blocking_read_timeout(_BLOCK_MS / 1000)" in inspect.getsource(base_worker)
+    assert "redis_pubsub_from_url(socket_timeout=None)" in inspect.getsource(process_api._artifact_event_listener)

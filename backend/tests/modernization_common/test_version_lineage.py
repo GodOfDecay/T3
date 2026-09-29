@@ -126,7 +126,7 @@ async def test_a_newer_approved_input_makes_a_version_stale(project):
                                            [{"stage": "requirements_modernization", "version": 1,
                                              "artifact": "migration_intent_payload"}])
     assert stale == [{"stage": "requirements_modernization", "artifact": "migration_intent_payload",
-                      "pinned": 1, "latest": 2}]
+                      "pinned": 1, "latest": 2, "rejected": False}]
 
 
 async def test_a_newer_draft_does_not_make_it_stale(project):

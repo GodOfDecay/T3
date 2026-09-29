@@ -2,7 +2,7 @@
 
 **Written:** 2026-09-28; **updated in session 2, near the end of Phase C** (fix wave mid-mutation).
 **Branch:** `akshat_track3` — Phases A, B and most of C are **committed locally** on it (first commit on the
-branch, parent `621b8904` = `akshat_main`). **Not pushed**: `origin` has no `akshat_track3` yet.
+branch, parent `621b8904` = `akshat_main`), **pushed to `origin/akshat_track3`** (tracking set; the team collaborates there).
 **Read next, in this order:** this file → `help/Track-3/build-log.md` (Entries 1–8, the evidence) →
 `docs/superpowers/plans/2026-09-28-track3-master-plan.md` (the phase map) →
 `help/Track-3/Track-3 Implementation Prompt.md` (the rules; §9 = mandatory stops).
@@ -23,9 +23,8 @@ Do **not** re-read the ~8,000 lines of Track 3 design docs up front — read eac
   credential → `get_connector_for_session`); **Track 1/2 must keep working** (it is complete).
 - ClaimTrack is a **simulated customer** scenario; there is **no real legacy code yet** — do not try to
   pull repos or test credentials; the user said Azure DevOps and the model key work.
-- **PENDING:** once Phase C is finished, **push to GitHub branch `akshat_track3`** (the user asked for
-  this; it does not exist on origin yet, so the first push creates it — do NOT push to `track-3`). Committed
-  locally so far: everything — this session's work AND the previously untracked files
+- **DONE:** `akshat_track3` exists on GitHub (pushed by the user, 2026-09-28). Push further commits there —
+  NOT to `track-3`. The first commit holds: everything — this session's work AND the previously untracked files
   (`help/Track-3/…` including the moved docs; the deleted `help/track3-*.md` are the moved originals).
   Commit message must end with `Co-Authored-By: Claude Sonnet 5 <noreply@anthropic.com>`. Before pushing:
   `git status` review — `.env` / `.env.test` are gitignored (keep it so); do not commit `backend/files/`,
@@ -139,7 +138,7 @@ tenant-union permission holders who then get a self-explaining 403.
    the fix wave and stopped, so **there is no regression result for the current code yet.**
 4. Finish build-log Entry 8 (a fix-wave section with the mutation results).
 5. Ask the user: apply 0068–0070 to the dev DB? Run `scripts/seed_track3_fixture.py` there?
-6. Commit, then **push `akshat_track3`** (creates it on origin). Then **Phase D** (master plan §4).
+6. Commit and push to `origin/akshat_track3` (auto mode blocks `git push`; ask the user to run it). Then **Phase D** (master plan §4).
 
 ## 5. Decisions already taken (don't re-litigate)
 

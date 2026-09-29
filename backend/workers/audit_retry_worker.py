@@ -28,7 +28,7 @@ from typing import Any, Optional
 
 import redis.asyncio as aioredis
 
-from shared.redis_client import redis_from_url
+from shared.redis_client import blocking_read_timeout, redis_from_url
 
 from config.env import REDIS_URL
 from shared.audit.models import AuditEventPayload
@@ -44,6 +44,12 @@ _BATCH_SIZE = 10
 # How long xread parks when the stream is drained — this is what makes the loop idle
 # instead of spin, and it only works because the cursor advances.
 _BLOCK_MS = 5000
+# The read must be allowed to outlast the block. The shared client's socket timeout is 2 s
+# (fail fast when Redis is gone), shorter than the 5 s block, so every idle wait timed out
+# at the socket, the TimeoutError escaped `run`, and the worker died two seconds after
+# startup — no dead-lettered audit event was ever retried, and every app shutdown that
+# awaited the dead task re-raised it (the "Redis read timeout" test flake).
+_READ_TIMEOUT_S = blocking_read_timeout(_BLOCK_MS / 1000)
 
 
 class AuditRetryWorker:
@@ -154,17 +160,22 @@ class AuditRetryWorker:
         client = self._redis_client
         own_client = False
         if client is None:
-            client = redis_from_url()
+            client = redis_from_url(socket_timeout=_READ_TIMEOUT_S)
             own_client = True
         last_id: Any = "0-0"
         logger.info("AuditRetryWorker started — draining %s", _DEAD_LETTER_STREAM)
         try:
             while True:
-                results = await client.xread(
-                    streams={_DEAD_LETTER_STREAM: last_id},
-                    count=_BATCH_SIZE,
-                    block=_BLOCK_MS,
-                )
+                try:
+                    results = await client.xread(
+                        streams={_DEAD_LETTER_STREAM: last_id},
+                        count=_BATCH_SIZE,
+                        block=_BLOCK_MS,
+                    )
+                except (aioredis.TimeoutError, TimeoutError):
+                    # A blocking read that timed out found nothing; an injected client with
+                    # a short socket timeout must not end the worker. Try again.
+                    continue
                 if not results:
                     # Caught up: xread blocked for _BLOCK_MS and returned nothing.
                     continue

@@ -1,0 +1,5 @@
+{"target": "workers/audit_retry_worker.py", "tests": ["tests/audit/test_dead_letter.py"], "env_test": true,
+ "mutants": [
+  ["short-read-timeout", "            client = redis_from_url(socket_timeout=_READ_TIMEOUT_S)", "            client = redis_from_url()"],
+  ["timeout-ends-worker", "                    continue\n                if not results:", "                    raise\n                if not results:"]
+ ]}

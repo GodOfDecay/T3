@@ -71,6 +71,20 @@ from config.env import REDIS_URL
 CONNECT_TIMEOUT_S = 2.0
 OPERATION_TIMEOUT_S = 2.0
 
+
+def blocking_read_timeout(block_s: float) -> float:
+    """The socket timeout for a client that BLOCKS on purpose (XREAD/XREADGROUP with
+    `block`): the wait itself, plus the ordinary operation budget.
+
+    OPERATION_TIMEOUT_S is right for commands, which answer in milliseconds, and wrong
+    for a read whose job is to wait: every idle wait longer than 2 s timed out at the
+    socket, and the three long-lived readers (the audit retry worker, the pipeline
+    workers, the artifact-event listener) each died with that TimeoutError seconds after
+    startup. A subscriber that waits for messages indefinitely passes `socket_timeout=None`
+    instead; its connect timeout still fails fast when Redis is gone.
+    """
+    return block_s + OPERATION_TIMEOUT_S
+
 # Query parameters consumed HERE and stripped before the URL reaches redis-py, which
 # would reject them as unknown connection arguments.
 _CLUSTER_PARAM = "cluster"

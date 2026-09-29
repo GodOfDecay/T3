@@ -32,6 +32,11 @@ from sqlalchemy import text
 logger = logging.getLogger(__name__)
 
 SWEEP_INTERVAL_SECONDS = float(os.environ.get("APPROVAL_SLA_SWEEP_INTERVAL_SECONDS", "900"))
+#: The FIRST sweep waits this long after startup. Not at boot, on purpose: a sweep visits every
+#: tenant, and a process that is shut down seconds after starting (a test client, a crash-looping
+#: pod) would otherwise be cancelled mid-sweep on every start. An SLA measured in hours loses
+#: nothing to a one-minute delay.
+FIRST_SWEEP_DELAY_SECONDS = float(os.environ.get("APPROVAL_SLA_FIRST_SWEEP_DELAY_SECONDS", "60"))
 
 #: Backend stage → the page's route segment (frontend `lib/agents.ts::phaseRoute`).
 STAGE_ROUTE = {
@@ -120,6 +125,7 @@ class ApprovalSlaSweeper:
             logger.debug("ApprovalSlaSweeper: external notify failed (swallowed)", exc_info=True)
 
     async def run(self) -> None:
+        await asyncio.sleep(FIRST_SWEEP_DELAY_SECONDS)
         while True:
             try:
                 await self.sweep_once()

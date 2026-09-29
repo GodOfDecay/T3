@@ -291,7 +291,10 @@ async def _artifact_event_listener() -> None:
     from shared.redis_client import redis_pubsub_from_url
 
     # Pub/sub needs the non-cluster client: RedisCluster has no .pubsub() at all.
-    client = redis_pubsub_from_url()
+    # No socket timeout: `listen()` waits for messages indefinitely by design, and the
+    # shared 2 s operation timeout killed this task after two quiet seconds — pipeline
+    # stage transitions then stopped being routed (shared/redis_client.blocking_read_timeout).
+    client = redis_pubsub_from_url(socket_timeout=None)
     pubsub = client.pubsub()
     try:
         await pubsub.subscribe(_ARTIFACT_CHANNEL)

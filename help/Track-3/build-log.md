@@ -390,3 +390,59 @@ Tests: `test_phase_c_review_fixes.py`, 16 pass, run twice. Frontend: Track 3 fil
 Both are next.
 
 **Committed locally** on `akshat_track3`, the first commit on that branch, at the user's request. Not pushed.
+
+---
+
+## Entry 9 — 2026-09-29 — Phase C closed: fix wave proven, a pushed mutant found, a platform bug fixed
+
+**Fix-wave mutation — complete.** 15 of 15 backend mutants were killed, each by the test named for its
+finding. The specs are `tools/specs-phase-c/spec_fix_*.json`: `av` 3, `fb` 2, `lin` 2, `linr` 2, `sa` 1,
+`sla` 1, `rr` 2 and `audit` 2. The frontend fixes killed 5 of 5.
+
+**A MUTANT WAS COMMITTED AND PUSHED (R46/R48, my process failure).**
+- The frontend mutation run the user stopped on 2026-09-28 had already written the `latest-always`
+  mutant into `version-view.tsx`.
+- My check afterwards grepped only for `if False:`, so it missed that mutant.
+- The mutant went into `8c90522c` on `origin/akshat_track3`: a version built on a rejected input would
+  have read "vnull has since been approved".
+- It was found because the mutant's pattern no longer matched (`BAD(0)`). It is restored, and the
+  mutant is now killed.
+- New tool `tools/verify_no_mutants.py` checks every spec's ORIGINAL line against the tree. Its only
+  hits are four originals that were deliberately rewritten since; I read each one. **Run it after any
+  interrupted mutation run.**
+
+**Regression: a hang, then a platform bug underneath it.**
+- The regression run hung for more than 40 minutes with zero CPU. I re-ran it in groups with
+  `-o faulthandler_timeout=300`, which dumped the stack of
+  `test_artifact_publication_routes.py::test_the_stage_owner_can_publish`, stuck in the app lifespan's
+  **shutdown**.
+1. **Mine:** `ApprovalSlaSweeper` swept every tenant immediately at startup, and a test client shuts the
+   app down seconds later, mid-sweep. The first sweep now waits `APPROVAL_SLA_FIRST_SWEEP_DELAY_SECONDS`
+   (60 s). That is right for production too: a crash-looping pod no longer re-sweeps every tenant.
+2. **Pre-existing, Track 1 / platform:**
+   - `workers/audit_retry_worker.py` blocks on `xread` for 5 s.
+   - `shared/redis_client.py` gives every client a 2 s socket timeout (commit `9fcf8829`, "fail fast").
+   - So every idle read raised `TimeoutError`. `run` caught only `CancelledError`, and **the worker died
+     2 s after startup: no dead-lettered audit event has ever been retried** since that commit.
+   - Any shutdown that awaited the dead task re-raised the error. That is the "Redis read-timeout
+     flake" handoff §6 told future sessions to ignore.
+   - Control run with my sweeper disabled: 6 of 19 failed. With the sweeper: 13 of 19. After the fix:
+     19 of 19 pass.
+   - Fix: the worker's own client uses `socket_timeout = block + 2 s`, and a timed-out idle read is
+     "nothing yet" (`continue`).
+   - Two tests guard it; mutation 2/2.
+   - **Correction to the handoff:** that "flake" was a real bug.
+3. **The same bug in two more places.** The next run still failed 4 tests in
+   `test_artifact_scope_and_upload.py`, which handoff §2 had called "Windows long paths".
+   - The traceback showed `_artifact_event_listener` (`process_api.py`). Its `pubsub.listen()` waits
+     for messages indefinitely under the same 2 s socket timeout. After two quiet seconds it died, and
+     **pipeline stage transitions stopped being routed**.
+   - The pipeline workers (`workers/base_worker.py`: `xreadgroup`, 5 s block) had the same mismatch,
+     though they only run with `ENABLE_WORKER_POOL`.
+   - Fix, in one place: `shared/redis_client.blocking_read_timeout(block_s)`. The audit worker and the
+     pipeline workers use it. The listener passes `socket_timeout=None`; its connect timeout still
+     fails fast.
+   - Pinned by `test_every_long_lived_redis_reader_outlasts_its_wait`. `test_artifact_scope_and_upload`
+     + `test_artifact_publication_routes`: 37/37, twice.
+   - `tests/orchestrator2` and `tests/development` both passed on this code; group 1 was re-run after
+     the fix.

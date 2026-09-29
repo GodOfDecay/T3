@@ -13,10 +13,13 @@ from abc import ABC, abstractmethod
 
 import redis.asyncio as aioredis
 
-from shared.redis_client import redis_from_url
+from shared.redis_client import blocking_read_timeout, redis_from_url
 from redis.exceptions import ResponseError
 
 from config.env import REDIS_URL, WORKER_RECLAIM_TIMEOUT_MS
+
+#: How long XREADGROUP waits for a new message before looping.
+_BLOCK_MS = 5000
 from shared.services.metrics import TASK_DURATION, QUEUE_DEPTH, DEAD_LETTER_DEPTH
 
 logger = logging.getLogger(__name__)
@@ -36,7 +39,8 @@ class AbstractWorker(ABC):
         self._reclaim_counts: dict[bytes, int] = {}
 
     async def run(self) -> None:
-        client = redis_from_url()
+        # The read below blocks for up to 5 s: the socket must outlast it (redis_client).
+        client = redis_from_url(socket_timeout=blocking_read_timeout(_BLOCK_MS / 1000))
         try:
             await self._ensure_group(client)
         except Exception as exc:
@@ -77,7 +81,7 @@ class AbstractWorker(ABC):
                     consumername=self.consumer_name,
                     streams={self.stream_key: ">"},
                     count=1,
-                    block=5000,
+                    block=_BLOCK_MS,
                 )
                 if results:
                     for _stream, messages in results:
