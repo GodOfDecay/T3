@@ -541,7 +541,7 @@ not a product bug; left alone and noted. `tsc` and eslint are clean.
 
 Implements research §6.3 (+ §9 stage 3), master plan row E, D14. Plan:
 `docs/superpowers/plans/2026-09-29-track3-phase-e-target-architecture.md`. Click-through:
-`click-through-phase-E.md`. **Nothing committed; migration 0071 is on the test DB only.**
+`click-through-phase-E.md`. Committed as `999b1b3e`; migrations 0068–0071 applied to the dev DB with the user's OK and the tile unlocked after the user tested (both 2026-09-29).
 
 **What was built**
 - Agent package `design_modernization_agent/`: graph (`agents/architect.py`), prompt (research §6.3 house

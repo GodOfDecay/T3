@@ -1,15 +1,15 @@
 # Track 3 (Code Modernization) — Handoff for whoever builds the next agents
 
-**Updated:** 2026-09-29, end of Phase E (uncommitted at hand-off — see §9). **Branch:** `akshat_track3` on `origin` (the team's shared
-branch; never push Track 3 work to `track-3`). Head: `0c814fad` (Phase D), on top of `9f2e81f6` (Phase C
-closed) and `8c90522c` (A, B and most of C). The working tree was clean at hand-off.
+**Updated:** 2026-09-29, end of Phase E. **Branch:** `akshat_track3` on `origin` (the team's shared
+branch; never push Track 3 work to `track-3`). Head: `999b1b3e` (Phase E), on top of `0c814fad` (Phase D),
+`9f2e81f6` (Phase C closed) and `8c90522c` (A, B and most of C). The working tree was clean at hand-off.
 
 **Read in this order:**
 1. This file.
 2. `help/Track-3/track3-research.md` §6.x for **the one agent you are building**. Do not read the ~8,000
    lines of design docs up front.
 3. `help/Track-3/Track-3 Lessons from Track 1-2.md` (rules R1–R57).
-4. `help/Track-3/build-log.md` for the evidence behind any decision below (Entries 1–10).
+4. `help/Track-3/build-log.md` for the evidence behind any decision below (Entries 1–11).
 
 The phase map is `docs/superpowers/plans/2026-09-28-track3-master-plan.md`. The binding rules and the
 mandatory stops are in `help/Track-3/Track-3 Implementation Prompt.md` §9.
@@ -18,14 +18,14 @@ mandatory stops are in `help/Track-3/Track-3 Implementation Prompt.md` §9.
 
 ## 1. Where it stands
 
-Track 3 has ten agents in hand-off order. The two built ones are live on their pages; tiles 3–10 show
+Track 3 has ten agents in hand-off order. The three built ones are live on their pages; tiles 4–10 show
 **Coming soon** until built and click-through-verified (R42).
 
 | # | Agent id | UI name | Owner role | Status |
 |---|---|---|---|---|
 | 1 | `requirements_modernization` | Migration Intent | BA | **Built** (Phases A, B, D) |
 | 2 | `discovery` | Dependency and Risk | BA | **Built** (Phases A, B, D) |
-| 3 | `design_modernization` | Target Architecture | Architect | **Built** (Phase E; tile flips after the click-through) |
+| 3 | `design_modernization` | Target Architecture | Architect | **Built** (Phase E; tile unlocked, user-tested) |
 | 4 | `strategy` | Migration Strategy | Architect | **Next: Phase F** |
 | 5 | `testing_modernization` | Equivalence Testing | QA | Phase G (baseline), J (verify) |
 | 6 | `development_modernization` | Migration Development | Developer (D10) | Phase H |
@@ -201,7 +201,7 @@ them.
 | Storage | `STORAGE_BACKEND=local`. Windows long paths must be enabled for uploads (admin PowerShell; in the A/B click-through) |
 | Ports | Backend **8001** (docs saying 8004 are stale) |
 | Commands | `uv run python -m alembic …`, `python -m uvicorn process_api:app --port 8001` (`uv run alembic/uvicorn` fail: "uv trampoline"). Tests: `cd backend && set -a && . ./.env.test && set +a && uv run python -m pytest <files> -q -p no:cacheprovider`. Frontend: `node node_modules/typescript/bin/tsc --noEmit`, `node node_modules/vitest/vitest.mjs run`, `node node_modules/eslint/bin/eslint.js` (**never npx**) |
-| Migrations | Code head **`0071_target_design`**. **Test DB 0071; dev DB 0067.** 0068–0071 go on dev only with the user's OK; until then approving a version on dev fails (the ORM has the columns). 0067 reached dev without explicit approval earlier (verified identical; the user was told) |
+| Migrations | Code head **`0071_target_design`**. **Test DB 0071; dev DB 0071** (0068–0071 applied to dev with the user's OK on 2026-09-29, grants re-applied). A new migration goes on dev only with the user's OK. 0067 reached dev without explicit approval earlier (verified identical; the user was told) |
 | Personas (dev DB) | `ba@gmail.com`, `projadmin@gmail.com`, `architect@gmail.com`, `dev@gmail.com`, `tester@gmail.com`, `buadmin@gmail.com`, `admin@pwc.dev`. `DEV_LOGINS.txt` personas are NOT in this DB. Projects: "Migration test" (Track 3, ADO wired), "Test" (Greenfield) |
 | Seed | `backend/scripts/seed_track3_fixture.py`: the ClaimTrack project, roster, placeholder repositories and six ledger modules. Idempotent, guarded to localhost. **Not yet run on dev; ask first** |
 | Git | Commit messages end `Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>`. PRs get reviewer `UjjwalTyagi5` and end with the Claude Code line. `git push` may be blocked for Claude in auto mode; ask the user to run `! git push origin akshat_track3` |
@@ -307,9 +307,9 @@ Also decided:
 
 ## 9. Open items for the user
 
-- Apply migrations 0068–0071 to the dev DB (0071 = Phase E), and optionally run the seed script.
-- Run `click-through-phase-E.md`; then flip the Target Architecture tile: add `design_modernization` to `BUILT_AGENTS_BY_TRACK.modernization` in `frontend/lib/agents.ts` (R42).
-- Commit Phase E (nothing is committed yet).
+- Optionally run the seed script on dev (`scripts/seed_track3_fixture.py`; ask first).
+- The remaining click-through steps in `click-through-phase-E.md`, if not all were run.
+- `help/Track-3/tools/mutate.py` and `verify_no_mutants.py` do not import on Python 3.12 as checked in (a cp1252 `§` and an unescaped `C:\Users` in the docstring); Phase E ran UTF-8 raw-docstring copies (build-log Entry 11). A one-line fix each, not yet applied.
 - Run the click-throughs: `click-through-phase-A-B.md`, `-C.md`, `-D.md`. None has been run yet.
 - **Track 1 issue, reported and not fixed:** `workers/run_sweeper.py` queries `runs` through the
   superuser session, which isn't BYPASSRLS, so it very likely never expires anything. Fix it the way
