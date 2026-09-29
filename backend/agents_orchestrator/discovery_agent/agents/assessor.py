@@ -10,6 +10,7 @@ from agents_orchestrator.discovery_agent.tools.assessment_tools import TOOLS
 from shared.tools.document_approval import make_approval_tools
 from shared.tools.project_documents import make_document_tools
 from agents_orchestrator.modernization_common.graph import build_tool_agent_graph
+from agents_orchestrator.modernization_common.restore_tool import make_compare_tool, make_restore_tool
 
 AGENT_ID = "discovery"
 
@@ -22,6 +23,11 @@ AGENT_ID = "discovery"
 #: block (`has_document_tools`), so the prompt only names tools that are really bound.
 DOCUMENT_TOOLS = [*make_document_tools(AGENT_ID), *make_approval_tools(AGENT_ID)]
 
-app = build_tool_agent_graph(agent_type=AGENT_ID, tools=[*TOOLS, *DOCUMENT_TOOLS], checkpoint_name=AGENT_ID)
+#: Going back to an earlier assessment from the chat (research §12.4): compare first, then
+#: restore as a NEW draft. The page's Restore button is the same operation.
+VERSION_TOOLS = [make_compare_tool(AGENT_ID, "assessment"), make_restore_tool(AGENT_ID, "assessment")]
 
-__all__ = ["DOCUMENT_TOOLS", "AGENT_ID", "DISCOVERY_SYS_MESSAGE", "TOOLS", "app"]
+app = build_tool_agent_graph(agent_type=AGENT_ID, tools=[*TOOLS, *DOCUMENT_TOOLS, *VERSION_TOOLS],
+                             checkpoint_name=AGENT_ID)
+
+__all__ = ["DOCUMENT_TOOLS", "AGENT_ID", "DISCOVERY_SYS_MESSAGE", "TOOLS", "VERSION_TOOLS", "app"]

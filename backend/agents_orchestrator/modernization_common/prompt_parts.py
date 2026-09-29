@@ -36,6 +36,20 @@ SENDING WORK FOR APPROVAL
 """
 
 
+#: Every Track 3 agent (research §12.4). `noun` is what the agent records ("brief").
+def going_back(noun: str) -> str:
+    return f"""GOING BACK
+- When the user asks to go back to an earlier {noun} ("use version 2", "undo the last
+  change"), first show what differs between that version and the current one in a few
+  lines (compare_versions), and ask them to confirm. Then call restore_version with the
+  version number and the user's reason. The restored copy is a NEW version that needs
+  approval again — by someone who produced neither it nor the version it restores; say so,
+  and say which later work will show as out of date once it is approved.
+- Never delete or overwrite a version, and never describe a restore as undoing something
+  that has left the platform (a file sent, an item written to the board).
+"""
+
+
 DELIVERABLE_RULES = """\
 DELIVERABLES
 - Save, don't offer. When your work is agreed, record it with your record tool in the same

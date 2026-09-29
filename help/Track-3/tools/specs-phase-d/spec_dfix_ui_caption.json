@@ -1,0 +1,1 @@
+{"root": "frontend", "target": "components/modernization/brief-sections.tsx", "cmd": ["node", "node_modules/vitest/vitest.mjs", "run", "components/modernization/__tests__/track3-phase-d.test.tsx"], "mutants": [["always-own-words", "        {brief.must_not_change_verified === false", "        {false"]]}

@@ -162,6 +162,7 @@ export function AssessmentView({ assessment }: { assessment: DiscoveryAssessment
               <table className="w-full text-sm">
                 <thead className="bg-muted/40 text-muted-foreground text-left text-xs">
                   <tr>
+                    <th className="px-3 py-2 font-medium">Id</th>
                     <th className="px-3 py-2 font-medium">Module</th>
                     <th className="px-3 py-2 font-medium">Runtime</th>
                     <th className="px-3 py-2 text-right font-medium">LOC</th>
@@ -177,6 +178,7 @@ export function AssessmentView({ assessment }: { assessment: DiscoveryAssessment
                       className={cn("hover:bg-muted/40 cursor-pointer border-t", m.name === selected && "bg-primary/5")}
                       aria-selected={m.name === selected}
                     >
+                      <td className="px-3 py-2 font-mono text-xs">{m.id || "—"}</td>
                       <td className="px-3 py-2">
                         <p className="font-medium">{m.name}</p>
                         <p className="text-muted-foreground font-mono text-[11px]">{m.path}</p>
@@ -194,7 +196,7 @@ export function AssessmentView({ assessment }: { assessment: DiscoveryAssessment
                   ))}
                   {visible.length === 0 && (
                     <tr>
-                      <td colSpan={5} className="text-muted-foreground px-3 py-6 text-center text-sm">
+                      <td colSpan={6} className="text-muted-foreground px-3 py-6 text-center text-sm">
                         No modules in this tier.
                       </td>
                     </tr>
@@ -214,7 +216,45 @@ export function AssessmentView({ assessment }: { assessment: DiscoveryAssessment
           <FlagsPanel flags={assessment.flags} />
         </TabsContent>
       </Tabs>
+
+      <NotAssessable items={assessment.not_assessable_statically} />
+      <GoldenMaster golden={assessment.golden_master} />
     </div>
+  );
+}
+
+/** What the code cannot tell (research §6.2): questions for Target Architecture, not gaps to fill in. */
+function NotAssessable({ items }: { items: DiscoveryAssessment["not_assessable_statically"] }) {
+  if (!items.length) return null;
+  return (
+    <section aria-label="Not assessable statically" className="space-y-2">
+      <h3 className="text-sm font-semibold">Not assessable statically</h3>
+      <p className="text-muted-foreground text-xs">
+        The code alone cannot answer these. Target Architecture asks them instead of assuming.
+      </p>
+      <ul className="space-y-1.5">
+        {items.map((q, i) => (
+          <li key={i} className="flex gap-2 rounded-lg border p-2.5 text-[13px] leading-relaxed">
+            <span className="text-muted-foreground w-24 shrink-0 text-xs capitalize">{q.topic}</span>
+            <span>{q.question}</span>
+          </li>
+        ))}
+      </ul>
+    </section>
+  );
+}
+
+function GoldenMaster({ golden }: { golden: DiscoveryAssessment["golden_master"] }) {
+  const captured = golden.status === "captured" && golden.baselines.length > 0;
+  return (
+    <p aria-label="Golden master" className="text-muted-foreground text-xs">
+      Golden master:{" "}
+      {captured ? (
+        <span className="text-foreground">captured — {golden.baselines.join(", ")}</span>
+      ) : (
+        <span>not captured yet — the Equivalence Testing agent records the legacy system&apos;s behaviour baseline</span>
+      )}
+    </p>
   );
 }
 
@@ -244,7 +284,7 @@ function ModuleDetail({ module }: { module: AssessedModule | null }) {
     <aside aria-label={`${module.name} detail`} className="space-y-4 rounded-lg border p-4">
       <header className="space-y-1">
         <div className="flex items-center justify-between gap-2">
-          <h3 className="font-semibold">{module.name}</h3>
+          <h3 className="font-semibold">{module.id ? `${module.id} · ` : ""}{module.name}</h3>
           <TierBadge tier={module.risk.tier} />
         </div>
         <p className="text-muted-foreground text-xs">{TIER_META[module.risk.tier].hint}</p>

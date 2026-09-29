@@ -194,6 +194,28 @@ def _version_markdown(stage: str, payload: dict) -> tuple[str, str]:
     return assessment_markdown(payload), "discovery-assessment"
 
 
+@modernization_router.get("/projects/{project_id}/modernization/{kind}/versions/{version}/packet")
+async def version_packet(project_id: str, kind: str, version: int, request: Request,
+                         db: AsyncSession = Depends(get_db_session)) -> dict:
+    """What this version hands the next agent (Phase D): the packet Target Architecture reads,
+    built from the frozen version and validated by the hand-over models — or, when it cannot
+    be handed over, the reasons in words. `{ok, problems, packet}`."""
+    from agents_orchestrator.modernization_common.handover.emit import (  # noqa: PLC0415
+        assessment_packet, brief_packet, envelope_of,
+    )
+    from shared.services import artifact_versions as svc  # noqa: PLC0415
+
+    stage = _KINDS.get(kind)
+    if stage is None:
+        raise HTTPException(status_code=404, detail=f"Unknown kind {kind!r}.")
+    resolved, _tenant, _user = await _guard(db, request, project_id, stage)
+    row = await svc.get_version(db, resolved, stage, version)
+    if row is None or row.payload is None:
+        raise HTTPException(status_code=404, detail=f"v{version} not found")
+    build = brief_packet if stage == "requirements_modernization" else assessment_packet
+    return {"stage": stage, "version": version, **build(row.payload, envelope_of(row)).as_dict()}
+
+
 @modernization_router.get("/projects/{project_id}/modernization/{kind}/versions/{version}/export")
 async def export_version(
     project_id: str, kind: str, version: int, request: Request, format: str = "docx",

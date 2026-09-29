@@ -130,6 +130,7 @@ async def record_migration_intent(
     in_scope: list[str] | None = None,
     out_of_scope: list[str] | None = None,
     constraints: list[str] | None = None,
+    must_not_change: list[str] | None = None,
     deadline: str = "",
     budget: str = "",
     milestones: list[dict] | None = None,
@@ -182,7 +183,11 @@ async def record_migration_intent(
       trade_offs: [{"decision": "Rebuild the portal in React", "gain": "...", "cost": "..."}]
       milestones: [{"date": "2027-06-30", "label": "Dallas data-centre exit",
                     "kind": "start|freeze|compliance|deadline|cutover|decommission|other"}]
-      success_measures: [{"metric": "API p95 latency", "current": "~800 ms", "target": "<= 300 ms"}]
+      success_measures: [{"metric": "API p95 latency", "current": "~800 ms", "target": "<= 300 ms",
+                          "kind": "equivalence|performance|security|schedule|cost"}]   kind required.
+      must_not_change: ["the /api/v1 claims API brokers call"] — the USER'S EXACT WORDS for each
+                       interface, file or report that must not change. Checked against the
+                       conversation: a paraphrase is refused.
       stakeholders: [{"name": "...", "role": "..."}]
       stack_departures: ["what in the recommendation is outside the project's approved tech
                          stack, and why"] — empty when it stays within the stack or none
@@ -222,6 +227,7 @@ async def record_migration_intent(
             trade_offs=trade_offs or [],
             in_scope=in_scope or [], out_of_scope=out_of_scope or [],
             constraints=constraints or [], deadline=deadline.strip(), budget=budget.strip(),
+            must_not_change=[str(s).strip() for s in must_not_change or [] if str(s).strip()],
             milestones=milestones or [],
             success_criteria=success_criteria or [], success_measures=success_measures or [],
             stakeholders=stakeholders or [], assumptions=assumptions or [],
@@ -242,6 +248,32 @@ async def record_migration_intent(
     if missing:
         return ("NOT RECORDED YET — still missing: " + "; ".join(missing)
                 + ". Ask the user for these (at most three questions at a time).")
+
+    # WORD FOR WORD (research §6.1): each must-not-change entry becomes a contract later
+    # agents prove unchanged, so it must be what the user said, not a paraphrase. When the
+    # conversation cannot be read, it is not checked — "could not check" is not "not said".
+    from agents_orchestrator.modernization_common.verbatim import not_in_user_words, user_texts  # noqa: PLC0415
+    from config.ws_helper import get_tenant_id  # noqa: PLC0415
+
+    said = await user_texts(_session_key(), get_tenant_id())
+    reworded = not_in_user_words(brief.must_not_change, said) if said is not None else []
+    if reworded:
+        return ("NOT RECORDED YET — these must-not-change entries are not the user's own words: "
+                + "; ".join(f'"{r}"' for r in reworded)
+                + ". Copy the whole phrase exactly as the user wrote it in this chat (two words or more), "
+                "or ask them to name it precisely. If the wording is in an attached document, ask the user "
+                "to paste those lines into the chat — only what they write here can be checked.")
+    if brief.must_not_change:
+        brief.must_not_change_verified = said is not None
+
+    # THE HAND-OVER (Phase D): the brief must be something Target Architecture can take.
+    from agents_orchestrator.modernization_common.handover.emit import brief_packet  # noqa: PLC0415
+
+    handover = brief_packet(brief.model_dump(), {"version": 1, "status": "draft"})
+    if not handover.ok:
+        return ("NOT RECORDED YET — the brief cannot be handed to the next agents: "
+                + " ".join(p if p.endswith(".") else p + "." for p in handover.problems[:6])
+                + " Ask the user for what is missing (at most three questions at a time).")
 
     _enrich_from_code(brief)
     # The stack in force is a FACT about the project, read by code; only the departures
@@ -266,7 +298,9 @@ async def record_migration_intent(
     from agents_orchestrator.modernization_common.versions import freeze_version, saved_line  # noqa: PLC0415
 
     version = await freeze_version(STAGE, brief.model_dump())
-    return f"{brief_markdown(brief)}\n_{saved_line(saved, version, 'brief')}_"
+    unchecked = ("\n_The must-not-change wording could not be checked against this conversation — "
+                 "confirm it with the user._" if brief.must_not_change_verified is False else "")
+    return f"{brief_markdown(brief)}\n_{saved_line(saved, version, 'brief')}_{unchecked}"
 
 
 @tool

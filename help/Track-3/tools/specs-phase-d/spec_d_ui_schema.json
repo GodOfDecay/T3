@@ -1,0 +1,1 @@
+{"root": "frontend", "target": "lib/schemas/modernization.ts", "cmd": ["node", "node_modules/vitest/vitest.mjs", "run", "components/modernization/__tests__/track3-phase-d.test.tsx"], "mutants": [["kind-strict", "  kind: z.enum(MEASURE_KINDS).nullable().catch(null).default(null),", "  kind: z.enum(MEASURE_KINDS).nullable().default(null),"]]}

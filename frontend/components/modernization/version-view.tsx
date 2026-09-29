@@ -33,7 +33,7 @@ import {
   toBackendStage,
   type ArtifactVersionDetail,
 } from "@/lib/api/artifact-versions";
-import { versionExportHref, type Track3Stage } from "@/lib/api/modernization";
+import { getVersionPacket, versionExportHref, type Track3Stage } from "@/lib/api/modernization";
 import { qk } from "@/lib/api/query-keys";
 import { hasPermission } from "@/lib/auth/permissions";
 import type { ProjectId } from "@/lib/schemas";
@@ -242,6 +242,10 @@ export function VersionView({
       )}
 
       <Staleness projectId={projectId} stage={stage} version={detail.version} noun={noun} />
+      {(detail.status === "draft" || detail.status === "published") && (
+        <HandOver projectId={projectId} stage={stage} version={detail.version} noun={noun}
+          approved={detail.status === "published"} />
+      )}
 
       {comparing && version > 1 && (
         <Comparison projectId={projectId} stage={stage} from={version - 1} to={version} />
@@ -422,7 +426,7 @@ export function Staleness({ projectId, stage, version, noun }: {
           <p key={i.stage}>
             It was built from {(AGENT_LABEL as Record<string, string>)[i.stage] ?? i.stage} v{i.pinned}
             {i.rejected ? ", which was later rejected" : ""}
-            {`; v${i.latest} has since been approved`}. Nothing changes until someone
+            {i.latest != null ? `; v${i.latest} has since been approved` : ""}. Nothing changes until someone
             revises it.
           </p>
         ))}
@@ -462,5 +466,49 @@ export function Comparison({ projectId, stage, from, to }: {
         </ul>
       )}
     </section>
+  );
+}
+
+/**
+ * Whether this version can be handed to the next agent (Phase D): the packet Target
+ * Architecture reads, validated by the hand-over models. Ready is one quiet line; not ready
+ * lists why, so the gap is fixed on this page and not discovered by the next agent.
+ */
+const HANDOVER_SHOWN = 6;
+
+/** Only a draft or an approved version is ever handed over: a rejected or superseded one says
+ *  nothing here (the caller does not render this for them). A draft is handed over once approved. */
+export function HandOver({ projectId, stage, version, noun, approved }: {
+  projectId: ProjectId; stage: Track3Stage; version: number; noun: string; approved: boolean;
+}) {
+  const q = useQuery({
+    queryKey: [...qk.artifactVersions.forStage(projectId, stage), version, "packet"],
+    queryFn: () => getVersionPacket(projectId, stage, version),
+  });
+  if (q.isError) {
+    return (
+      <p aria-label="Hand-over" className="text-muted-foreground -mt-4 text-xs">
+        Could not check whether this {noun} can be handed to Target Architecture.
+      </p>
+    );
+  }
+  if (!q.data) return null;
+  if (q.data.ok) {
+    return (
+      <p aria-label="Hand-over" className="text-muted-foreground -mt-4 text-xs">
+        {approved ? "Ready to hand to Target Architecture." : "Ready to hand to Target Architecture once approved."}
+      </p>
+    );
+  }
+  const shown = q.data.problems.slice(0, HANDOVER_SHOWN);
+  const more = q.data.problems.length - shown.length;
+  return (
+    <div aria-label="Hand-over" role="status" className="rounded-lg border border-amber-500/40 bg-amber-500/10 p-3 text-xs">
+      <p className="font-medium">This {noun} is not yet ready to hand to Target Architecture:</p>
+      <ul className="mt-1 list-disc pl-4">
+        {shown.map((p) => <li key={p}>{p}</li>)}
+      </ul>
+      {more > 0 && <p className="mt-1">…and {more} more.</p>}
+    </div>
   );
 }

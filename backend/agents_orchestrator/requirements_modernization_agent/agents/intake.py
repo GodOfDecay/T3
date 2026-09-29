@@ -7,6 +7,7 @@ column — because Track 3 is its own portfolio (help/multi-track-agent-access-d
 from __future__ import annotations
 
 from agents_orchestrator.modernization_common.graph import build_tool_agent_graph
+from agents_orchestrator.modernization_common.restore_tool import make_compare_tool, make_restore_tool
 from agents_orchestrator.requirements_modernization_agent.prompts.migration_intent_prompt import (
     MIGRATION_INTENT_SYS_MESSAGE,
 )
@@ -25,6 +26,11 @@ AGENT_ID = "requirements_modernization"
 #: block (`has_document_tools`), so the prompt only names tools that are really bound.
 DOCUMENT_TOOLS = [*make_document_tools(AGENT_ID), *make_approval_tools(AGENT_ID)]
 
-app = build_tool_agent_graph(agent_type=AGENT_ID, tools=[*TOOLS, *DOCUMENT_TOOLS], checkpoint_name=AGENT_ID)
+#: Going back to an earlier brief from the chat (research §12.4): compare first, then
+#: restore as a NEW draft. The page's Restore button is the same operation.
+VERSION_TOOLS = [make_compare_tool(AGENT_ID, "brief"), make_restore_tool(AGENT_ID, "brief")]
 
-__all__ = ["DOCUMENT_TOOLS", "AGENT_ID", "MIGRATION_INTENT_SYS_MESSAGE", "TOOLS", "app"]
+app = build_tool_agent_graph(agent_type=AGENT_ID, tools=[*TOOLS, *DOCUMENT_TOOLS, *VERSION_TOOLS],
+                             checkpoint_name=AGENT_ID)
+
+__all__ = ["DOCUMENT_TOOLS", "AGENT_ID", "MIGRATION_INTENT_SYS_MESSAGE", "TOOLS", "VERSION_TOOLS", "app"]

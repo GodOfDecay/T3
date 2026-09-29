@@ -30,8 +30,11 @@ from agents_orchestrator.discovery_agent.analysis.inventory import (
 )
 from agents_orchestrator.discovery_agent.analysis.manifests import parse_module_manifest
 from agents_orchestrator.discovery_agent.analysis.risk import TIERS, score_module
+from agents_orchestrator.discovery_agent.analysis.unknowns import not_assessable
+from agents_orchestrator.modernization_common.handover.ids import mint
 
-SCHEMA_VERSION = 1
+#: 2: stable module ids (`M-xx`), "not assessable statically", golden_master.baselines.
+SCHEMA_VERSION = 2
 
 #: Word-boundary keywords per ecosystem, used to tell whether the target stack is the
 #: same language as a module (an upgrade codemods can do) or a different one (a
@@ -45,9 +48,9 @@ _ECOSYSTEM_WORDS: dict[str, re.Pattern[str]] = {
 }
 
 _GOLDEN_MASTER_NOTE = (
-    "No behaviour baseline has been captured yet. Recording real inputs and outputs of "
-    "the legacy system is what the Testing agent will diff the migrated code against; "
-    "it is planned for that phase and this field is reserved for it."
+    "No behaviour baseline has been captured yet. The Equivalence Testing agent records real "
+    "inputs and outputs of the legacy system; once a baseline is accepted, this points at it "
+    "(BL-01, …), and the migrated code is compared against it."
 )
 
 _TIER_LABEL = {
@@ -229,6 +232,12 @@ def assess_repository(
             "risk": risk.as_dict(),
         })
 
+    # STABLE IDS: numbered by PATH, not by risk. The report lists modules riskiest first, and
+    # a score moves with the scan date and findings; an id numbered by score would name a
+    # different module in the next run. Same checkout → same ids (research §6.2 item 1).
+    for n, row in enumerate(sorted(module_rows, key=lambda r: (r["path"], r["name"])), start=1):
+        row["id"] = mint("M", n)
+
     scores = [row["risk"]["score"] for row in module_rows]
     summary = {
         "module_count": len(module_rows),
@@ -258,7 +267,8 @@ def assess_repository(
         "dependency_graph": build_dependency_graph(modules, manifests),
         "flags": flags,
         "scanners": scanners or {"trivy": "skipped", "note": "No vulnerability scan was run."},
-        "golden_master": {"status": "not_captured", "ref": None, "note": _GOLDEN_MASTER_NOTE},
+        "golden_master": {"status": "not_captured", "baselines": [], "note": _GOLDEN_MASTER_NOTE},
+        "not_assessable_statically": not_assessable(root, module_rows, manifests),
     }
 
 
@@ -374,13 +384,13 @@ def assessment_markdown(artifacts: dict, *, max_modules: int | None = None) -> s
         lines += [f"_The tables below show the {len(modules)} riskiest modules; {omitted} more are "
                   "on the Dependency and Risk page and in the exported report._", ""]
 
-    lines += ["## Inventory", "", "| Module | Path | Ecosystem | Runtime | LOC | Tests |",
-              "|---|---|---|---|---:|---|"]
+    lines += ["## Inventory", "", "| Id | Module | Path | Ecosystem | Runtime | LOC | Tests |",
+              "|---|---|---|---|---|---:|---|"]
     for m in modules:
         rt = m.get("runtime") or {}
         runtime = f"{rt.get('name', '')} {rt.get('version', '')}".strip() or "—"
         lines.append(
-            f"| {_cell(m['name'])} | `{_cell(m['path'])}` | {_cell(m['ecosystem'])} | "
+            f"| {_cell(m.get('id'))} | {_cell(m['name'])} | `{_cell(m['path'])}` | {_cell(m['ecosystem'])} | "
             f"{_cell(runtime)} ({_cell(rt.get('status'))}) | {m['loc']:,} | {'yes' if m['has_tests'] else 'no'} |"
         )
     lines.append("")
@@ -416,23 +426,34 @@ def assessment_markdown(artifacts: dict, *, max_modules: int | None = None) -> s
     lines.append("")
 
     lines += ["## Module risk and migration tier", "",
-              "| Module | Score | Tier | Main factors |", "|---|---:|---|---|"]
+              "| Id | Module | Score | Tier | Main factors |", "|---|---|---:|---|---|"]
     for m in modules:
         top = sorted(m["risk"]["factors"], key=lambda f: -f["points"])[:3]
-        reasons = "; ".join(f"{f['factor']} +{f['points']}" for f in top) or "—"
+        # NOT MEASURED IS NOT ZERO (R39): an unmeasured factor reads "not measured", never "+0".
+        reasons = "; ".join(f"{f['factor']} " + (f"+{f['points']}" if f.get("measured", True) else "not measured")
+                            for f in top) or "—"
         lines.append(
-            f"| {_cell(m['name'])} | {m['risk']['score']} | {_TIER_LABEL.get(m['risk']['tier'], m['risk']['tier'])} | {_cell(reasons)} |"
+            f"| {_cell(m.get('id'))} | {_cell(m['name'])} | {m['risk']['score']} | {_TIER_LABEL.get(m['risk']['tier'], m['risk']['tier'])} | {_cell(reasons)} |"
         )
     lines.append("")
 
+    unknowns = artifacts.get("not_assessable_statically") or []
+    lines += ["## Not assessable statically", ""]
+    lines += ([f"- {_cell(q.get('question'))}" for q in unknowns]
+              or ["- Nothing listed."])
+    lines += ["", "_The code alone cannot answer these; Target Architecture asks them instead of assuming._", ""]
+
     golden = artifacts.get("golden_master") or {}
-    lines += ["## Behaviour baseline", "", f"- Status: {golden.get('status', 'not_captured')}. {golden.get('note', '')}", ""]
+    baselines = golden.get("baselines") or []
+    status = f"captured ({', '.join(baselines)})" if golden.get("status") == "captured" and baselines else \
+        golden.get("status", "not_captured")
+    lines += ["## Behaviour baseline", "", f"- Status: {status}. {golden.get('note', '')}", ""]
 
     lines += [
         "## Next steps", "",
         "- The BA accepts this assessment as the planning baseline by approving the exported report.",
-        "- Design decides the target architecture and migration pattern from it; Strategy sequences the "
-        "modules into waves, lowest risk first.",
+        "- Target Architecture decides the target and the migration pattern for each module from it; "
+        "Migration Strategy sequences the modules into waves, lowest risk first.",
         "",
     ]
     return "\n".join(lines)

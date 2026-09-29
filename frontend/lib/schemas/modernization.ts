@@ -31,7 +31,15 @@ const BriefModuleChange = z.object({
 });
 const BriefTradeOff = z.object({ decision: text, gain: text, cost: text });
 const BriefMilestone = z.object({ date: text, label: text, kind: z.string().default("other") });
-const BriefMeasure = z.object({ metric: text, current: text, target: text });
+/** What a success measure is about (research §6.1): Migration Strategy turns the
+ *  `equivalence` and `performance` ones into equivalence criteria. Null on a brief recorded
+ *  before `kind` existed — shown as "not yet classified", never guessed. */
+export const MEASURE_KINDS = ["equivalence", "performance", "security", "schedule", "cost"] as const;
+export type MeasureKind = (typeof MEASURE_KINDS)[number];
+const BriefMeasure = z.object({
+  metric: text, current: text, target: text,
+  kind: z.enum(MEASURE_KINDS).nullable().catch(null).default(null),
+});
 
 export const MigrationIntentBrief = z.object({
   system_name: z.string().default(""),
@@ -53,6 +61,13 @@ export const MigrationIntentBrief = z.object({
   in_scope: strings,
   out_of_scope: strings,
   constraints: strings,
+  /** Interfaces, files and reports the user said must not change — in THEIR words (the
+   *  record tool checks them against the conversation). Target Architecture turns each
+   *  into a contract (CT-xx). */
+  must_not_change: strings,
+  /** False when the wording could NOT be checked against the conversation — then the page
+   *  must not call it the user's own words. Null on older briefs. */
+  must_not_change_verified: z.boolean().nullable().default(null),
   success_criteria: strings,
   stakeholders: z.array(z.object({ name: z.string(), role: z.string().default("") })).default([]),
   assumptions: strings,
@@ -110,6 +125,9 @@ export const RiskFactor = z.object({
 });
 
 export const AssessedModule = z.object({
+  /** Stable within a commit (numbered by path), cited by every later agent. Empty on an
+   *  assessment recorded before ids existed (schema 1). */
+  id: z.string().default(""),
   name: z.string(),
   path: z.string(),
   ecosystem: z.string(),
@@ -186,8 +204,13 @@ export const DiscoveryAssessment = z.object({
   }),
   scanners: z.object({ trivy: z.string().default("skipped"), note: z.string().default("") })
     .default({ trivy: "skipped", note: "" }),
-  golden_master: z.object({ status: z.string(), note: z.string().default("") })
-    .default({ status: "not_captured", note: "" }),
+  /** A POINTER once Equivalence Testing accepts a baseline: {status: "captured", baselines: ["BL-01"]}. */
+  golden_master: z.object({ status: z.string(), note: z.string().default(""), baselines: strings })
+    .default({ status: "not_captured", note: "", baselines: [] }),
+  /** What the code alone cannot tell — questions for Target Architecture (research §6.2). */
+  not_assessable_statically: z.array(z.object({
+    topic: z.string().default(""), modules: strings, question: z.string(),
+  })).default([]),
 });
 export type DiscoveryAssessment = z.infer<typeof DiscoveryAssessment>;
 

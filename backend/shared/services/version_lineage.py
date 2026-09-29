@@ -144,26 +144,3 @@ async def compare_versions(db: AsyncSession, project_id: str, stage: str, a: int
     if missing:
         raise RestoreRefused(f"{stage} v{', v'.join(map(str, missing))} not found")
     return {"stage": stage, "from": a, "to": b, "differences": compare_payloads(left.payload, right.payload)}
-
-
-# ── the envelope (research §5.3) ─────────────────────────────────────────────
-
-def envelope_of(row: Any, *, agent_id: str, artifact: str) -> dict:
-    """A version as the hand-over envelope every Track 3 packet carries
-    (`agents_orchestrator/modernization_common/handover/packets.py::_Envelope`): read off the
-    version row — never assembled by a model."""
-    return {
-        "schema_version": 1,
-        "agent_id": agent_id,
-        "artifact": artifact,
-        "version": row.version,
-        "status": row.status,
-        "built_from": [
-            {k: v for k, v in item.items() if k in ("artifact", "version", "status", "commit")}
-            for item in (row.built_from or []) if item.get("artifact")
-        ],
-        "produced_by": {"user_id": row.produced_by, "model": None,
-                        "run_id": str(row.run_id) if row.run_id else None},
-        "produced_at": row.created_at.isoformat() if row.created_at else None,
-        "payload": row.payload,
-    }

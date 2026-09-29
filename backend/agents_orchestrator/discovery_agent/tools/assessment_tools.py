@@ -119,7 +119,18 @@ async def assess_legacy_repository(target_stack: str = "") -> str:
     s.assessment = artifacts
     saved = await _persist(artifacts)
     report = assessment_markdown(artifacts, max_modules=_REPORT_MODULE_LIMIT)
-    return f"{report}\n\n_{saved}_"
+    return f"{report}\n\n_{saved}_" + _handover_note(artifacts)
+
+
+def _handover_note(artifacts: dict) -> str:
+    """Can Target Architecture take this assessment? The facts are the code's, so the
+    assessment is always SAVED; a gap in what can be handed over is said, not hidden."""
+    from agents_orchestrator.modernization_common.handover.emit import assessment_packet  # noqa: PLC0415
+
+    out = assessment_packet(artifacts, {"version": 1, "status": "draft"})
+    if out.ok:
+        return ""
+    return ("\n\n_Not yet ready to hand to Target Architecture: " + "; ".join(out.problems[:5]) + "._")
 
 
 @tool
@@ -128,15 +139,17 @@ async def get_module_detail(module: str) -> str:
     with its status, what it depends on and what depends on it, and each risk factor.
 
     Args:
-        module: The module's name as it appears in the assessment.
+        module: The module's id (M-03) or its name as it appears in the assessment.
     """
     s = session()
     if not s.assessment:
         return "No assessment yet — call assess_legacy_repository first."
     modules = s.assessment.get("modules") or []
-    match = next((m for m in modules if m["name"].lower() == (module or "").strip().lower()), None)
+    wanted = (module or "").strip().lower()
+    match = next((m for m in modules if wanted in (m["name"].lower(), str(m.get("id") or "").lower())), None)
     if match is None:
-        return f"No module named '{module}'. Modules: {', '.join(m['name'] for m in modules)}"
+        return (f"No module '{module}'. Modules: "
+                + ", ".join(f"{m.get('id') or '?'} {m['name']}" for m in modules))
     return json.dumps(match, indent=1, default=str)
 
 

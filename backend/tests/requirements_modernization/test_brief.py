@@ -12,8 +12,12 @@ from agents_orchestrator.requirements_modernization_agent.tools import brief_too
 from config.ws_helper import set_session_id, set_tenant_id, set_user_id
 from shared.models.artifacts import MigrationIntentArtifact
 
+# Phase D: a brief is recorded only when it can be handed to the next agents — so a
+# "complete" brief now has a goal and at least one success measure with its kind.
 COMPLETE = {
     "system_name": "Billing",
+    "goal": "Move Billing onto a supported runtime before 31 March.",
+    "success_measures": [{"metric": "Invoices identical", "target": "100% of Q1 inputs", "kind": "equivalence"}],
     "business_drivers": [".NET Framework 4.5.2 is out of support", "IIS hosting cost"],
     "current_stack": ".NET Framework 4.5.2 WebForms on IIS",
     "target_stack": ".NET 8 on Azure App Service",
@@ -67,7 +71,8 @@ async def test_an_incomplete_brief_is_not_persisted(monkeypatch):
         return "saved"
 
     monkeypatch.setattr(brief_tools, "_persist", fake_persist)
-    partial = {k: v for k, v in COMPLETE.items() if k != "success_criteria"}
+    # Criteria are derived from measures when absent, so both go for the section to be missing.
+    partial = {k: v for k, v in COMPLETE.items() if k not in ("success_criteria", "success_measures")}
     out = await brief_tools.record_migration_intent.ainvoke(partial)
     assert out.startswith("NOT RECORDED YET")
     assert "Success criteria" in out
@@ -196,7 +201,7 @@ V2 = {
     "deadline": "2027-06-30", "budget": "$450,000",
     "milestones": [{"date": "2027-06-30", "label": "Data-centre exit", "kind": "Data-centre exit"},
                    {"date": "2027-02-01", "label": "Legacy freeze", "kind": "freeze"}],
-    "success_measures": [{"metric": "API p95", "current": "~800 ms", "target": "<= 300 ms"}],
+    "success_measures": [{"metric": "API p95", "current": "~800 ms", "target": "<= 300 ms", "kind": "performance"}],
     "success_criteria": ["Identical payouts on 10,000 recorded claims"],
 }
 

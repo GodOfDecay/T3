@@ -29,10 +29,12 @@ import {
   Scale,
 } from "lucide-react";
 
-import type {
-  BriefLayer,
-  BriefModuleChange,
-  MigrationIntentBrief,
+import {
+  MEASURE_KINDS,
+  type BriefLayer,
+  type BriefModuleChange,
+  type MeasureKind,
+  type MigrationIntentBrief,
 } from "@/lib/schemas/modernization";
 import { cn } from "@/lib/utils";
 
@@ -553,20 +555,61 @@ export function Constraints({ brief }: { brief: MigrationIntentBrief }) {
   );
 }
 
+/* ── 8b. must not change ──────────────────────────────────────────────────── */
+
+/** The user's own words, quoted — each becomes a contract Target Architecture proves unchanged. */
+export function MustNotChange({ brief }: { brief: MigrationIntentBrief }) {
+  const items = brief.must_not_change.filter((c) => c.trim());
+  return (
+    <div className="space-y-2">
+      <p className="text-muted-foreground text-xs">
+        {brief.must_not_change_verified === false
+          ? "Not checked against the conversation — confirm the wording with the user. "
+          : "In the user’s own words. "}
+        Target Architecture turns each into a contract that later agents prove unchanged.
+      </p>
+      <ul aria-label="Must not change" className="space-y-1.5">
+        {items.map((c, i) => (
+          <li key={i} className="bg-card flex items-start gap-3 rounded-xl border px-3.5 py-2.5">
+            <Lock className="text-primary mt-0.5 size-4 shrink-0" aria-hidden />
+            <q className="text-[13.5px] leading-relaxed">{c}</q>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
 /* ── 9. success ───────────────────────────────────────────────────────────── */
+
+const KIND_LABEL: Record<MeasureKind, string> = {
+  equivalence: "Equivalence", performance: "Performance", security: "Security", schedule: "Schedule", cost: "Cost",
+};
 
 /** What a model writes when there is no figure for today — shown as nothing. */
 function isPlaceholder(text: string): boolean {
   return ["", "-", "—", "n/a", "na", "none", "unknown", "tbd", "not measured"].includes(text.trim().toLowerCase());
 }
 
+type Measure = MigrationIntentBrief["success_measures"][number];
+
+/** Measures grouped by `kind`, in the fixed order; unclassified ones (older briefs) last. */
+function measureGroups(measures: readonly Measure[]): { kind: MeasureKind | null; items: Measure[] }[] {
+  const groups = MEASURE_KINDS.map((kind) => ({ kind, items: measures.filter((m) => m.kind === kind) }));
+  const rest = measures.filter((m) => m.kind == null);
+  return [...groups, { kind: null, items: rest }].filter((g) => g.items.length > 0);
+}
+
 export function Success({ brief }: { brief: MigrationIntentBrief }) {
   const criteria = brief.success_criteria.filter((c) => c.trim());
+  const groups = measureGroups(brief.success_measures);
   return (
     <div className="space-y-4">
-      {brief.success_measures.length > 0 && (
+      {groups.map((g) => (
+        <section key={g.kind ?? "unclassified"} aria-label={g.kind ? `${KIND_LABEL[g.kind]} measures` : "Unclassified measures"}>
+          <p className="mb-2 text-sm font-semibold">{g.kind ? KIND_LABEL[g.kind] : "Not yet classified"}</p>
         <ul className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
-          {brief.success_measures.map((m, i) => (
+          {g.items.map((m, i) => (
             <li key={i} className="bg-card rounded-xl border p-4">
               <p className="text-muted-foreground flex items-center gap-1.5 text-[11px] font-semibold tracking-wide uppercase">
                 <Target className="size-3.5" aria-hidden /> {m.metric}
@@ -583,7 +626,8 @@ export function Success({ brief }: { brief: MigrationIntentBrief }) {
             </li>
           ))}
         </ul>
-      )}
+        </section>
+      ))}
       {criteria.length > 0 && (
         <div>
           {brief.success_measures.length > 0 && <p className="mb-2 text-sm font-semibold">Acceptance criteria</p>}

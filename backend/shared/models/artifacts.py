@@ -293,12 +293,26 @@ class Milestone(BaseModel):
         return _pick(v, MILESTONE_KINDS, "other")
 
 
+#: What a success measure is about (research §6.1). Migration Strategy turns the
+#: `equivalence` and `performance` ones into equivalence criteria without parsing text.
+MEASURE_KINDS = ("equivalence", "performance", "security", "schedule", "cost")
+
+
 class SuccessMeasure(BaseModel):
-    """A measurable success criterion: the metric, where it is today, where it must be."""
+    """A measurable success criterion: the metric, where it is today, where it must be, and
+    what KIND of measure it is. `kind` is None on a brief recorded before it existed; the
+    record tool requires it on every new one (the hand-over packet does)."""
 
     metric: str
     current: str = ""
     target: str = ""
+    kind: Optional[str] = None
+
+    @field_validator("kind", mode="before")
+    @classmethod
+    def _kind(cls, v: Any) -> Optional[str]:
+        value = str(v or "").strip().lower()
+        return value if value in MEASURE_KINDS else None
 
 
 class MigrationIntentArtifact(BaseModel):
@@ -325,6 +339,14 @@ class MigrationIntentArtifact(BaseModel):
     in_scope: List[str] = []
     out_of_scope: List[str] = []
     constraints: List[str] = []
+    # Interfaces, files and reports the user said must not change, IN THE USER'S WORDS
+    # (the record tool checks each against the conversation). Target Architecture turns
+    # each into a contract (CT-xx) that later agents prove unchanged. Research §6.1.
+    must_not_change: List[str] = []
+    # Whether the entries were checked against the conversation: True (checked), False (the
+    # conversation could not be read, so they were NOT checked — the brief must say so rather
+    # than claim "the user's own words"), None (nothing to check, or recorded before Phase D).
+    must_not_change_verified: Optional[bool] = None
     deadline: str = ""
     budget: str = ""
     milestones: List[Milestone] = []
@@ -342,7 +364,8 @@ class MigrationIntentArtifact(BaseModel):
     tech_stack: Optional[dict] = None
     recorded_at: Optional[str] = None
     agent_session_id: Optional[str] = None
-    version: int = 2
+    # 3: must_not_change and success-measure kinds (Phase D). Older briefs still load.
+    version: int = 3
 
 
 class DiscoveryArtifact(BaseModel):
@@ -360,6 +383,9 @@ class DiscoveryArtifact(BaseModel):
     flags: Dict[str, Any]
     scanners: Dict[str, Any]
     golden_master: Dict[str, Any]
+    # Schema 2: what the code alone cannot tell (research §6.2). Without this field the
+    # model would DROP it silently on persist (pydantic ignores unknown keys).
+    not_assessable_statically: List[Dict[str, Any]] = []
 
 
 # ---------------------------------------------------------------------------

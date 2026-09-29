@@ -113,7 +113,7 @@ export function keyFacts(brief: MigrationIntentBrief): KeyFact[] {
 /** The sections the brief has, in order — the same plan as the Word/PDF documents. */
 export type BriefSection =
   | "glance" | "why" | "recommendation" | "target_state" | "scope" | "modules"
-  | "tradeoffs" | "timeline" | "constraints" | "success" | "people" | "risks";
+  | "tradeoffs" | "timeline" | "constraints" | "must_not_change" | "success" | "people" | "risks";
 
 export function sectionPlan(brief: MigrationIntentBrief): BriefSection[] {
   const plan: BriefSection[] = ["glance", "why"];
@@ -124,7 +124,9 @@ export function sectionPlan(brief: MigrationIntentBrief): BriefSection[] {
   if (brief.module_changes.length) plan.push("modules");
   if (brief.trade_offs.length) plan.push("tradeoffs");
   if (brief.milestones.length) plan.push("timeline");
-  plan.push("constraints", "success");
+  plan.push("constraints");
+  if (brief.must_not_change.some((s) => s.trim())) plan.push("must_not_change");
+  plan.push("success");
   if (brief.stakeholders.length) plan.push("people");
   plan.push("risks");
   return plan;

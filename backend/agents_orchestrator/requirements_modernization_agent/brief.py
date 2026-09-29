@@ -56,6 +56,18 @@ MILESTONE_LABEL = {
     "start": "Start", "freeze": "Freeze", "compliance": "Compliance", "deadline": "Deadline",
     "cutover": "Cutover", "decommission": "Decommission", "other": "Milestone",
 }
+def must_not_change_caption(brief: MigrationIntentArtifact) -> str:
+    """What the must-not-change list is — claimed as the user's own words only when checked."""
+    tail = "Target Architecture turns each into a contract that later agents prove unchanged."
+    if brief.must_not_change_verified is False:
+        return "Not checked against the conversation — confirm the wording with the user. " + tail
+    return "In the user's own words. " + tail
+
+
+MEASURE_KIND_LABEL = {
+    "equivalence": "Equivalence", "performance": "Performance", "security": "Security",
+    "schedule": "Schedule", "cost": "Cost",
+}
 #: Worst first — a layer made of several modules shows its worst module's status.
 _STATUS_RANK = ("eol", "approaching", "legacy", "unknown", "supported")
 
@@ -299,11 +311,16 @@ def brief_markdown(brief: MigrationIntentArtifact) -> str:
     lines += section("Constraints")
     lines += [*_bullets(brief.constraints), ""]
 
+    if brief.must_not_change:
+        lines += section("Must not change")
+        lines += [f"_{must_not_change_caption(brief)}_", "",
+                  *[f"- “{_cell(s)}”" for s in brief.must_not_change], ""]
+
     lines += section("How we will measure success")
     if brief.success_measures:
-        lines += ["| Measure | Today | Target |", "|---|---|---|",
-                  *[f"| {_cell(s.metric)} | {_cell(s.current)} | **{_cell(s.target)}** |"
-                    for s in brief.success_measures], ""]
+        lines += ["| Measure | Kind | Today | Target |", "|---|---|---|---|",
+                  *[f"| {_cell(s.metric)} | {_cell(MEASURE_KIND_LABEL.get(s.kind or '', 'not classified'))} | "
+                    f"{_cell(s.current)} | **{_cell(s.target)}** |" for s in brief.success_measures], ""]
     lines += [*_bullets(brief.success_criteria), ""]
 
     if brief.stakeholders:

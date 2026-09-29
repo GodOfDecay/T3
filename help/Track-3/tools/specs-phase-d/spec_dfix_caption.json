@@ -1,0 +1,1 @@
+{"target": "agents_orchestrator/requirements_modernization_agent/brief.py", "tests": ["tests/discovery", "tests/requirements_modernization", "tests/modernization_common/test_handover_emit.py", "tests/modernization_common/test_verbatim.py"], "env_test": true, "mutants": [["always-own-words", "    if brief.must_not_change_verified is False:", "    if False:"]]}

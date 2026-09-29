@@ -225,7 +225,7 @@ def test_assessment_summary_agrees_with_its_modules(repo):
     tiers = summary["tier_counts"]
     assert sum(tiers.values()) == 5
     assert summary["flag_counts"]["eol"] == len(artifacts["flags"]["eol"])
-    assert artifacts["schema_version"] == 1
+    assert artifacts["schema_version"] == 2  # Phase D: M-xx ids, not-assessable, golden-master pointer
     assert artifacts["golden_master"]["status"] == "not_captured"
 
 

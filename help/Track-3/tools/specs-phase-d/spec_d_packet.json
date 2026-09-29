@@ -1,0 +1,5 @@
+{"target": "shared/routers/modernization.py", "tests": ["tests/modernization_common/test_phase_d_handover_and_restore.py"], "env_test": true,
+ "mutants": [
+  ["packet-from-latest-not-version", "    row = await svc.get_version(db, resolved, stage, version)\n    if row is None or row.payload is None:\n        raise HTTPException(status_code=404, detail=f\"v{version} not found\")\n    build = ", "    row = await svc.get_version(db, resolved, stage, 1)\n    if row is None or row.payload is None:\n        raise HTTPException(status_code=404, detail=f\"v{version} not found\")\n    build = "],
+  ["wrong-packet-type", "    build = brief_packet if stage == \"requirements_modernization\" else assessment_packet", "    build = assessment_packet"]
+ ]}

@@ -1,6 +1,6 @@
 {
   "assessment": {
-    "schema_version": 1,
+    "schema_version": 2,
     "generated_at": "2026-09-10T09:00:00+00:00",
     "as_of": "2026-09-10",
     "target_stack": ".NET 8",
@@ -93,8 +93,8 @@
                 "cve": "CVE-2024-21907",
                 "severity": "high",
                 "fixed_version": "13.0.1",
-                "target": "src/Billing.Web/packages.config",
-                "title": "Improper handling of exceptional conditions"
+                "title": "Improper handling of exceptional conditions",
+                "target": "src/Billing.Web/packages.config"
               }
             ]
           },
@@ -164,7 +164,8 @@
               "detail": "No tests exercise this module, so preserved behaviour is harder to prove."
             }
           ]
-        }
+        },
+        "id": "M-04"
       },
       {
         "name": "billing-notifier",
@@ -240,7 +241,8 @@
               "detail": "1 deprecated package(s) must be replaced, not upgraded."
             }
           ]
-        }
+        },
+        "id": "M-02"
       },
       {
         "name": "Billing.Core",
@@ -306,7 +308,8 @@
               "detail": "2 other module(s) depend on this one — a change here ripples."
             }
           ]
-        }
+        },
+        "id": "M-03"
       },
       {
         "name": "Billing.Core.Tests",
@@ -358,7 +361,8 @@
               "detail": "Past the vendor's end of support."
             }
           ]
-        }
+        },
+        "id": "M-05"
       },
       {
         "name": "billing-batch",
@@ -413,7 +417,8 @@
               "detail": "No tests exercise this module, so preserved behaviour is harder to prove."
             }
           ]
-        }
+        },
+        "id": "M-01"
       }
     ],
     "dependency_graph": {
@@ -651,9 +656,23 @@
     },
     "golden_master": {
       "status": "not_captured",
-      "ref": null,
-      "note": "No behaviour baseline has been captured yet. Recording real inputs and outputs of the legacy system is what the Testing agent will diff the migrated code against; it is planned for that phase and this field is reserved for it."
-    }
+      "baselines": [],
+      "note": "No behaviour baseline has been captured yet. The Equivalence Testing agent records real inputs and outputs of the legacy system; once a baseline is accepted, this points at it (BL-01, …), and the migrated code is compared against it."
+    },
+    "not_assessable_statically": [
+      {
+        "topic": "scheduler",
+        "modules": [
+          "M-01"
+        ],
+        "question": "When do the scheduled jobs run, in what order, and what triggers them (M-01)? That lives in the scheduler, not in the repository."
+      },
+      {
+        "topic": "configuration",
+        "modules": [],
+        "question": "Environment-specific configuration (connection strings, endpoints, credentials, feature flags) is held in each environment, not in the code. The repository has no per-environment files, so all of it must come from the team."
+      }
+    ]
   },
   "brief": {
     "system_name": "Billing",

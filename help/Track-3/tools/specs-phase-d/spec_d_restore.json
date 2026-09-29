@@ -1,0 +1,1 @@
+{"target": "agents_orchestrator/modernization_common/restore_tool.py", "tests": ["tests/modernization_common/test_phase_d_handover_and_restore.py"], "env_test": true, "mutants": [["orchestrator-allowed", "    if get_orchestrator_run():", "    if False:"], ["no-reason-needed", "    if not (reason or \"\").strip():", "    if False:"]]}

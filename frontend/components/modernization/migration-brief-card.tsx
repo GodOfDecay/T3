@@ -7,6 +7,7 @@ import {
   BriefHero,
   ChangeAtAGlance,
   Constraints,
+  MustNotChange,
   ModuleChanges,
   People,
   RecommendedStack,
@@ -41,6 +42,7 @@ const TITLES: Record<BriefSection, string> = {
   tradeoffs: "Trade-offs",
   timeline: "Timeline",
   constraints: "Constraints",
+  must_not_change: "Must not change",
   success: "How we will measure success",
   people: "Stakeholders",
   risks: "Assumptions, risks and open questions",
@@ -57,6 +59,7 @@ function body(key: BriefSection, brief: MigrationIntentBrief): React.ReactNode {
     case "tradeoffs": return <TradeOffs brief={brief} />;
     case "timeline": return <Timeline brief={brief} />;
     case "constraints": return <Constraints brief={brief} />;
+    case "must_not_change": return <MustNotChange brief={brief} />;
     case "success": return <Success brief={brief} />;
     case "people": return <People brief={brief} />;
     case "risks": return <RisksAndQuestions brief={brief} />;

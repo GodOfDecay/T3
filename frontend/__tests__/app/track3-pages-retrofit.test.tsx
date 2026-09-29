@@ -38,6 +38,8 @@ const state = vi.hoisted(() => ({
   stale: false,
   stalenessCalls: 0,
   staleRejected: false,
+  packetProblems: [] as string[],
+  packetFails: false,
   publishRefusesWithoutReason: false,
 }));
 
@@ -64,6 +66,16 @@ vi.mock("@/lib/api/projects", () => ({
   getProject: async () => ({ id: PROJECT, name: "ClaimTrack Modernization", track: state.track }),
 }));
 // The Programme strip in the page header: no modules yet, so it stays silent.
+vi.mock("@/lib/api/modernization", async (orig) => ({
+  ...(await (orig() as Promise<Record<string, unknown>>)),
+  getVersionPacket: async (_p: string, stage: string, version: number) => {
+    if (state.packetFails) throw new Error("backend unavailable");
+    return {
+    stage, version, ok: state.packetProblems.length === 0, problems: state.packetProblems,
+    packet: state.packetProblems.length === 0 ? { payload: {} } : null,
+  };
+  },
+}));
 vi.mock("@/lib/api/modernization-programme", async (orig) => ({
   ...(await (orig() as Promise<Record<string, unknown>>)),
   getLedger: async () => ({ projectId: PROJECT, states: [], modules: [] }),
@@ -139,6 +151,8 @@ beforeEach(() => {
   state.stale = false;
   state.stalenessCalls = 0;
   state.staleRejected = false;
+  state.packetProblems = [];
+  state.packetFails = false;
   state.publishRefusesWithoutReason = false;
 });
 afterEach(cleanup);
@@ -321,5 +335,45 @@ describe("restore, compare and staleness (Phase C)", () => {
     await user.click(await screen.findByRole("button", { name: "Compare with v1" }));
     const changes = await screen.findByRole("region", { name: "Changes from v1 to v2" });
     expect(changes.textContent).toContain("one → two");
+  });
+});
+
+describe("the hand-over to Target Architecture (Phase D)", () => {
+  it("says a draft is ready once approved, and an approved version is ready", async () => {
+    const { unmount } = viewAt(1, 1);
+    expect((await screen.findByLabelText("Hand-over")).textContent).toBe(
+      "Ready to hand to Target Architecture once approved.");
+    unmount();
+    state.version = { ...state.version, status: "published" };
+    viewAt(1, 1);
+    expect((await screen.findByLabelText("Hand-over")).textContent).toBe("Ready to hand to Target Architecture.");
+  });
+
+  it("says nothing about a rejected version, which is never handed over", async () => {
+    state.version = { ...state.version, status: "rejected" };
+    viewAt(1, 1);
+    await screen.findByText("brief body");
+    await new Promise((r) => setTimeout(r, 20));
+    expect(screen.queryByLabelText("Hand-over")).toBeNull();
+  });
+
+  it("lists why a version cannot be handed over yet, in plain words, capped", async () => {
+    // The backend's own wording (handover/emit.py `_plain`).
+    state.packetProblems = [
+      "Success measure 1 has no kind (equivalence, performance, security, schedule or cost).",
+      ...Array.from({ length: 7 }, (_, i) => `Problem ${i + 2}.`),
+    ];
+    viewAt(1, 1);
+    const box = await screen.findByLabelText("Hand-over");
+    expect(box.textContent).toContain("not yet ready to hand to Target Architecture");
+    expect(box.textContent).toContain("Success measure 1 has no kind");
+    expect(box.querySelectorAll("li")).toHaveLength(6);
+    expect(box.textContent).toContain("…and 2 more.");
+  });
+
+  it("says when the check itself failed, rather than nothing", async () => {
+    state.packetFails = true;
+    viewAt(1, 1);
+    expect((await screen.findByLabelText("Hand-over")).textContent).toContain("Could not check");
   });
 });

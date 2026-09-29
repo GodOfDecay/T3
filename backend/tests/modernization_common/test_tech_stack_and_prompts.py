@@ -81,7 +81,9 @@ async def test_the_recorded_brief_carries_the_stack_set_by_code(monkeypatch):
     monkeypatch.setattr(versions, "freeze_version", no_version)
     brief_tools._LAST_BRIEF.clear()
     reply = await brief_tools.record_migration_intent.ainvoke({
-        "system_name": "ClaimTrack", "business_drivers": ["End of support"],
+        "system_name": "ClaimTrack", "goal": "Leave Dallas on supported runtimes.",
+        "business_drivers": ["End of support"],
+        "success_measures": [{"metric": "Payouts identical", "target": "100%", "kind": "equivalence"}],
         "current_stack": "Java 7", "target_stack": "Java 21", "in_scope": ["all five components"],
         "constraints": ["off Dallas by 30 Jun 2027"], "success_criteria": ["payouts identical"],
         "recommendation_summary": "Java 21 and React.",

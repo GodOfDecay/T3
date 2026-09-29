@@ -30,7 +30,9 @@ from agents_orchestrator.requirements_modernization_agent.brief import (
     CHANGE_LABEL,
     DRIVER_LABEL,
     EFFORT_LABEL,
+    MEASURE_KIND_LABEL,
     MILESTONE_LABEL,
+    must_not_change_caption,
     STATUS_LABEL,
     display_drivers,
     display_layers,
@@ -115,6 +117,7 @@ SECTION_TITLES = {
     "tradeoffs": "Trade-offs",
     "timeline": "Timeline",
     "constraints": "Constraints",
+    "must_not_change": "Must not change",
     "success": "How we will measure success",
     "people": "Stakeholders",
     "risks": "Assumptions, risks and open questions",
@@ -136,7 +139,10 @@ def _plan(brief: MigrationIntentArtifact) -> list[str]:
         plan.append("tradeoffs")
     if brief.milestones:
         plan.append("timeline")
-    plan += ["constraints", "success"]
+    plan.append("constraints")
+    if _clean(brief.must_not_change):
+        plan.append("must_not_change")
+    plan.append("success")
     if brief.stakeholders:
         plan.append("people")
     plan.append("risks")
@@ -762,6 +768,13 @@ class _Word:
         self.heading("constraints")
         self.bullets(self.doc, self.b.constraints, mark="■", mark_colour=ACCENT, size=9.5)
 
+    def must_not_change(self) -> None:
+        self.heading("must_not_change")
+        p = self.para(self.doc, after=4)
+        self.run(p, must_not_change_caption(self.b), size=8.5, italic=True, colour=MUTED)
+        self.bullets(self.doc, [f"“{s}”" for s in _clean(self.b.must_not_change)], mark="■",
+                     mark_colour=ACCENT, size=9.5)
+
     def success(self) -> None:
         self.heading("success")
         measures = self.b.success_measures
@@ -775,6 +788,8 @@ class _Word:
                 cells = t.rows[r].cells
                 p = self.para(cells[0], first=True, after=0)
                 self.run(p, m.metric, size=9.5, bold=True, colour=INK)
+                p = self.para(cells[0], after=0)
+                self.run(p, MEASURE_KIND_LABEL.get(m.kind or "", "Not classified"), size=7.5, colour=MUTED)
                 p = self.para(cells[1], first=True, after=0)
                 self.run(p, _value(m.current), size=9.5, colour=MUTED)
                 self.shade(cells[2], TARGET)
@@ -1252,13 +1267,21 @@ class _Pdf:
     def constraints(self):
         self.section("constraints", self.bullets(self.b.constraints, mark="■", mark_colour=ACCENT))
 
+    def must_not_change(self):
+        body = [self.P(must_not_change_caption(self.b), size=8, colour=MUTED, after=3)]
+        body += self.bullets([f"“{s}”" for s in _clean(self.b.must_not_change)], mark="■",
+                             mark_colour=ACCENT)
+        self.section("must_not_change", body)
+
     def success(self):
         from reportlab.platypus import Spacer  # noqa: PLC0415
 
         body: list = []
         if self.b.success_measures:
             data = [[self.P(h, size=6.8, colour=MUTED, bold=True) for h in ("MEASURE", "TODAY", "TARGET")]]
-            data += [[self.P(m.metric, size=8.8, colour=INK, bold=True), self.P(_value(m.current), size=8.8, colour=MUTED),
+            data += [[[self.P(m.metric, size=8.8, colour=INK, bold=True),
+                       self.P(MEASURE_KIND_LABEL.get(m.kind or "", "Not classified"), size=7, colour=MUTED)],
+                      self.P(_value(m.current), size=8.8, colour=MUTED),
                       self.P(m.target or "—", size=9.5, colour=ACCENT, bold=True)] for m in self.b.success_measures]
             body += [self.table(data, [80, 44, 50], [("BACKGROUND", (0, 0), (-1, 0), self.C(PANEL)),
                                                     ("BACKGROUND", (2, 1), (2, -1), self.C(TARGET)),

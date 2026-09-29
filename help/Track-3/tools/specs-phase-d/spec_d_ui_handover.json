@@ -1,0 +1,1 @@
+{"root": "frontend", "target": "components/modernization/version-view.tsx", "cmd": ["node", "node_modules/vitest/vitest.mjs", "run", "__tests__/app/track3-pages-retrofit.test.tsx"], "mutants": [["handover-always-ready", "  if (q.data.ok) {", "  if (true) {"], ["problems-hidden", "        {q.data.problems.map((p) => <li key={p}>{p}</li>)}", ""]]}

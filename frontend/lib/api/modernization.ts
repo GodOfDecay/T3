@@ -1,3 +1,5 @@
+import { z } from "zod";
+
 import type { ProjectId } from "@/lib/schemas";
 import {
   DiscoveryResponse,
@@ -63,3 +65,18 @@ export const versionExportHref = (
   format: "docx" | "pdf",
 ) =>
   `/api/projects/${encodeURIComponent(id)}/modernization/${KIND_FOR_STAGE[stage]}/versions/${version}/export?format=${format}`;
+
+/** What a version hands the next agent (Phase D): ready, or the reasons it is not. */
+export const VersionPacket = z.object({
+  stage: z.string(),
+  version: z.number(),
+  ok: z.boolean(),
+  problems: z.array(z.string()).default([]),
+  packet: z.record(z.string(), z.unknown()).nullable(),
+});
+export type VersionPacket = z.infer<typeof VersionPacket>;
+
+export const getVersionPacket = (id: ProjectId, stage: Track3Stage, version: number) =>
+  api(`/projects/${encodeURIComponent(id)}/modernization/${KIND_FOR_STAGE[stage]}/versions/${version}/packet`, {
+    schema: VersionPacket,
+  });
