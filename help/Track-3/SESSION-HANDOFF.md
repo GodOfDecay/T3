@@ -1,196 +1,319 @@
-# Track 3 — Session handoff (read this first)
+# Track 3 (Code Modernization) — Handoff for whoever builds the next agents
 
-**Written:** 2026-09-28; **updated 2026-09-29 at the end of Phase D** (session 3).
-**Branch:** `akshat_track3` on `origin` (the team collaborates there; never `track-3`). Commits: `8c90522c`
-(A, B, most of C), `9f2e81f6` (C closed + Redis reader fixes), then the Phase D commit. `git push` is blocked
-for Claude in auto mode — ask the user to run `! git push`.
-**Read next, in this order:** this file → `help/Track-3/build-log.md` (Entries 1–10, the evidence) →
-`docs/superpowers/plans/2026-09-28-track3-master-plan.md` (the phase map) →
-`help/Track-3/Track-3 Implementation Prompt.md` (the rules; §9 = mandatory stops).
-Do **not** re-read the ~8,000 lines of Track 3 design docs up front — read each agent's section of
-`track3-research.md` §6.x only when you start that agent's phase.
+**Updated:** 2026-09-29, end of Phase D. **Branch:** `akshat_track3` on `origin` (the team's shared
+branch; never push Track 3 work to `track-3`). Head: `0c814fad` (Phase D), on top of `9f2e81f6` (Phase C
+closed) and `8c90522c` (A, B and most of C). The working tree was clean at hand-off.
+
+**Read in this order:**
+1. This file.
+2. `help/Track-3/track3-research.md` §6.x for **the one agent you are building**. Do not read the ~8,000
+   lines of design docs up front.
+3. `help/Track-3/Track-3 Lessons from Track 1-2.md` (rules R1–R57).
+4. `help/Track-3/build-log.md` for the evidence behind any decision below (Entries 1–10).
+
+The phase map is `docs/superpowers/plans/2026-09-28-track3-master-plan.md`. The binding rules and the
+mandatory stops are in `help/Track-3/Track-3 Implementation Prompt.md` §9.
 
 ---
 
-## 1. What the user asked for (standing instructions)
+## 1. Where it stands
 
-- Build Track 3 phase by phase per the master plan, "in the same manner" as A and B: tests first where
-  possible, **mutation-prove every guard (R46)**, an **independent adversarial reviewer** (R54), log
-  every decision/finding in `build-log.md`, give the user a click-through script per phase.
-- **No timeline** thinking. Phases are ordered by dependency only.
-- Track 3 = Code Modernization; when a user creates a project and picks Track 3, the project must open
-  with the ten Track 3 agents (done — see §3).
-- Integrations must ride the existing platform (BU grant → stage wiring → access level → project
-  credential → `get_connector_for_session`); **Track 1/2 must keep working** (it is complete).
-- ClaimTrack is a **simulated customer** scenario; there is **no real legacy code yet** — do not try to
-  pull repos or test credentials; the user said Azure DevOps and the model key work.
-- **DONE:** `akshat_track3` exists on GitHub (pushed by the user, 2026-09-28). Push further commits there —
-  NOT to `track-3`. The first commit holds: everything — this session's work AND the previously untracked files
-  (`help/Track-3/…` including the moved docs; the deleted `help/track3-*.md` are the moved originals).
-  Commit message must end with `Co-Authored-By: Claude Sonnet 5 <noreply@anthropic.com>`. Before pushing:
-  `git status` review — `.env` / `.env.test` are gitignored (keep it so); do not commit `backend/files/`,
-  logs, `node_modules`. Then continue with **Phase D**.
+Track 3 has ten agents in hand-off order. The two built ones are live on their pages; tiles 3–10 show
+**Coming soon** until built and click-through-verified (R42).
 
-## 2. Environment (verified this session — do not re-investigate)
+| # | Agent id | UI name | Owner role | Status |
+|---|---|---|---|---|
+| 1 | `requirements_modernization` | Migration Intent | BA | **Built** (Phases A, B, D) |
+| 2 | `discovery` | Dependency and Risk | BA | **Built** (Phases A, B, D) |
+| 3 | `design_modernization` | Target Architecture | Architect | **Next: Phase E** |
+| 4 | `strategy` | Migration Strategy | Architect | Phase F |
+| 5 | `testing_modernization` | Equivalence Testing | QA | Phase G (baseline), J (verify) |
+| 6 | `development_modernization` | Migration Development | Developer (D10) | Phase H |
+| 7 | `code_review_modernization` | Migration Review | Architect | Phase I |
+| 8 | `security_modernization` | Security (Modernization) | Security Engineer | Phase I |
+| 9 | `deployment_modernization` | Cutover | DevOps Engineer | Phase K |
+| 10 | `documentation_modernization` | Cutover Pack | BA | Phase L |
+
+**The backbone every agent from 3 onward uses is DONE** (Phase C): hand-over packets, the module ledger,
+version provenance/restore/compare/staleness, legacy vs target repositories, the universal Project Admin
+fallback approval, SLA escalation and the Programme board. Agents 1–2 now emit the packets agent 3 reads
+(Phase D).
+
+**Quality bar met by every phase so far:**
+- tests first where possible;
+- every guard mutation-proven;
+- an independent adversarial review, followed by a fix wave that is also mutation-proven;
+- the Track 1 regression set green (last run 1,420 + 760 + 41 passed, 0 failed);
+- a click-through script for the user.
+Keep that bar (§6).
+
+---
+
+## 2. Enterprise non-negotiables (apply to every agent)
+
+- **Tenancy.** Every table is FORCE RLS on `app.current_tenant_id`, and the app role `sdlc_app` is **not**
+  BYPASSRLS:
+  - Background jobs go tenant by tenant (`organizations` is not RLS-scoped); see
+    `workers/approval_sla_sweeper.py`.
+  - `get_db_session_superuser` sees **nothing** in RLS tables.
+  - New tables: FORCE RLS + insert policy + grants (`scripts.grant_app_role`), with a tenant-isolation
+    test.
+- **Authorization is project-scoped, not tenant-union.** Permissions in a token are the union across a
+  user's bindings, so a Track 3 gate must also check the role **on this project**. Use the existing
+  helpers:
+  - `fallback_approval.project_roles`, which honours `expires_at`;
+  - `assert_can_administer_project`;
+  - `assert_agent_access_for_chat_on_track`, which checks membership, track and reach.
+  - A route under `/{project_id}` needs `require_project_access` (Lessons R11).
+- **Nobody approves their own work.** The DB enforces `published_by <> produced_by`. For Track 3 the
+  check also follows `restored_from` (`version_lineage.producers_of`). A producer can neither approve
+  nor reject.
+- **Approvals:**
+  - Track 3 sign-offs go to the owning role, or to a Project Admin **of that project** as fallback, with
+    a reason. That approval is labelled `approved_as = fallback:project_admin` and appears in the
+    Cutover Pack.
+  - The Strict / after-SLA policies are per project (Settings → Code Modernization), and changes to
+    them are audited.
+  - Track 1 approval behaviour must stay unchanged.
+- **Consequential actions** (board writes, pushes, PRs, cutover) need the owner role **and** the user's
+  consent in this turn (`authorize_consequential`). Show exactly what will be written first.
+- **Repositories:**
+  - Legacy is **read-only for every stage**.
+  - Only Migration Development and Cutover write the **target**. Every push/PR tool **must call
+    `repository_roles.assert_target_write`** first. It is built and tested, but **nothing calls it
+    yet**, and the UI says so.
+  - Integrations ride the platform chain: BU grant → stage wiring → access level →
+    `resolve_effective_access`, with the project credential through `get_connector_for_session`.
+    Never add a second path.
+- **Not measured is not zero (R39):** a number that wasn't produced reads "not measured" or "not scanned",
+  never 0.
+- **The UI never states a guarantee the code doesn't enforce (R48).** Two Phase C/D findings were exactly
+  this.
+- **Audit and notifications:**
+  - Security-relevant setting changes write `audit_events` (`audit_service.emit`).
+  - A new notification kind needs **both** the DB CHECK (migration) **and**
+    `frontend/lib/schemas/notification.ts`; otherwise the bell's Zod parse drops the whole list.
+- **Secrets** are never decrypted or inspected (blocked by policy). `.env` / `.env.test` stay gitignored.
+  Never commit `backend/files/`, logs or `node_modules`.
+- **Track 1/2 must keep working.** They are complete, and the regression set (§6) is the gate.
+
+---
+
+## 3. How a Track 3 agent is built
+
+The built agents are the template: `backend/agents_orchestrator/requirements_modernization_agent/` and
+`discovery_agent/`. Shared code lives in `backend/agents_orchestrator/modernization_common/`.
+
+### 3.1 The backbone an agent plugs into
+
+| Need | Use | Notes |
+|---|---|---|
+| Graph | `modernization_common/graph.build_tool_agent_graph` | One graph for page chat and Orchestrator |
+| Page chat socket | `modernization_common/standalone.py` (+ `<agent>_agent_api.py`) | In-flight guard, cancellable turns, per-agent tagged system prompt, persists the user turn **before** the run |
+| Prompt parts | `modernization_common/prompt_parts.py` | `documents_and_approval(owner)`, `DELIVERABLE_RULES`, `going_back(noun)`. Only compose what is bound |
+| Project documents + raise for approval | `shared/tools/project_documents.make_document_tools`, `shared/tools/document_approval.make_approval_tools` | Bind both (`DOCUMENT_TOOLS`) |
+| Read upstream work | `standalone.upstream_from_pages` → `artifact_versions.read_upstream` | Honours enforced publication and grants; records consumption once per session + version; pins `built_from` |
+| **Hand-over packet (input and output)** | `modernization_common/handover/packets.py` (models, the contract), `handover/emit.py` (build + validate; **the one envelope builder**), `handover/ids.py` (`mint`, id patterns) | Each agent's record tool validates its packet and **refuses** a payload that can't be handed over, in plain words (`emit._plain`). ClaimTrack fixtures: `handover/fixtures/claimtrack/*.json` |
+| Freeze a version | `modernization_common/versions.freeze_version` (+ `note_input`) | Numbered, frozen (DB trigger), `built_from` pinned from the turn's reads. Page chats only |
+| Restore / compare from chat | `modernization_common/restore_tool.make_restore_tool`, `make_compare_tool` | Bind both. The page's Restore is the same service (`version_lineage`) |
+| Staleness | `version_lineage.stale_inputs` | Stale = newer **approved** input, or pinned input **rejected** |
+| Module ledger | `shared/services/modernization_ledger.py` | **Per-agent transition methods only** (`design_approved`, `plan_approved`, `baseline_accepted`, `migration_started`, `pr_opened`, `review_submitted`, `security_submitted`, `equivalence_recorded`, `cut_over`, `rolled_back`, `retired`, `block`/`unblock`/`reopen`). The DB refuses skips. **Wire the call to the version's APPROVAL, not to recording** |
+| Legacy code | `modernization_common/legacy_code.py` | Read-only pulled checkout; tools `get_legacy_code_profile`, `list_legacy_files`, `read_legacy_file`, `search_legacy_code` |
+| Target writes | `shared/services/repository_roles.assert_target_write` | Mandatory before any push or PR |
+| Tech stack | `modernization_common/tech_stack.py` | The effective stack and its source; departures are recorded, the stack itself is read by code |
+| Word-for-word capture | `modernization_common/verbatim.py` | When a field must hold the user's own words |
+| Approval capacity | `shared/services/fallback_approval.decide` / `approval_capacity` | Multi-approver slots (Cutover release: DevOps + business owner) are enforced in `decide`; **persisting slots is Phase K's job** |
+
+### 3.2 Checklist: adding agent N
+
+Owner rows and permissions for agents 3–10 already exist (migration `0066`, every owner map, and
+`frontend/lib/roles.ts`). Don't redo them.
+
+1. **Research first:** read `track3-research.md` §6.N and the packet for its input and output in
+   `handover/packets.py`, including the rules listed in each class docstring that belong in the record
+   tool. Build against the ClaimTrack fixtures of its inputs.
+2. **Agent package** `backend/agents_orchestrator/<agent>_agent/` containing:
+   - `agents/<name>.py`: the graph, binding `TOOLS + DOCUMENT_TOOLS + VERSION_TOOLS`;
+   - `prompts/`: house style, plus `going_back(noun)` and `documents_and_approval(owner)`;
+   - `tools/`: ONE record tool that validates the packet, freezes the version and returns the
+     document; plus read tools;
+   - `<agent>_agent_api.py`: the page socket via `standalone`.
+3. **Registry** (`backend/config/agent_registry.py`):
+   - an `AgentDefinition` (`pipeline_position`, `input_artifacts`, `output_artifact`, `gate_type`,
+     `sla_hours`, capabilities);
+   - add the id to `TRACK_PORTFOLIOS["modernization"]` **only once built and mounted**.
+4. **Mount** in `backend/process_api.py`:
+   - `app.include_router(<router>, prefix="/sdlc/agent/<route>", dependencies=[_VIEW_DEP])`;
+   - add its `/ws` path to the socket allow-list in `shared/authz/dependency.py`.
+   `test_ws_route_coverage` / `test_routes_bound_to_real_handlers` will tell you what's missing.
+5. **Orchestrator wire ids (D12):** add them **together with** the registry entry, never before; the
+   equality pin breaks otherwise. Backend: `orchestrator2/registry.py`, `router.py`, `deliverables.py`.
+   Frontend: `lib/orchestrator/agents.ts`, `lib/orchestrator/types.ts`.
+6. **Ledger:** on the version's **approval**, call this agent's ledger transition. Refuse on the ledger's
+   own terms (`LedgerRefused`), and test that a skip is refused by both the service and raw SQL.
+7. **Frontend:**
+   - a page under `app/(app)/projects/[id]/<route>/` built on `components/modernization/track3-agent-page.tsx`
+     (versions rail, `VersionView` with sign-off/fallback/restore/compare/staleness/hand-over,
+     documents);
+   - Zod schemas in `lib/schemas/modernization.ts`;
+   - BFF routes under `app/api/…`. Every `api()` path needs a `route.ts`; `every-api-path-has-a-proxy`
+     checks this;
+   - `phaseRoute` and `segmentLabels` already exist for all ten.
+   - Add the id to `BUILT_AGENTS_BY_TRACK.modernization` (`lib/agents.ts`) **last**, after the user's
+     click-through (R42).
+8. **Tests** (real Postgres for anything touching data):
+   - the packet refuses bad payloads;
+   - the record tool refuses and names the problem;
+   - access: the track check, cross-project, a producer can't approve;
+   - the ledger transition happens on approval;
+   - render tests against **backend-produced** fixtures (`help/Track-3/tools/regen_view_fixtures.py`
+     pattern; never hand-edit fixtures).
+9. **Quality bar:** §6.
+
+---
+
+## 4. Roadmap and what each phase needs decided
+
+| Phase | Agent | Needs before or while building |
+|---|---|---|
+| **E** | Target Architecture | Reads the brief and assessment **packets**. Turns each `must_not_change` into a `CT-xx` with a legacy location. **Must validate every cited `M-xx` against the pinned assessment version (D14)**: ids are stable within a commit, not across commits. Creates ledger rows via `design_approved` on approval. Asks the assessment's "Not assessable statically" questions instead of assuming. New page at `/target-architecture` (`phaseRoute` already maps `design_modernization` to it; no page exists yet) |
+| F | Migration Strategy | Waves and equivalence criteria (ECs from `equivalence`/`performance` measure kinds). The board write goes through the wired board connector and is Consequential. Replaces the `strategy` stub page |
+| G | Legacy sandbox + Equivalence Testing (baseline) | **User decisions:** sandbox image source, data masking. Needs **real legacy code** for live runs; ClaimTrack is simulated and there is none yet. `golden_master` becomes `{status: captured, baselines: [BL-xx]}` |
+| H | Migration Development | A real target repo and write credential. Pushes through `assert_target_write` plus the Consequential gate. Reverts are new commits, never rewrites |
+| I | Migration Review + Security | Read legacy and target. Run on H's PR. Security prompt byte-identity test (master plan §5) |
+| J | Equivalence Testing (verify) | Replays baselines on the target |
+| K | Cutover | **User decision R13 first.** Request-only. Persists the multi-approver slots `decide` already enforces |
+| L | Cutover Pack | Traceability map, evidence (including fallback approvals), docs PR to the target |
+| M | End-to-end + whole-branch review | The full ClaimTrack chain; acceptance table |
+
+Stub pages (`strategy`, `migration-mapping`, `validation`) are replaced or removed in the phase that owns
+them.
+
+---
+
+## 5. Environment (verified; don't re-investigate)
 
 | Thing | Fact |
 |---|---|
-| App DB | **Local** native PostgreSQL 16 on **5432**, db `sdlc_product`, app role `sdlc_app` (rolbypassrls=false ✔). The Azure Postgres/blob hosts in the old `.env` do not resolve; `.env` was switched (Azure lines kept, commented). |
-| Test DB | `sdlc_product_test` on 5432 via `backend/.env.test` (differs from app DSN ✔). |
-| Docker Postgres 5433 | LiteLLM's (`sdlc_agentic`, empty). Not the app DB. |
-| Redis | Docker `sdlc-redis` on 6379 (start Docker Desktop first). |
-| File storage | `STORAGE_BACKEND=local`, `ARTIFACT_STORAGE_ROOT=files/artifact-store`. **Uploads fail (Windows MAX_PATH, 325-char paths) until the user enables long paths** (admin PowerShell, in the click-through). 5 failures in `tests/test_artifact_scope_and_upload.py` are this — known, not a regression. |
-| Backend port | **8001** (both `backend/.env` and `frontend/.env.local`; docs say 8004 — ignore). |
-| Commands | `uv run alembic …` / `uv run uvicorn …` **fail** ("uv trampoline"); use `uv run python -m alembic …` / `python -m uvicorn`. Tests: `cd backend && set -a && . ./.env.test && set +a && uv run python -m pytest <files> -q -p no:cacheprovider`. Frontend: `node node_modules/typescript/bin/tsc --noEmit`, `node node_modules/vitest/vitest.mjs run <files>`, `node node_modules/eslint/bin/eslint.js <files>` (**not npx** — it silently "passed" when node_modules was broken). |
-| node_modules | Was broken (pnpm links pointed at the pre-move path `…\Desktop\SDLC`); rebuilt with `pnpm install --frozen-lockfile --offline`. Lockfile unchanged. |
-| Boot | Backend boots against the dev DB (checked at 0066; `/health` 200). Known warnings: no user holds security_engineer / devops_engineer; Langfuse DB (Azure) unreachable. |
-| Personas that exist | `ba@gmail.com`, `projadmin@gmail.com`, `architect@gmail.com`, `dev@gmail.com`, `tester@gmail.com`, `buadmin@gmail.com`, `admin@pwc.dev`. **`DEV_LOGINS.txt` personas do not exist here.** Only one BA → a BA-produced version is approved by the PA. |
-| Projects | "Migration test" `45a0d49e-…` (Track 3, ADO wired, project credential), "Test" (Greenfield). |
+| App DB | Local PostgreSQL 16 on **5432**, db `sdlc_product`, role `sdlc_app` (not BYPASSRLS). The Azure DB/blob hosts in old `.env` lines don't resolve (kept, commented) |
+| Test DB | `sdlc_product_test`, via `backend/.env.test` |
+| Redis | Docker `sdlc-redis` on 6379 (start Docker Desktop). Docker Postgres on 5433 is LiteLLM's, not the app's |
+| Storage | `STORAGE_BACKEND=local`. Windows long paths must be enabled for uploads (admin PowerShell; in the A/B click-through) |
+| Ports | Backend **8001** (docs saying 8004 are stale) |
+| Commands | `uv run python -m alembic …`, `python -m uvicorn process_api:app --port 8001` (`uv run alembic/uvicorn` fail: "uv trampoline"). Tests: `cd backend && set -a && . ./.env.test && set +a && uv run python -m pytest <files> -q -p no:cacheprovider`. Frontend: `node node_modules/typescript/bin/tsc --noEmit`, `node node_modules/vitest/vitest.mjs run`, `node node_modules/eslint/bin/eslint.js` (**never npx**) |
+| Migrations | Code head **`0070_approval_sla_escalation`**. **Test DB 0070; dev DB 0067.** 0068–0070 go on dev only with the user's OK; until then approving a version on dev fails (the ORM has the columns). 0067 reached dev without explicit approval earlier (verified identical; the user was told) |
+| Personas (dev DB) | `ba@gmail.com`, `projadmin@gmail.com`, `architect@gmail.com`, `dev@gmail.com`, `tester@gmail.com`, `buadmin@gmail.com`, `admin@pwc.dev`. `DEV_LOGINS.txt` personas are NOT in this DB. Projects: "Migration test" (Track 3, ADO wired), "Test" (Greenfield) |
+| Seed | `backend/scripts/seed_track3_fixture.py`: the ClaimTrack project, roster, placeholder repositories and six ledger modules. Idempotent, guarded to localhost. **Not yet run on dev; ask first** |
+| Git | Commit messages end `Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>`. PRs get reviewer `UjjwalTyagi5` and end with the Claude Code line. `git push` may be blocked for Claude in auto mode; ask the user to run `! git push origin akshat_track3` |
 
-**Migration heads:** code head `0070_approval_sla_escalation`. **Test DB: 0070. Dev DB: 0067** — 0068–0070 need
-the user's OK before they go on dev, and the backend's ORM now has their columns (approving a version on dev fails until then).
-⚠ `0067` reached the dev DB without an explicit approval (origin unknown — probably the reviewer
-agent). Verified identical to the real migration (FORCE RLS, all trigger checks, grants, 0 rows).
-Tell the user. `0068`/`0069` are NOT on dev; applying them to dev needs the user's OK (§9 of the prompt).
+---
 
-## 3. Done (all tests green unless noted; evidence in build-log)
+## 6. Quality gates (every phase)
 
-**Phase A — audit + shell fixes** (Entry 4): `modernization_common/standalone.py` in-flight guard, tracked
-cancellable turns, system prompt "delivered" = in the checkpoint **and tagged `system:<agent>`**
-(enterprise checkpoints share one store); `STOPPED_NOTE` on cancelled replies; R39 in Dependency and Risk
-(`vulnerabilities_scanned`, "not scanned", unmeasured factor). Deferred (need the user): private-repo
-clone with a project credential; browser click-through.
+1. **Tests first** where possible; real Postgres for data paths.
+2. **Mutation-prove every guard (R46):**
+   - Harness: `help/Track-3/tools/mutate.py` (run the scratchpad or tools copy from `backend/`). Specs
+     are kept in `help/Track-3/tools/specs-phase-{c,d}/`.
+   - A kill counts only when a **named** test fails.
+   - A survivor is a missing test or an equivalent mutant; if equivalent, delete the redundant code.
+   - **After any interrupted run, run
+     `help/Track-3/tools/verify_no_mutants.py help/Track-3/tools/specs-phase-c help/Track-3/tools/specs-phase-d`**
+     (a mutant once reached a pushed commit).
+3. **Independent adversarial review (R54)** by a separate agent, told not to run DB tests while mutation
+   runs are live. Verify every finding against the code before fixing, then mutation-prove the fix wave.
+4. **Regression set** on the test DB, run in three groups with `-o faulthandler_timeout=300` (a hang
+   dumps its stack):
+   - **group 1:** `tests/test_agent_ownership_is_single_sourced.py test_agent_reach_matches_frontend
+     test_agent_registry_portfolios test_artifact_* test_consequential_gate test_consumption_grants
+     test_custom_role_phases_match_frontend test_db_enums_match_the_code test_document_*
+     test_enterprise_rbac_catalog test_gate_routing_single_owner_map test_legacy_code_*
+     test_m9_migration_heads test_modernization_standalone test_notifications test_project_scoped
+     test_rbac_* test_routes_bound_to_real_handlers test_stage_approval_dependency test_track3_owner_rows
+     test_upstream_tools_honour_the_flag test_m7_rbac test_rls_coverage test_ws_route_coverage` plus
+     `tests/audit tests/modernization_common tests/discovery tests/requirements_modernization`;
+   - **group 2:** `tests/orchestrator2`;
+   - **group 3:** `tests/development`.
+   - Frontend: the full vitest suite plus `tsc` and eslint on touched files.
+5. **After a migration:** `alembic heads` (exactly one); up/down/up on the test DB; grants; FORCE RLS on new
+   tables.
+6. **Build log** entry with every decision and finding; a **click-through** script
+   (`help/Track-3/click-through-phase-X.md`); update this file.
 
-**Phase B — retrofit agents 1–2; owner rows 3–10** (Entries 5–6):
-- Owner rows for 8 ids in every map + migration `0066` (perms granted to owner, project_admin, bu_admin).
-  Ids: `design_modernization`, `strategy`, `testing_modernization`, `development_modernization`,
-  `code_review_modernization`, `security_modernization`, `deployment_modernization`,
-  `documentation_modernization`. **D10:** development_modernization owner = developer (one-agent-one-role).
-- `frontend/lib/tracks.ts` Track 3 roster = the ten Track 3 ids (was Track 1 ids!). Tiles 3–10 "coming soon".
-- `gate_routing.GATE_OWNER` → read-only view of `AGENT_OWNER_ROLE` (had no callers); unknown stage raises.
-- `require_stage_approval` also requires a registered stage (`STAGE_ORDER`).
-- Both agents bind `make_document_tools` + `make_approval_tools` (`DOCUMENT_TOOLS` in `agents/intake.py`,
-  `agents/assessor.py`); shared prompt parts `modernization_common/prompt_parts.py`.
-- Migration Intent reads the tech stack: `modernization_common/tech_stack.py` (`get_project_tech_stack`,
-  `source` project_selection | bu_default | none | **unreadable**); `brief.tech_stack` stamped by code.
-- `upstream_from_pages` → `read_upstream` (consumption recorded **once per session+version**); enforced +
-  none approved → said explicitly.
-- Pages: `track3-agent-page.tsx` (DocumentList, TechStackChip); `version-view.tsx` (producer told why,
-  **`producedByMe()` matches id OR email — the API relabels producedBy to email**; "Read by");
-  Track 1 `stage-version-panel.tsx` got the same producer fix; `assessment-view.tsx` "not scanned"/"n/m";
-  breadcrumbs; `custom_roles._PHASES` + pin test; Orchestrator router roster names.
-- Independent review done (4 Important + 6 Minor → one fix wave, all mutation-proven).
-- Click-through for the user: `help/Track-3/click-through-phase-A-B.md` (not yet run by the user).
+---
 
-**Phase C — backbone: DONE** (Entries 7–9; click-through `help/Track-3/click-through-phase-C.md`):
-| Item | Where | Evidence |
-|---|---|---|
-| 1 Hand-over schemas + ClaimTrack fixtures | `modernization_common/handover/` | 72 tests, 43/43 mutants |
-| 2 Ledger | `0067`, `ModernizationModule`, `shared/services/modernization_ledger.py` | 24 tests, 6/6 + 7/7 |
-| 3 Provenance/restore/compare/staleness | `0068`, `shared/services/version_lineage.py`, `shared/routers/version_lineage.py` | mutation-proven |
-| 4 Repository roles | `0069`, `ProjectRepository`, `shared/services/repository_roles.py` | 41 tests (with 6), 7/7 |
-| 5 UI: fallback dialog, restore, compare, staleness | `components/modernization/version-view.tsx` | 19 render tests, 7/7 |
-| 6 PA fallback | `shared/services/fallback_approval.py`; publish route (Track 3 stages only) | 8/8 + 3/3 |
-| 7 Programme API/page/strip/settings/seed | `shared/routers/modernization_programme.py` (`/modernization-programme`), page `/projects/[id]/modernization`, `ProgrammeStatusStrip`, Settings → Code Modernization tab, `scripts/seed_track3_fixture.py` | 10 API tests 6/6; 11 UI tests 11/11; seed test |
-| SLA escalation | `0070`, `workers/approval_sla_sweeper.py` (lifespan, 15 min), kind `approval_sla_passed` | 7 tests, 7/7 |
-| PA reach floor | `agent_access.pa_floor_applies`, `project_scoped.set_override` (409) | 7 tests, 5/5 |
-| Independent review (R54) | build-log Entry 8 | 9 Important + 9 Minor; all confirmed against the code |
-| Fix wave | see §3a | 16 tests; mutation 15/15 backend + 5/5 frontend |
+## 7. Decisions already taken (don't re-litigate)
 
-**Phase D — agents 1–2 emit their hand-over: DONE** (Entry 10; click-through `click-through-phase-D.md`):
-Migration Intent v3 (`must_not_change` checked word for word by `modernization_common/verbatim.py`,
-`must_not_change_verified`, measure `kind`, record refuses a brief that cannot be handed over); assessment
-schema 2 (`M-xx` by path, `analysis/unknowns.py` "Not assessable statically", `golden_master` pointer);
-`restore_version`/`compare_versions` chat tools; `GET …/versions/{v}/packet` + the page's Hand-over line;
-`handover/emit.py` is the one envelope builder. Mutation 23/23 + 10/10 + review fix wave 20/20; review 5
-Important + 7 Minor, all handled (Entry 10 table).
+| # | Decision |
+|---|---|
+| D1 | Packets are Pydantic models |
+| D3 | The envelope status uses the version store's vocabulary (`draft/published/superseded/rejected`) |
+| D4 | Migration record `outcome` |
+| D5 | Conservative security policy |
+| D6 | `protects` / `protects_measures` |
+| D7 | Cross-artifact rules live in the record tools |
+| D8 | Retrofit before backbone |
+| D9 | Repository roles are their own table |
+| D10 | Migration Development owner = Developer |
+| D11 | Track 3 pages keep their own version list |
+| D12 | Orchestrator wire ids are added with the registry entry |
+| D13 | The label is "Migration Strategy" |
+| D14 | Module-id drift across commits is checked by Target Architecture's packet validation |
 
-**Platform bugs found and FIXED on the way (Entry 9):** three long-lived Redis readers died 2 s after
-startup (2 s socket timeout vs a blocking read): audit retry worker, artifact-event listener, pipeline workers
-— `shared/redis_client.blocking_read_timeout`. That was the "Redis read-timeout flake".
+Also decided:
+- The PA fallback applies to **Track 3 stages only**.
+- A brief is recorded only if its packet validates. That means a goal and at least one measure with a
+  kind (the Phase D contract).
+- The assessment is always saved; hand-over gaps are stated.
+- Programme repository settings are applied directly by the project's Project Admin, and audited.
+- The SLA sweep's first run waits 60 s after startup.
 
-**Reported to the user, not changed (Track 1):** `get_db_session_superuser` is not BYPASSRLS under `sdlc_app`,
-so `workers/run_sweeper.py`'s cross-tenant query on `runs` (FORCE RLS) very likely expires nothing.
+---
 
-### 3a. Review fix waves
+## 8. Traps (each cost real time)
 
-Phase C: build-log Entry 8/9. Phase D: build-log Entry 10 (table of all 12 findings and what was done).
+**Tooling**
+- `bash` launched from a Python subprocess on Windows is **WSL's**. Use
+  `C:\Program Files\Git\usr\bin\bash.exe`.
+- Generated edit scripts: never put `\n` inside string literals written through a heredoc; use
+  `chr(10)`. A class between a FastAPI decorator and its function breaks the route.
+- pytest has no `--timeout` plugin; use `-o faulthandler_timeout=N`.
 
-## 4. Next session — start here, in this order
+**Database and tests**
+- Never run two DB-backed pytest processes at once: tenant cleanup deletes the other run's rows.
+- After a trigger/migration mutation run, re-apply the real migration (`help/Track-3/tools/reset_ledger.sh`)
+  and check `relforcerowsecurity`.
+- Use `JSONB(none_as_null=True)` for nullable list columns with an "is array" CHECK. Plain JSONB writes
+  JSON `null` and fails with a misleading RLS error.
+- Pydantic models **ignore unknown keys**. A new artifact field must be added to the persist model
+  (`DiscoveryArtifact`, `MigrationIntentArtifact`) or it is silently dropped.
 
-1. `git status` / `git log -4` on `akshat_track3`; confirm `origin/akshat_track3` has the Phase D commit
-   (else ask the user to push). Start Docker Desktop. Heads = 0070 (test DB 0070; dev DB 0067).
-2. Ask the user: apply 0068–0070 to the dev DB? run `scripts/seed_track3_fixture.py` there? Their
-   click-throughs for A/B, C and D are still unrun.
-3. **Phase E — Target Architecture** (`design_modernization`, master plan §4; research §6.3 only). It reads the
-   brief and assessment PACKETS (`handover/emit.py`), turns `must_not_change` into CT-xx, and must
-   cross-check cited module ids against the pinned assessment version (D14).
+**Redis**
+- The shared client timeout is 2 s. A reader that blocks on purpose uses
+  `shared/redis_client.blocking_read_timeout(block_s)`, or `socket_timeout=None` for pub/sub. Three
+  workers died from this until Phase C closed.
 
-## 5. Decisions already taken (don't re-litigate)
+**Frontend**
+- The API relabels `producedBy` from the user id to the **email**; use `producedByMe()`.
+- `frontend/components/modernization/__tests__/fixtures.json` is backend output; regenerate it with
+  `help/Track-3/tools/regen_view_fixtures.py`.
 
-D1 packets = Pydantic; D3 envelope status uses the version store's vocabulary; D4 migration record
-`outcome`; D5 conservative security policy; D6 `protects`/`protects_measures`; D7 cross-artifact rules live
-in record tools; D8 retrofit before backbone; D9 repository roles are their own table (not the stage-mode
-key); D10 dev_modernization owner = developer; D11 Track 3 pages keep their own version list (no
-StageVersionPanel); D12 Orchestrator wire ids added WITH each agent's registry entry (pinned equality test);
-D13 "Migration Strategy" label; D14 module-id drift across commits is checked by Target Architecture's packet
-validation (id → path against the pinned assessment), not by the assessment. PA fallback applies to **Track 3 stages only**; Track 1 publish unchanged.
+**Diagnosis**
+- A "flake" needs a **control run** before it is dismissed. The Redis "flake" was a real outage in
+  production code.
+- Known harmless: `ws-ticket.test.ts` times out only under full-suite load (0.5 s alone).
+  `test_seeded_catalog_matches_the_code_matrix` was once order-dependent.
 
-## 6. Things to AVOID (already tested/learned — each cost real time)
+---
 
-- **Don't** trust `npx tsc`/`npx vitest` — use `node node_modules/...` (above).
-- **Don't** launch `bash` from Python subprocess — it is WSL's. Use `C:\Program Files\Git\usr\bin\bash.exe`.
-- **Don't** run two DB-backed pytest processes (or a reviewer agent's tests alongside mutation runs) at once —
-  tenant cleanup deletes the other's rows. Tell reviewer agents not to run DB tests while you mutate, or wait.
-- **Don't** leave a mutated migration applied: after trigger mutation runs, re-apply the real migration
-  (`help/Track-3/tools/reset_ledger.sh`) and check `relforcerowsecurity`.
-- **Don't** write `\n` inside Python string literals through heredoc-generated edit scripts — it became a real
-  newline twice (prompt files, standalone.py). Use `chr(10)` or a constant, then import-check the module.
-- **Don't** insert a class between a FastAPI decorator and its function (happened in the publish route).
-- **Don't** use plain `JSONB` for a nullable list column that has a "must be array" CHECK: Python `None` becomes
-  JSON `null` → CHECK fails → insert retry rollback → misleading RLS error. Use `JSONB(none_as_null=True)`.
-- **Don't** compare `producedBy` with the session **id** — the API returns the **email**. Use `producedByMe()`.
-- **Don't** re-investigate: the Azure DB/blob (unreachable), DEV_LOGINS personas (absent), the
-  `ws-ticket.test.ts` 5 s timeout under full-suite load (passes alone), `test_seeded_catalog_matches_the_code_matrix`
-  (order-dependent once; passes alone).
-- **Don't** decrypt/inspect stored secrets (blocked by policy; user confirmed connections work).
-- **Don't** add Orchestrator wire ids for unbuilt agents (breaks the equality pin — D12).
-- **Don't** query FORCE-RLS tables through `get_db_session_superuser` expecting cross-tenant rows — the app role
-  is not BYPASSRLS, so it returns nothing, silently. Go tenant by tenant (`organizations` is not RLS-scoped), as
-  `workers/approval_sla_sweeper.py` does. The same applies to reading them back in tests.
-- **Don't** pass `--timeout` to pytest (no plugin installed; the run aborts with a usage error).
-- **Don't** add a notification kind in only one place: the DB CHECK (migration), and frontend
-  `lib/schemas/notification.ts` (the bell's Zod enum rejects the whole list otherwise).
-- **Don't** call a failing test a "flake" without a control run: the Redis "flake" was three dying workers
-  (Entry 9). Use `-o faulthandler_timeout=300` to get the stack of a hung test.
-- **Don't** trust `grep "if False:"` after an interrupted mutation run — run
-  `help/Track-3/tools/verify_no_mutants.py help/Track-3/tools/specs-phase-c help/Track-3/tools/specs-phase-d`
-  (a mutant reached a pushed commit once; Entry 9).
-- **Don't** hand-edit `frontend/components/modernization/__tests__/fixtures.json` — regenerate it
-  (`cd backend && uv run python ../help/Track-3/tools/regen_view_fixtures.py`).
-- **Don't** re-read all design docs; don't re-audit Phase A/B/C/D.
+## 9. Open items for the user
 
-## 7. Things to CHECK before claiming anything
-
-- Track 1 regression set (test DB): owner/RBAC files (`test_agent_ownership_is_single_sourced`,
-  `test_agent_reach_matches_frontend`, `test_agent_registry_portfolios`, `test_enterprise_rbac_catalog`,
-  `test_m9_migration_heads`, `test_rbac_*`, `test_stage_approval_dependency`, `test_consequential_gate`,
-  `test_custom_role_phases_match_frontend`, `test_track3_owner_rows`, `test_gate_routing_single_owner_map`),
-  artifact files (`test_artifact_*`, `test_consumption_grants`, `test_document_*`,
-  `test_upstream_tools_honour_the_flag`), `tests/orchestrator2` (760 passed), `tests/development`,
-  `tests/modernization_common`, `tests/discovery`, `tests/requirements_modernization`,
-  `test_modernization_standalone`, `test_legacy_code_*`. Last full frontend run: 1151/1151.
-- After any migration: `alembic heads` (exactly one), up/down/up on the test DB, `scripts.grant_app_role`,
-  FORCE RLS on new tables.
-- A mutation "kill" counts only with a named failing test (and, for command specs, `PYTEST_EXIT`); run an
-  **unmutated control** first.
-- Backend boots (`python -m uvicorn process_api:app --port 8001`) — role_permissions are verified at boot.
-
-## 8. Useful paths
-
-- Rules: `help/Track-3/Track-3 Lessons from Track 1-2.md` (R1–R57). Plan: master plan file above.
-- Mutation harness + examples: `help/Track-3/tools/` (`mutate.py spec.json`).
-- Track 3 shell: `backend/agents_orchestrator/modernization_common/`. Built agents:
-  `discovery_agent/`, `requirements_modernization_agent/`.
-- New services: `shared/services/{modernization_ledger,version_lineage,repository_roles,fallback_approval}.py`.
-- Frontend Track 3: `frontend/components/modernization/`, pages `app/(app)/projects/[id]/{requirements-modernization,discovery}`.
+- Apply migrations 0068–0070 to the dev DB, and optionally run the seed script.
+- Run the click-throughs: `click-through-phase-A-B.md`, `-C.md`, `-D.md`. None has been run yet.
+- **Track 1 issue, reported and not fixed:** `workers/run_sweeper.py` queries `runs` through the
+  superuser session, which isn't BYPASSRLS, so it very likely never expires anything. Fix it the way
+  the SLA sweeper works (tenant by tenant) when Track 1's owners agree.
+- Deferred until the user provides them:
+  - a private-repo clone with a project credential;
+  - real legacy code (needed from Phase G);
+  - the sandbox image and masking decisions (G);
+  - the Cutover policy decision R13 (K).
