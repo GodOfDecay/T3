@@ -3,8 +3,18 @@
 Everything a fresh Ubuntu VM needs to run this platform: system packages, Python and Node
 dependencies, configuration, the database steps, and the smoke tests that prove it worked.
 
-Verified on 2026-09-22 by installing the Python dependency set in a clean
-`python:3.12` Linux container from this repository's `pyproject.toml` + `uv.lock`.
+> **Status: not yet deployed.** No Linux VM is running this platform. What exists is this
+> procedure and evidence that the code runs on Linux — nothing more. Read the rest of this
+> document as instructions to follow, not as a description of a system that is up.
+
+What has actually been done, so you know what you are inheriting:
+
+| | |
+|---|---|
+| Dependency set installs on Linux | 2026-09-22, in a clean `python:3.12` container from `pyproject.toml` + `uv.lock` |
+| Procedure rehearsed end to end | In WSL Ubuntu, then torn down — a rehearsal on a developer machine, not a VM build |
+| Backend test suite passes on Linux | 2026-09-29, Ubuntu 24.04 / Python 3.12.3, `uv sync --frozen`: 437 tests in the documentation, deployment and Azure DevOps areas. The 16 errors in that run were database-backed tests reaching across the WSL boundary for the host's PostgreSQL; the same tests pass where the database is |
+| **A real deployment** | **Not done.** Nobody has run this document on a VM |
 
 | Part | Runs as | Port |
 |---|---|---|

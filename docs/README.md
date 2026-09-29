@@ -4,6 +4,10 @@ Start here. Each line says what the document is for and who needs it.
 
 ## Deploying the platform
 
+> **Nothing is deployed yet.** These documents describe how to deploy the platform on a Linux
+> VM. No VM is running it today — the status table at the top of
+> [deploy-linux-vm.md](deploy-linux-vm.md) says exactly what has and has not been verified.
+
 Read in this order. The first three answer "what is this and what does it need"; the fourth is
 the procedure.
 
@@ -12,7 +16,7 @@ the procedure.
 | [platform-overview.md](platform-overview.md) | What the system is, the pieces it is made of, how they talk, and the shape of a deployment. Assumes no prior knowledge |
 | [dependencies.md](dependencies.md) | The inventory: services (required vs optional and what is lost without each), software and versions, command-line tools the agents invoke, network access, ports, secrets |
 | [deployment-faq.md](deployment-faq.md) | Short answers to what a deployer actually asks — Docker? one machine? which ports? what do we back up? |
-| [deploy-linux-vm.md](deploy-linux-vm.md) | **The procedure.** System packages, configuration, database, storage, frontend build, systemd, nginx, smoke tests, backups, and what differs on Linux |
+| [deploy-linux-vm.md](deploy-linux-vm.md) | **The procedure — not yet carried out.** System packages, configuration, database, storage, frontend build, systemd, nginx, smoke tests, backups, and what differs on Linux |
 | **`langfuse-deploy/README.md`** — a sibling folder of this repository, delivered alongside it | Self-hosting Langfuse (traces and cost) without Docker, on the same VM. Deliberately outside this repository: it deploys upstream Langfuse, not this product |
 
 ## Presenting the platform
