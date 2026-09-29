@@ -581,6 +581,7 @@ _GENERATED_STAGE_DIRS = {"security", "code_review", "deployment"}
 _SEGMENT_OUTPUT_STAGES = {
     "requirements_modernization": "requirements_modernization_agent",
     "discovery": "discovery_agent",
+    "design_modernization": "design_modernization_agent",
 }
 
 

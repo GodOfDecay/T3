@@ -61,9 +61,11 @@ from langchain_core.tools import tool
 
 logger = logging.getLogger(__name__)
 
-#: The two Track 3 stages whose pages can pull, and whose connections may hold the
-#: credential for a private repository.
-TRACK3_STAGES = ("requirements_modernization", "discovery")
+#: The Track 3 stages whose pages show (and can pull) the project's legacy code, and whose
+#: connections may hold the credential for a private repository. Legacy is read-only for every
+#: stage (repository roles, master plan §3); Target Architecture reads the same checkout the
+#: assessment was made from.
+TRACK3_STAGES = ("requirements_modernization", "discovery", "design_modernization")
 
 _STALE_PULL = timedelta(minutes=15)
 _MAX_READ_BYTES = 2_000_000
@@ -267,7 +269,8 @@ def profile_markdown(pull: dict) -> str:
 
 
 _STAGE_LABELS = {"requirements_modernization": "Migration Intent",
-                 "discovery": "Dependency and Risk"}
+                 "discovery": "Dependency and Risk",
+                 "design_modernization": "Target Architecture"}
 
 
 def stage_may_read() -> bool:
@@ -548,6 +551,8 @@ async def search_legacy_code(query: str, path: str = "", max_results: int = 40) 
                 if seen > _MAX_SEARCH_FILES:
                     return hits
                 full = pathlib.Path(dirpath) / name
+                if full.is_symlink():
+                    continue  # a cloned symlink can point anywhere on this server; never followed
                 try:
                     if full.stat().st_size > _MAX_SEARCH_FILE_BYTES:
                         continue

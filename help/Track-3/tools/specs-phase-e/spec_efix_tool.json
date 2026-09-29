@@ -1,0 +1,24 @@
+{
+ "target": "agents_orchestrator/design_modernization_agent/tools/design_tools.py",
+ "tests": [
+  "tests/design_modernization/test_record_tool.py"
+ ],
+ "env_test": true,
+ "mutants": [
+  [
+   "commit-drift-recorded",
+   "    if commit_note:\n        problems.append(",
+   "    if False:\n        problems.append("
+  ],
+  [
+   "cache-ignores-modules",
+   "    key = (str(root), commit or \"\", tuple(",
+   "    key = (str(root), commit or \"\") or tuple("
+  ],
+  [
+   "export-prefers-chat-copy",
+   "    if get_orchestrator_run() or not (get_project_id() and get_tenant_id()):\n        return _LAST_DESIGN",
+   "    if True:\n        return _LAST_DESIGN"
+  ]
+ ]
+}

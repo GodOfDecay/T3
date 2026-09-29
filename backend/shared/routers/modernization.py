@@ -42,7 +42,8 @@ from shared.models.orm import Run
 modernization_router = APIRouter()
 
 #: Page kind (URL segment) -> backend stage.
-_KINDS = {"migration-intent": "requirements_modernization", "discovery": "discovery"}
+_KINDS = {"migration-intent": "requirements_modernization", "discovery": "discovery",
+          "target-architecture": "design_modernization"}
 _MEDIA = {
     "docx": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
     "pdf": "application/pdf",
@@ -92,6 +93,14 @@ async def latest_discovery_assessment(
 ) -> dict:
     """The project's current Dependency and Risk assessment, or `payload: null`."""
     return await _latest(db, request, project_id, "discovery", "discovery_artifacts")
+
+
+@modernization_router.get("/projects/{project_id}/modernization/target-architecture")
+async def latest_target_design(
+    project_id: str, request: Request, db: AsyncSession = Depends(get_db_session),
+) -> dict:
+    """The project's current target design, or `payload: null`."""
+    return await _latest(db, request, project_id, "design_modernization", "target_design_artifacts")
 
 
 # ── legacy code ──────────────────────────────────────────────────────────────
@@ -179,6 +188,36 @@ async def list_legacy_code_repositories(
     return data  # the list, or what actually went wrong reaching it
 
 
+@modernization_router.get("/projects/{project_id}/modernization/legacy-code/interfaces")
+async def get_legacy_interfaces(
+    project_id: str, request: Request, stage: str = "design_modernization",
+    db: AsyncSession = Depends(get_db_session),
+) -> dict:
+    """What the project's pulled legacy code exposes and consumes (Phase E) — the same
+    deterministic inventory the Target Architecture agent reads its contracts from. Module ids
+    come from the newest assessment that has them. `status: none` when nothing is pulled."""
+    import asyncio  # noqa: PLC0415
+
+    from agents_orchestrator.design_modernization_agent.tools.design_tools import inventory_for  # noqa: PLC0415
+    from agents_orchestrator.modernization_common import legacy_code  # noqa: PLC0415
+    from shared.services import artifact_versions as svc  # noqa: PLC0415
+
+    resolved, _tenant, _user = await _guard(db, request, project_id, stage)
+    pull = legacy_code.current_pull(resolved)
+    if not pull:
+        return {"projectId": resolved, "status": "none", "inventory": None}
+    row = await svc.latest_version(db, resolved, "discovery")
+    modules = [{"id": m.get("id"), "name": m.get("name"), "path": m.get("path")}
+               for m in ((row.payload or {}).get("modules") if row is not None else None) or [] if m.get("id")]
+    if not modules:
+        modules = [{"name": m.get("name"), "path": m.get("path")}
+                   for m in ((pull.get("profile") or {}).get("modules") or [])]
+    inventory = await asyncio.to_thread(inventory_for, legacy_code.checkout_dir(resolved),
+                                        str(pull.get("commit") or ""), modules)
+    return {"projectId": resolved, "status": "ready", "repository": pull.get("name") or pull.get("url"),
+            "inventory": inventory}
+
+
 # ── exports ──────────────────────────────────────────────────────────────────
 
 
@@ -189,6 +228,10 @@ def _version_markdown(stage: str, payload: dict) -> tuple[str, str]:
         from shared.models.artifacts import MigrationIntentArtifact  # noqa: PLC0415
 
         return brief_markdown(MigrationIntentArtifact(**payload)), "migration-intent-brief"
+    if stage == "design_modernization":
+        from agents_orchestrator.design_modernization_agent.design_document import design_markdown  # noqa: PLC0415
+
+        return design_markdown(payload), "target-architecture"
     from agents_orchestrator.discovery_agent.analysis.assessment import assessment_markdown  # noqa: PLC0415
 
     return assessment_markdown(payload), "discovery-assessment"
@@ -201,7 +244,7 @@ async def version_packet(project_id: str, kind: str, version: int, request: Requ
     built from the frozen version and validated by the hand-over models — or, when it cannot
     be handed over, the reasons in words. `{ok, problems, packet}`."""
     from agents_orchestrator.modernization_common.handover.emit import (  # noqa: PLC0415
-        assessment_packet, brief_packet, envelope_of,
+        assessment_packet, brief_packet, design_packet, envelope_of,
     )
     from shared.services import artifact_versions as svc  # noqa: PLC0415
 
@@ -212,7 +255,8 @@ async def version_packet(project_id: str, kind: str, version: int, request: Requ
     row = await svc.get_version(db, resolved, stage, version)
     if row is None or row.payload is None:
         raise HTTPException(status_code=404, detail=f"v{version} not found")
-    build = brief_packet if stage == "requirements_modernization" else assessment_packet
+    build = {"requirements_modernization": brief_packet, "discovery": assessment_packet,
+             "design_modernization": design_packet}[stage]
     return {"stage": stage, "version": version, **build(row.payload, envelope_of(row)).as_dict()}
 
 

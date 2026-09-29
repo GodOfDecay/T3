@@ -28,6 +28,7 @@ export const ORCHESTRATOR_AGENT_IDS = [
   // an id missing here fails Zod's parse and is DROPPED in the browser.
   "requirements_modernization",
   "discovery",
+  "design_modernization",
 ] as const;
 
 export const OrchestratorAgentId = z.enum(ORCHESTRATOR_AGENT_IDS);

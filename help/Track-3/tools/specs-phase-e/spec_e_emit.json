@@ -1,0 +1,14 @@
+{
+ "target": "agents_orchestrator/modernization_common/handover/emit.py",
+ "tests": [
+  "tests/design_modernization/test_approval_and_routes.py"
+ ],
+ "env_test": true,
+ "mutants": [
+  [
+   "page-fields-handed-over",
+   "    return {name: design[name] for name in DesignPayload.model_fields if name in design}",
+   "    return dict(design)"
+  ]
+ ]
+}

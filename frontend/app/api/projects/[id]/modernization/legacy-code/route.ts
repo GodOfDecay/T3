@@ -10,7 +10,7 @@ import { bffProxy } from "@/lib/bff/proxy";
  * caller's reach to THAT agent, and tries that stage's repository connection first for
  * a private repository's credential. Anything else is refused here rather than proxied.
  */
-const STAGES = new Set(["requirements_modernization", "discovery"]);
+const STAGES = new Set(["requirements_modernization", "discovery", "design_modernization"]);
 
 export async function GET(
   req: NextRequest,

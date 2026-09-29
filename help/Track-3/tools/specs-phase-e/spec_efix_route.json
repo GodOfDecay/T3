@@ -1,0 +1,14 @@
+{
+ "target": "shared/routers/artifact_versions.py",
+ "tests": [
+  "tests/design_modernization/test_approval_and_routes.py"
+ ],
+ "env_test": true,
+ "mutants": [
+  [
+   "unplaced-approved",
+   "    if unplaced:\n        raise HTTPException(",
+   "    if False:\n        raise HTTPException("
+  ]
+ ]
+}

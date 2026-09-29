@@ -275,6 +275,19 @@ class FrozenContract(_Strict):
     consumers: list[str] = []
     proof: str = NonEmpty
     status: Literal["confirmed", "proposed"]
+    brief_item: Optional[str] = Field(
+        default=None,
+        description="The brief's must-not-change entry this contract freezes, word for word; "
+                    "None for a contract the brief did not name.")
+
+
+class ResolvedQuestion(_Strict):
+    """A question the assessment could not answer from the code (`not_assessable_statically`),
+    and the answer the design rests on — from the user or an approved document, never a guess."""
+
+    question: str = NonEmpty
+    answer: str = NonEmpty
+    source: Literal["user", "document"]
 
 
 class DataMigration(_Strict):
@@ -327,9 +340,13 @@ class DesignPayload(_Strict):
     contract with no legacy location, an ADR with fewer than two options, and any reference
     to a contract/ADR/module the design does not define.
 
-    Checked by `record_target_design` (needs other data): a version past end of life (the
-    assessment's EOL table); every in-scope module present (the assessment); a contract not
-    found by `capture_legacy_interfaces` may only be `proposed`.
+    Checked by `record_target_design` (needs other data — `design_modernization_agent/analysis/
+    checks.py`): a version past end of life (the EOL table); every assessed module present, with
+    the id, name, tier and score of the PINNED assessment (D14); every must-not-change item frozen
+    by a contract (`brief_item`); a contract not found by `capture_legacy_interfaces` and not
+    named by the brief may only be `proposed`; locations that exist in the checkout; the data
+    migration when the database changes; the three diagrams; every not-assessable question
+    answered or kept open.
     """
 
     summary: str = NonEmpty
@@ -346,6 +363,7 @@ class DesignPayload(_Strict):
     diagrams: list[Diagram] = []
     departures_from_brief: list[Departure] = []
     open_questions: list[str] = []
+    resolved_questions: list[ResolvedQuestion] = []
 
     @model_validator(mode="after")
     def _references_resolve(self):

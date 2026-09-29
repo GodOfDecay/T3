@@ -14,7 +14,7 @@
     "summary": "ClaimTrack moves to Azure PaaS module by module: core and web upgraded in place (web strangled at the gateway), batch and reports upgraded and parallel-run, the broker portal rewritten in React and strangled route by route. Four frozen contracts and seven version traps carry the behaviour across.",
     "layers": [
       {"layer": "Hosting", "today": "Dallas VMs · Tomcat 8", "target": "Azure App Service (Linux) · Container Apps Jobs", "modules": ["M-02", "M-03", "M-05"]},
-      {"layer": "Runtime", "today": "Java 7/8 · Node 8 · Python 2.7", "target": "Java 21 · Node 22 · Python 3.12", "modules": ["M-01", "M-02", "M-03", "M-04", "M-05"]},
+      {"layer": "Runtime", "today": "Java 7/8 · Node 8 · Python 2.7", "target": "Java 21 · Node 24 · Python 3.12", "modules": ["M-01", "M-02", "M-03", "M-04", "M-05"]},
       {"layer": "Framework", "today": "Spring MVC 4 · AngularJS 1.5", "target": "Spring Boot 3.3 · React 18", "modules": ["M-02", "M-04"]},
       {"layer": "Database", "today": "MySQL 5.6", "target": "Azure MySQL Flexible Server 8.0", "modules": []},
       {"layer": "Routing facade", "today": "none", "target": "Application Gateway (WAF v2)", "modules": ["M-02", "M-04"]},
@@ -48,11 +48,14 @@
     ],
     "frozen_contracts": [
       {"id": "CT-01", "name": "/api/v1 claims API", "kind": "http", "legacy_location": "claimtrack-web/src/main/java/com/contoso/claimtrack/api/ClaimsApiController.java",
-       "consumers": ["broker partners", "claimtrack-agent-portal"], "proof": "EC-04 replay of 25,000 recorded calls", "status": "confirmed"},
+       "consumers": ["broker partners", "claimtrack-agent-portal"], "proof": "EC-04 replay of 25,000 recorded calls", "status": "confirmed",
+       "brief_item": "/api/v1 claims API our broker partners call"},
       {"id": "CT-02", "name": "bank payment file", "kind": "file", "legacy_location": "claimtrack-batch/src/main/java/com/contoso/claimtrack/batch/SettlementFileWriter.java",
-       "consumers": ["bank payment gateway"], "proof": "EC-02 byte-identical on 20 recorded nights", "status": "confirmed"},
+       "consumers": ["bank payment gateway"], "proof": "EC-02 byte-identical on 20 recorded nights", "status": "confirmed",
+       "brief_item": "bank payment file format"},
       {"id": "CT-03", "name": "CR-4 quarterly return", "kind": "report", "legacy_location": "claimtrack-reports/cr4_return.py",
-       "consumers": ["regulator"], "proof": "EC-03 byte-identical Q4 2026 return", "status": "confirmed"},
+       "consumers": ["regulator"], "proof": "EC-03 byte-identical Q4 2026 return", "status": "confirmed",
+       "brief_item": "the regulator's CR-4 quarterly return"},
       {"id": "CT-04", "name": "PolicyHub nightly extract (read)", "kind": "file", "legacy_location": "claimtrack-batch/src/main/java/com/contoso/claimtrack/batch/PolicyExtractReader.java",
        "consumers": ["claimtrack-batch"], "proof": "same file accepted by both sides during the parallel run", "status": "confirmed"}
     ],
@@ -72,9 +75,9 @@
       {"id": "TR-02", "change": "HashMap order feeds settlement lines", "affects": ["M-03"], "where": "claimtrack-batch/.../SettlementFileWriter.java", "effect": "line order changes", "contract_ids": ["CT-02"]},
       {"id": "TR-03", "change": "Python 3 round() and /", "affects": ["M-05"], "where": "claimtrack-reports/cr4_return.py", "effect": "banker's rounding, true division", "contract_ids": ["CT-03"]},
       {"id": "TR-04", "change": "MySQL 8 GROUP BY no longer sorts", "affects": ["M-05"], "where": "claimtrack-reports/sql/*.sql", "effect": "row order changes", "contract_ids": ["CT-03"]},
-      {"id": "TR-05", "change": "MySQL 8 collation and reserved words", "affects": ["M-02", "M-03", "M-05"], "where": "queries across web, batch, reports", "effect": "comparison and sort changes", "contract_ids": []},
-      {"id": "TR-06", "change": "host time zone Dallas CT → Azure UTC", "affects": ["M-03", "M-05"], "where": "batch and reports job config", "effect": "file dates move", "contract_ids": ["CT-02", "CT-03"]},
-      {"id": "TR-07", "change": "javax→jakarta validation messages in API error bodies", "affects": ["M-02"], "where": "claimtrack-web validation", "effect": "error body field names change", "contract_ids": ["CT-01"]}
+      {"id": "TR-05", "change": "MySQL 8 collation and reserved words", "affects": ["M-02", "M-03", "M-05"], "where": "claimtrack-reports/sql/*.sql and the queries in claimtrack-batch/src/main/java/", "effect": "comparison and sort changes", "contract_ids": []},
+      {"id": "TR-06", "change": "host time zone Dallas CT → Azure UTC", "affects": ["M-03", "M-05"], "where": "claimtrack-batch/src/main/resources/application.properties", "effect": "file dates move", "contract_ids": ["CT-02", "CT-03"]},
+      {"id": "TR-07", "change": "javax→jakarta validation messages in API error bodies", "affects": ["M-02"], "where": "claimtrack-web/.../api/ClaimsApiController.java", "effect": "error body field names change", "contract_ids": ["CT-01"]}
     ],
     "adrs": [
       {"id": "ADR-01", "title": "Rewrite the portal in React 18 + TypeScript", "context": "AngularJS 1.5 on Node 8 is EOL with no upgrade path.",
@@ -102,6 +105,11 @@
     "departures_from_brief": [
       {"brief_said": "App Service for all workloads (PaaS-first)", "design_says": "Container Apps Jobs for batch and reports", "adr_id": "ADR-08"}
     ],
-    "open_questions": []
+    "open_questions": [],
+    "resolved_questions": [
+      {"question": "M-03 declares Java 7 but depends on M-01 (Java 8): production JRE must be 8+ — confirm", "answer": "Production runs the batch on a Java 8 JRE (ops runbook).", "source": "document"},
+      {"question": "scheduler configuration held outside the repository", "answer": "Quartz cron lives in the Dallas ops crontab; nightly 01:30 CT.", "source": "user"},
+      {"question": "environment-specific configuration (hosts, credentials) not in the repository", "answer": "Held in the Dallas properties share; moves to Key Vault.", "source": "user"}
+    ]
   }
 }

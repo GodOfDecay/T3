@@ -82,6 +82,7 @@ export function Track3AgentPage({
   guide,
   renderVersion,
   showTechStack = false,
+  headerActions,
 }: {
   phase: Track3Stage;
   runLabel: string;
@@ -94,6 +95,8 @@ export function Track3AgentPage({
   renderVersion: (payload: unknown, detail: ArtifactVersionDetail) => React.ReactNode;
   /** Show the project's approved tech stack — for an agent that recommends one. */
   showTechStack?: boolean;
+  /** Page-specific controls beside the model picker (e.g. Target Architecture's interfaces). */
+  headerActions?: React.ReactNode;
 }) {
   const params = useParams<{ id: string }>();
   const projectId = params.id as ProjectId;
@@ -184,6 +187,7 @@ export function Track3AgentPage({
           </div>
           <div className="flex flex-wrap items-center gap-2">
             {showTechStack && <TechStackChip projectId={projectId} />}
+            {headerActions}
             <ModelSelector
               aria-label={`${PHASE_LABEL[phase]} agent model`}
               projectId={projectId}

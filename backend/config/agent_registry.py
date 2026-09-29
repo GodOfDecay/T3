@@ -268,6 +268,28 @@ AGENT_REGISTRY: dict[str, AgentDefinition] = {
         ],
         optional_capabilities=["doc.export.docx", "doc.export.pdf", "legacy.code.read"],
     ),
+    "design_modernization": AgentDefinition(
+        id="design_modernization",
+        name="Target Architecture Agent",
+        pipeline_position=3,
+        # Research §6.3: the brief and the assessment (their hand-over packets), and the
+        # legacy code (read through modernization_common.legacy_code, not an artifact).
+        input_artifacts=["migration_intent_payload", "discovery_artifacts"],
+        output_artifact="target_design_artifacts",
+        route_path="/target-architecture",
+        # "Accept the target design" is a Sign-off; its approval puts the modules on the ledger.
+        gate_type="approval_required",
+        sla_hours=48,
+        can_parallel_with=[],
+        max_rejections=1,
+        required_capabilities=[
+            "design.tech.stack.recommend", "design.migration.pattern.select",
+            "design.legacy.interop.plan", "design.contract.freeze", "design.trap.identify",
+            "design.adr.generate", "design.diagram.render", "design.data.migration.plan",
+            "artifact.write",
+        ],
+        optional_capabilities=["doc.export.docx", "doc.export.pdf", "legacy.code.read"],
+    ),
 }
 
 
@@ -295,9 +317,9 @@ _PORTFOLIO_1: list[str] = [
 TRACK_PORTFOLIOS: dict[str, list[str]] = {
     "greenfield": _PORTFOLIO_1,
     "enhancement": _PORTFOLIO_1,
-    # Built so far: the first two of Portfolio 2's ten (Phase 1). Design, Strategy and
+    # Built so far: the first three of Portfolio 2's ten (Phase 1, Phase E). Strategy and
     # the rest are added one at a time as each is built and mounted.
-    "modernization": ["requirements_modernization", "discovery"],
+    "modernization": ["requirements_modernization", "discovery", "design_modernization"],
     "rpa_infra": [],
     "data_engineering": [],
 }

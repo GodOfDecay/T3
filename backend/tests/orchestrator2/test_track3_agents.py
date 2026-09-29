@@ -18,7 +18,7 @@ from agents_orchestrator.orchestrator2.registry import (
     registry_for_track,
 )
 
-TRACK3 = ("requirements_modernization", "discovery")
+TRACK3 = ("requirements_modernization", "discovery", "design_modernization")
 
 
 def test_the_modernization_portfolio_is_the_two_built_agents_in_hand_off_order():
@@ -140,6 +140,8 @@ async def test_a_hallucinated_greenfield_pick_on_a_modernization_turn_is_refused
     ("open the discovery agent", "discovery"),
     ("switch to the discovery and assessment agent", "discovery"),
     ("use the migration intent agent", "requirements_modernization"),
+    ("run the target architecture agent", "design_modernization"),
+    ("open the design agent", "design_modernization"),
 ])
 async def test_naming_an_agent_resolves_within_the_track_without_a_model_call(monkeypatch, text, expected):
     async def must_not_call(*_a, **_kw):
@@ -156,6 +158,12 @@ def test_the_same_name_means_portfolio_1_requirements_on_greenfield():
     assert router.prefilter("run the requirements agent", agent_ids_for_track("greenfield")) == "requirements"
 
 
+def test_design_means_portfolio_1_design_on_greenfield_and_target_architecture_on_track3():
+    assert router.prefilter("run the design agent", agent_ids_for_track("greenfield")) == "design"
+    assert router.prefilter("run the design agent", agent_ids_for_track("modernization")) == "design_modernization"
+    assert router.prefilter("run the target architecture agent", agent_ids_for_track("greenfield")) is None
+
+
 def test_the_track3_prompt_starts_with_migration_intent_and_names_the_unbuilt_agents():
     prompt = router._system_prompt(registry_for_track("modernization"), "modernization")
     assert "MIGRATION INTENT" in prompt
@@ -170,9 +178,10 @@ def test_the_track3_prompt_starts_with_migration_intent_and_names_the_unbuilt_ag
     unbuilt = prompt.split("Not built for this track yet:", 1)[1].split(".", 1)[0]
     # Track 3's OWN agents 3–10 (not Portfolio 1's Design, Development, … — Phase B).
     assert [n.strip() for n in unbuilt.split(",")] == [
-        "Target Architecture", "Migration Strategy", "Equivalence Testing", "Migration Development",
+        "Migration Strategy", "Equivalence Testing", "Migration Development",
         "Migration Review", "Security", "Cutover", "Cutover Pack",
     ]
+    assert "DESIGNING WHAT THE SYSTEM BECOMES is Target Architecture work" in prompt
     assert "Discovery" not in unbuilt and "Dependency and Risk" not in unbuilt
     # The hand-off order puts the baseline before any code changes.
     order = prompt.split("in hand-off order, is", 1)[1]
@@ -201,6 +210,16 @@ def test_the_assessment_report_is_filed_as_a_deliverable(tmp_path):
     rows = render("discovery", report)
     assert len(rows) == 1
     assert rows[0]["title"].startswith("Dependency and Risk")
+
+
+def test_the_target_design_is_filed_as_a_deliverable():
+    from agents_orchestrator.design_modernization_agent.design_document import design_markdown
+    from agents_orchestrator.orchestrator2.deliverables import render
+    from tests.design_modernization.claimtrack import design_payload
+
+    rows = render("design_modernization", design_markdown({**design_payload(), "system_name": "ClaimTrack"}))
+    assert len(rows) == 1
+    assert rows[0]["title"] == "Target Architecture — ClaimTrack"
 
 
 def test_the_migration_brief_is_filed_as_a_deliverable():

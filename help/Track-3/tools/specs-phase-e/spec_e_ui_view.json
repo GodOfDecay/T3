@@ -1,0 +1,52 @@
+{
+ "root": "frontend",
+ "target": "components/modernization/target-design-view.tsx",
+ "cmd": [
+  "node",
+  "node_modules/vitest/vitest.mjs",
+  "run",
+  "__tests__/app/target-architecture-page.test.tsx"
+ ],
+ "mutants": [
+  [
+   "ledger-no-refetch",
+   "    if (approved) void refetch();",
+   "    if (false) void refetch();"
+  ],
+  [
+   "ledger-claims-before-approval",
+   "        {approved\n",
+   "        {true\n"
+  ],
+  [
+   "proposed-shown-confirmed",
+   "              {c.status === \"confirmed\" ? \"Confirmed\" : \"Proposed — needs confirming\"}",
+   "              {\"Confirmed\"}"
+  ],
+  [
+   "brief-words-hidden",
+   "          {c.brief_item && (",
+   "          {false && ("
+  ],
+  [
+   "chosen-exact-only",
+   "  return adr.options.find((o) => norm(o) === d) ?? adr.options.find((o) => d.startsWith(norm(o))) ?? null;",
+   "  return adr.options.find((o) => norm(o) === d) ?? null;"
+  ],
+  [
+   "unchecked-code-not-said",
+   "      {design.interfaces ? (",
+   "      {true ? ("
+  ],
+  [
+   "notes-hidden",
+   "        {design.notes.length > 0 && (",
+   "        {false && ("
+  ],
+  [
+   "module-traps-unjoined",
+   "  const traps = design.traps.filter((t) => t.affects.includes(module.module_id));",
+   "  const traps: DesignTrap[] = [];"
+  ]
+ ]
+}

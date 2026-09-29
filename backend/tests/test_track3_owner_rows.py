@@ -39,4 +39,4 @@ def test_every_track3_agent_is_owned_the_same_way_in_every_map(agent, owner):
 def test_only_built_track3_agents_are_in_the_portfolio():
     """Owner rows are not a build: the portfolio (what the Orchestrator offers and the
     track check admits) grows one agent at a time, as each is built."""
-    assert TRACK_PORTFOLIOS["modernization"] == ["requirements_modernization", "discovery"]
+    assert TRACK_PORTFOLIOS["modernization"] == ["requirements_modernization", "discovery", "design_modernization"]

@@ -89,6 +89,8 @@ async def org_with_tracks():
     ("agents_orchestrator.discovery_agent.discovery_agent_api", "discovery_ws"),
     ("agents_orchestrator.requirements_modernization_agent.requirements_modernization_agent_api",
      "requirements_modernization_ws"),
+    ("agents_orchestrator.design_modernization_agent.design_modernization_agent_api",
+     "design_modernization_ws"),
 ])
 async def test_a_socket_without_a_valid_ticket_is_closed_4401(monkeypatch, api_module, handler):
     import importlib

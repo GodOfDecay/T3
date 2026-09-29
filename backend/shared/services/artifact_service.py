@@ -42,6 +42,7 @@ _COLUMN_MAP = {
     # Track 3 (Code Modernization) — migration 0057.
     "requirements_modernization": "migration_intent_payload",
     "discovery": "discovery_artifacts",
+    "design_modernization": "target_design_artifacts",  # 0071
 }
 
 

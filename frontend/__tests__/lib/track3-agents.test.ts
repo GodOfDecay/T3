@@ -37,8 +37,8 @@ describe("Track 3 roster", () => {
     }
   });
 
-  it("builds exactly its first two agents; Portfolio 1's list is unchanged", () => {
-    expect(builtAgentsForTrack("modernization")).toEqual(["requirements_modernization", "discovery"]);
+  it("builds exactly its first three agents; Portfolio 1's list is unchanged", () => {
+    expect(builtAgentsForTrack("modernization")).toEqual(["requirements_modernization", "discovery", "design_modernization"]);
     expect(builtAgentsForTrack("greenfield")).toBe(BUILT_AGENTS);
     expect(BUILT_AGENTS).not.toContain("discovery");
   });
@@ -166,10 +166,18 @@ describe("Track 3 agents 3–10", () => {
     expect(GATE_POLICY.documentation_modernization.type).toBe("auto_approve");
   });
 
+  it("unlock one at a time as each is built: Target Architecture (Phase E) for its owner", () => {
+    const built = builtAgentsForTrack("modernization");
+    expect(tileStateFor("architect", "design_modernization", "modernization", built)).not.toBe("coming_soon");
+    expect(tileStateFor("project_admin", "design_modernization", "modernization", built)).not.toBe("coming_soon");
+    expect(tileStateFor("developer", "design_modernization", "modernization", built)).not.toBe("available");
+  });
+
   it("stay locked, even for their owner and the Project Admin, until each is built", () => {
     const built = builtAgentsForTrack("modernization");
     for (const [phase, want] of Object.entries(LATER)) {
       const p = phase as keyof typeof AGENT_OWNER_ROLE;
+      if (p === "design_modernization") continue; // built (Phase E): the test above
       expect(built).not.toContain(p);
       expect(tileStateFor(want.owner as never, p, "modernization", built), phase).toBe("coming_soon");
       expect(tileStateFor("project_admin", p, "modernization", built), phase).toBe("coming_soon");

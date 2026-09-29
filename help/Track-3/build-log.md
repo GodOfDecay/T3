@@ -536,3 +536,98 @@ rewrite; no live mutant.
 **Frontend:** full suite 1,187/1,188. The one failure is the `ws-ticket` 5 s default timeout under
 parallel load: a cold dynamic `import()` in the test body takes 0.5 s alone. That is test timing,
 not a product bug; left alone and noted. `tsc` and eslint are clean.
+
+## Entry 11 — 2026-09-29 — Phase E: Target Architecture (agent 3)
+
+Implements research §6.3 (+ §9 stage 3), master plan row E, D14. Plan:
+`docs/superpowers/plans/2026-09-29-track3-phase-e-target-architecture.md`. Click-through:
+`click-through-phase-E.md`. **Nothing committed; migration 0071 is on the test DB only.**
+
+**What was built**
+- Agent package `design_modernization_agent/`: graph (`agents/architect.py`), prompt (research §6.3 house
+  style + `going_back`, `documents_and_approval("Architect")`, `DELIVERABLE_RULES`), page socket
+  `/sdlc/agent/design-modernization/ws`, tools: `read_migration_brief`, `read_assessment`,
+  `get_module_detail`, `get_dependency_graph`, `capture_legacy_interfaces`, `record_target_design`,
+  `export_target_design` + legacy read tools, tech stack, documents/approval, compare/restore.
+- **Inputs are the versions this turn pinned** (`upstream_from_pages` now reads `discovery_artifacts` as
+  well; consumptions recorded, `built_from` pinned). Orchestrator turns read their own run's columns and
+  freeze nothing.
+- **`capture_legacy_interfaces`** (`analysis/interfaces.py`): deterministic pattern scan — Spring/JAX-RS
+  (with class prefix), web.xml, JSP/ASPX, ASP.NET attribute routes and minimal APIs, WCF, Flask/FastAPI,
+  Express; outbound HTTP; files written/read; jobs (@Scheduled, Quartz, cron); tables (DDL, JPA, EF,
+  SQL-shaped strings); queues. Each entry has `file:line` and module id; capped and says so.
+- **`record_target_design`**: `DesignPayload` validation, then `analysis/checks.py` (D7): every assessed
+  module designed under the PINNED assessment's id, name, tier and score (**D14**); every must-not-change
+  frozen by a contract whose new `brief_item` holds the brief's words; contract locations in the code, and
+  `confirmed` only for one file the inventory shows there (or the brief named); traps name a real place;
+  .NET/Java/Node/Python targets not past or within a year of end of support, never "latest", unknown
+  versions noted as not checked; data migration required when a database changes; AS-IS, TRANSITION and
+  TO-BE Mermaid diagrams; every "not assessable statically" question answered (new `resolved_questions`,
+  source user|document) or kept open; code at another commit than the assessment's is refused. Then it
+  persists `runs.target_design_artifacts` (0071), freezes the version and returns the document.
+- **Ledger on APPROVAL, not recording**: the publish route calls `ledger.design_approved` in the same
+  transaction; a ledger refusal is a 409 and rolls the approval back. The ledger refuses id drift in
+  **both** directions (same id/other path, same path/other id) and a design without module paths.
+- Wiring: registry entry + portfolio, orchestrator2 (registry, router names incl. "design" resolving
+  per track, capability, prompt bullet, deliverables), deliverables CHECK (0071), context formatter for
+  the assessment (+ the brief's must-not-change and measures), page routes (kind `target-architecture`:
+  latest, packet, export; `GET legacy-code/interfaces`).
+- Frontend: `/target-architecture` page on `Track3AgentPage` (new `headerActions`), `TargetDesignView`
+  (sources, stats, pattern mix, notes, ledger panel, tabs: overview, modules+detail join, contracts,
+  traps, decisions with the chosen option, Mermaid diagrams, questions), Legacy interfaces dialog,
+  hand-over line names the NEXT agent per stage (`HANDED_TO`), schemas, BFF routes, chat socket map,
+  orchestrator ids. **Tile not flipped** (R42) — `BUILT_AGENTS_BY_TRACK` after the click-through.
+
+**Decisions**
+- E1. Packet additions are optional fields (`FrozenContract.brief_item`, `DesignPayload.resolved_questions`)
+  — backward compatible; schemas regenerated; the ClaimTrack design fixture now passes every record-time
+  rule against a ClaimTrack fixture repo (`tests/design_modernization/claimtrack.py`): exact trap
+  locations, and Node **24** (Node 22 ends 2027-04-30, within a year — the check refuses it).
+- E2. No design is recorded without both a brief and an assessment (research: "provisional until it
+  exists" — the agent may discuss, not record).
+- E3. Every assessed module must be designed; out-of-scope ones are `keep` with a reason.
+- E4. The lifecycle table (shared with Dependency and Risk) gained the non-LTS Java 9–24 and odd Node
+  releases and Python 3.14.
+- E5. `resolve()`'s `..` guard deleted as an equivalent mutant: matching is against the checkout's own
+  file list; a `../` path matches nothing (tested).
+
+**Mutation (R46)** — `help/Track-3/tools/specs-phase-e/` (`make_specs.py` writes them).
+| Pass | Result | Notes |
+|---|---|---|
+| First | backend 49/50 → 50/50, frontend 11/11 | `framework-read-as-net` equivalent (redundant skip deleted, replaced by a real mutant); `vendored-read` survived because the test's jQuery sat in a skipped `vendor/` dir (moved); `sibling-folder-matches` missing case (added); ledger `drift-trailing-slash` missing test (added) |
+| Fix wave | 46/46 | after wiring `test_review_fixes.py` into the checks spec (5 "survivors" were the spec not running the new tests) |
+- The harness copy in `tools/` has a cp1252 `§` and an unescaped `C:\Users` in its docstring, so it does
+  not import on Python 3.12; run from a UTF-8 raw-docstring copy (scratchpad), which also reads vitest's
+  stderr so a kill names its test. `verify_no_mutants.py` must be run from `tools/` (it finds the repo
+  from its own path). Result: no mutant present; 12 originals absent — 5 deliberate Phase E rewrites,
+  each covered by a new spec, 7 pre-existing in files this phase did not touch.
+
+**Independent review (R54)**: 12 findings (7 Important, 5 Minor), each verified against the code.
+| # | Finding | Result |
+|---|---|---|
+| 1 | `confirmed` passable with `*`, `...`, a folder, or any line in the same file | **Fixed**: one file; cited line within 5 of an inventory entry |
+| 2 | One-letter open question muted every not-assessable question | **Fixed**: the open question must contain it |
+| 3 | Unknown versions passed silently; UI claimed "end-of-life version" in general | **Fixed**: noted as not checked; table extended; UI/tool text narrowed to the four runtimes |
+| 4 | Data-migration rule keyed on the layer's name only | **Fixed**: engine names in today/target count |
+| 5 | Inventory cache ignored the module list | **Fixed**: modules in the key |
+| 6 | Scanner (and existing `search_legacy_code`) followed symlinks out of the checkout | **Fixed** in both. The real-symlink test skips on this Windows machine (no Developer Mode); an OS-level stand-in test proves the guard |
+| 7 | C# method routes replaced the prefix; JAX-RS borrowed a neighbour's @Path; `open(os.path.join(..), "w")` read as a read; prose read as SQL; VB claimed but not scanned | **Fixed** each; VB removed and "scanned languages" stated in the report and dialog |
+| 8 | Drift only one direction; no-path payload skipped the check | **Fixed**: both directions (locked read), no-path design refused |
+| 9 | Ledger panel promised approval on rejected/superseded versions | **Fixed**: text by status |
+| 10 | "Ready to hand to Migration Strategy" reflects the packet model only | **Open, minor**: a payload snapshotted by another caller or restored against newer inputs passes the packet check; Staleness covers the latter. Noted for Phase F, whose record tool re-reads the packet |
+| 11 | Export preferred the chat copy after a restore | **Fixed**: page export reads the newest version |
+| 12 | Commit mismatch only a note | **Fixed**: refused |
+
+**Tests**: `tests/design_modernization` (scanner, checks, review fixes, record tool, approval/ledger,
+routes and guards, agent assembly); updated roster pins in 8 existing test files (the equality pins D12
+exists for), `test_stage_approval_dependency` (agent 3 leaves the unbuilt list, as Discovery did).
+Frontend: `__tests__/app/target-architecture-page.test.tsx` (19) against backend-produced fixtures
+(`regen_view_fixtures.py` now emits `target_design` and `legacy_interfaces`).
+
+**Regression (after the fix wave), `sdlc_product_test` at 0071, one group at a time:**
+group 1 **1,523 passed** (3 skipped, 7 xfailed, 17 xpassed); group 2 (orchestrator2) **776 passed**, after
+two roster pins were updated (the deliverables CHECK list is pinned from the newest migration's SOURCE, so
+0071 writes it out literally; the stage-output map); group 3 (development) **41 passed**. Migration 0071:
+one head; up/down/up clean. Frontend: full suite **1,211/1,211**, `tsc` and eslint clean on touched files.
+One page-test failure appeared once while a DB mutation run loaded the machine; three control runs and the
+full suite passed — noted, not dismissed, and not reproduced. The backend has no ruff installed, so no lint ran there.

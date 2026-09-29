@@ -359,12 +359,50 @@ def _fmt_migration_intent(brief: Dict[str, Any]) -> str:
         values = items(key)
         if values:
             lines.append(f"  {label}: " + "; ".join(values))
+    # Phase E: Target Architecture freezes each of these as a contract, word for word.
+    must = items("must_not_change")
+    if must:
+        lines.append("  MUST NOT CHANGE (the user's own words): " + "; ".join(f"“{m}”" for m in must))
+    measures = [m for m in (brief.get("success_measures") or []) if isinstance(m, dict) and m.get("metric")]
+    if measures:
+        lines.append("  SUCCESS MEASURES: " + "; ".join(
+            f"{m['metric']}: {m.get('current') or '?'} -> {m.get('target') or '?'}"
+            + (f" ({m['kind']})" if m.get("kind") else "") for m in measures))
+    return "\n".join(lines)
+
+
+def _fmt_assessment(assessment: Dict[str, Any]) -> str:
+    """Track 3's Dependency and Risk assessment, compact, as Target Architecture reads it first.
+
+    The module table with the stable ids is what the design cites; the full detail is one
+    tool call away (`read_assessment`, `get_module_detail`), so nothing here is a summary the
+    agent must trust over the tool."""
+    repo = assessment.get("repository") or {}
+    summary = assessment.get("summary") or {}
+    lines = [
+        "DEPENDENCY AND RISK ASSESSMENT:",
+        f"  REPOSITORY: {repo.get('name') or repo.get('url') or 'not recorded'}"
+        + (f" @ {str(repo.get('commit'))[:10]}" if repo.get("commit") else ""),
+        f"  MODULES: {summary.get('module_count', len(assessment.get('modules') or []))}",
+    ]
+    for m in (assessment.get("modules") or [])[:40]:
+        risk = m.get("risk") or {}
+        rt = m.get("runtime") or {}
+        lines.append(f"    - {m.get('id') or '?'} {m.get('name')} ({m.get('path')}): {risk.get('tier')}, "
+                     f"score {risk.get('score')}; runtime {rt.get('name') or '?'} {rt.get('version') or ''} "
+                     f"({rt.get('status') or 'unknown'})")
+    questions = [q.get("question") for q in assessment.get("not_assessable_statically") or [] if q.get("question")]
+    if questions:
+        lines.append("  NOT ASSESSABLE STATICALLY (ask; never assume): " + "; ".join(questions))
+    if (assessment.get("scanners") or {}).get("trivy") not in (None, "ok"):
+        lines.append("  VULNERABILITIES: not scanned (not measured, not zero)")
     return "\n".join(lines)
 
 
 _ARTIFACT_FORMATTERS = {
     "requirements_payload": _fmt_requirements,
     "migration_intent_payload": _fmt_migration_intent,
+    "discovery_artifacts": _fmt_assessment,
     "design_artifacts": _fmt_design,
     "development_artifacts": _fmt_development,
     "testing_artifacts": _fmt_testing,
@@ -410,6 +448,8 @@ _ARTIFACT_FIELDS = (
     "requirements_payload",
     # Track 3 — the Dependency and Risk agent reads the migration-intent brief.
     "migration_intent_payload",
+    # Track 3 — Target Architecture reads the assessment too.
+    "discovery_artifacts",
     "design_artifacts",
     "development_artifacts",
     "testing_artifacts",

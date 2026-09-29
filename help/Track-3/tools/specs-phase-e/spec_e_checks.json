@@ -1,0 +1,164 @@
+{
+ "target": "agents_orchestrator/design_modernization_agent/analysis/checks.py",
+ "tests": [
+  "tests/design_modernization/test_checks.py",
+  "tests/design_modernization/test_review_fixes.py"
+ ],
+ "mutants": [
+  [
+   "unknown-id-accepted",
+   "        if known is None:\n",
+   "        if known is None and False:\n"
+  ],
+  [
+   "name-drift-accepted",
+   "if words(m[\"module\"]) != words(known[\"name\"]):",
+   "if False:"
+  ],
+  [
+   "score-change-accepted",
+   "if m[\"tier\"] != known[\"tier\"] or int(m[\"risk_score\"]) != int(known[\"score\"]):",
+   "if m[\"tier\"] != known[\"tier\"]:"
+  ],
+  [
+   "missing-module-accepted",
+   "        if mid not in designed:",
+   "        if False:"
+  ],
+  [
+   "mnc-unfrozen-accepted",
+   "        if key not in claimed:",
+   "        if False:"
+  ],
+  [
+   "mnc-foreign-accepted",
+   "        if key not in wanted:",
+   "        if False:"
+  ],
+  [
+   "mnc-exact-compare",
+   "    return text.strip(\"\\\"'“”‘’ .\").casefold()",
+   "    return text"
+  ],
+  [
+   "location-unchecked",
+   "        if not hit:\n",
+   "        if False:\n"
+  ],
+  [
+   "confirmed-unchecked",
+   "        if not words(c.get(\"brief_item\") or \"\") and not _shown_by_inventory(",
+   "        if False and not _shown_by_inventory("
+  ],
+  [
+   "confirmed-multi-file",
+   "        if len(hit) != 1:",
+   "        if False:"
+  ],
+  [
+   "confirmed-any-line",
+   "    return line is None or not lines or any(abs(line - n) <= LINE_SLACK for n in lines)",
+   "    return True"
+  ],
+  [
+   "unknown-version-silent",
+   "            elif status.status == \"unknown\":",
+   "            elif False:"
+  ],
+  [
+   "engine-ignored",
+   "        is_db = _DATABASE_LAYER.search(layer[\"layer\"]) or _DATABASE_ENGINE.search(f\"{layer['today']} {layer['target']}\")",
+   "        is_db = _DATABASE_LAYER.search(layer[\"layer\"])"
+  ],
+  [
+   "no-code-confirmed-accepted",
+   "            if c[\"status\"] == \"confirmed\" and not words(c.get(\"brief_item\") or \"\"):\n                out.problems",
+   "            if False:\n                out.problems"
+  ],
+  [
+   "trap-no-path-accepted",
+   "        if not paths:",
+   "        if False:"
+  ],
+  [
+   "trap-unresolved-accepted",
+   "        elif not any(resolve(p, files, dirs) for p in paths):",
+   "        elif False:"
+  ],
+  [
+   "elision-unresolved",
+   "    if \"...\" in loc:",
+   "    if False:"
+  ],
+  [
+   "glob-unresolved",
+   "    if any(ch in loc for ch in \"*?[\"):",
+   "    if False:"
+  ],
+  [
+   "folder-unresolved",
+   "    if loc.rstrip(\"/\") in dirs:",
+   "    if False:"
+  ],
+  [
+   "eol-accepted",
+   "            if status.status == \"eol\":",
+   "            if False:"
+  ],
+  [
+   "approaching-accepted",
+   "            elif status.status == \"approaching\":",
+   "            elif False:"
+  ],
+  [
+   "latest-accepted",
+   "        if _LATEST.search(text or \"\"):",
+   "        if False:"
+  ],
+  [
+   "framework-matched-as-net",
+   "    (\".NET\", re.compile(r\"(?i)\\.net\\s*v?(\\d+(?:\\.\\d+)?)\")),",
+   "    (\".NET\", re.compile(r\"(?i)\\.net\\s*\\w*\\s*v?(\\d+(?:\\.\\d+)?)\")),"
+  ],
+  [
+   "data-migration-optional",
+   "        if is_db and words(layer[\"today\"]) != words(layer[\"target\"]):",
+   "        if False:"
+  ],
+  [
+   "unchanged-db-needs-plan",
+   "        if is_db and words(layer[\"today\"]) != words(layer[\"target\"]):",
+   "        if is_db:"
+  ],
+  [
+   "diagram-missing-accepted",
+   "        if not any(pattern.search(d[\"title\"]) for d in diagrams):",
+   "        if False:"
+  ],
+  [
+   "non-mermaid-accepted",
+   "        if not _MERMAID_START.match(_first_statement(d[\"mermaid\"])):",
+   "        if False:"
+  ],
+  [
+   "front-matter-unread",
+   "    if lines and lines[0].strip() == \"---\":",
+   "    if False:"
+  ],
+  [
+   "question-unasked-accepted",
+   "        if key in answered or any(key in o for o in still_open):",
+   "        if True:"
+  ],
+  [
+   "open-question-refused",
+   "        if key in answered or any(key in o for o in still_open):",
+   "        if key in answered:"
+  ],
+  [
+   "one-letter-mutes",
+   "        if key in answered or any(key in o for o in still_open):",
+   "        if key in answered or any(key in o or o in key for o in still_open if o):"
+  ]
+ ]
+}

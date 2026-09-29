@@ -1,0 +1,24 @@
+{
+ "target": "shared/routers/artifact_versions.py",
+ "tests": [
+  "tests/design_modernization/test_approval_and_routes.py"
+ ],
+ "env_test": true,
+ "mutants": [
+  [
+   "approval-skips-ledger",
+   "    if stage == \"design_modernization\":\n        await _design_approved",
+   "    if False:\n        await _design_approved"
+  ],
+  [
+   "refusal-swallowed",
+   "        raise HTTPException(status_code=409, detail=f\"Not approved: {exc}\") from exc",
+   "        pass"
+  ],
+  [
+   "path-not-passed",
+   "\"legacy_path\": paths.get(m.get(\"module_id\")) or \"\",",
+   "\"legacy_path\": \"\","
+  ]
+ ]
+}

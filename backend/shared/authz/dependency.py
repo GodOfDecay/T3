@@ -327,6 +327,7 @@ _WS_IN_HANDLER_AUTH_PATHS: set[str] = {
     # the caller's reach on every turn (assert_agent_access_for_chat_on_track).
     "/sdlc/agent/discovery/ws",
     "/sdlc/agent/requirements-modernization/ws",
+    "/sdlc/agent/design-modernization/ws",  # Target Architecture (Phase E)
 }
 
 

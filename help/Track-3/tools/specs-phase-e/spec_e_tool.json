@@ -1,0 +1,49 @@
+{
+ "target": "agents_orchestrator/design_modernization_agent/tools/design_tools.py",
+ "tests": [
+  "tests/design_modernization/test_record_tool.py"
+ ],
+ "mutants": [
+  [
+   "records-without-inputs",
+   "    if missing:\n        return \"NOT RECORDED",
+   "    if False:\n        return \"NOT RECORDED"
+  ],
+  [
+   "records-despite-problems",
+   "    if problems:\n        return _refusal(problems)",
+   "    if False:\n        return _refusal(problems)"
+  ],
+  [
+   "no-freeze",
+   "    version = await freeze_version(STAGE, artifact)",
+   "    version = None"
+  ],
+  [
+   "no-persist",
+   "    saved = await _persist(artifact)",
+   "    saved = \"Saved to the project as the current target design.\""
+  ],
+  [
+   "orchestrator-reads-pages",
+   "            if get_orchestrator_run():\n                run_id",
+   "            if False:\n                run_id"
+  ],
+  [
+   "draft-not-said",
+   "        if item.version is not None and item.status == \"draft\":",
+   "        if False:"
+  ],
+  [
+   "commit-drift-not-said",
+   "    if assessed and pulled and not (assessed.startswith(pulled[:7]) or pulled.startswith(assessed[:7])):",
+   "    if False:"
+  ],
+  [
+   "checked-without-code",
+   "    if root is not None:\n        files, dirs",
+   "    if False:\n        files, dirs"
+  ]
+ ],
+ "env_test": true
+}

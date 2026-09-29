@@ -476,6 +476,13 @@ export function Comparison({ projectId, stage, from, to }: {
  */
 const HANDOVER_SHOWN = 6;
 
+/** Who reads each stage's packet next (Development Plan §5 hand-over order). */
+export const HANDED_TO: Record<Track3Stage, string> = {
+  requirements_modernization: "Target Architecture",
+  discovery: "Target Architecture",
+  design_modernization: "Migration Strategy",
+};
+
 /** Only a draft or an approved version is ever handed over: a rejected or superseded one says
  *  nothing here (the caller does not render this for them). A draft is handed over once approved. */
 export function HandOver({ projectId, stage, version, noun, approved }: {
@@ -485,10 +492,11 @@ export function HandOver({ projectId, stage, version, noun, approved }: {
     queryKey: [...qk.artifactVersions.forStage(projectId, stage), version, "packet"],
     queryFn: () => getVersionPacket(projectId, stage, version),
   });
+  const next = HANDED_TO[stage];
   if (q.isError) {
     return (
       <p aria-label="Hand-over" className="text-muted-foreground -mt-4 text-xs">
-        Could not check whether this {noun} can be handed to Target Architecture.
+        Could not check whether this {noun} can be handed to {next}.
       </p>
     );
   }
@@ -496,7 +504,7 @@ export function HandOver({ projectId, stage, version, noun, approved }: {
   if (q.data.ok) {
     return (
       <p aria-label="Hand-over" className="text-muted-foreground -mt-4 text-xs">
-        {approved ? "Ready to hand to Target Architecture." : "Ready to hand to Target Architecture once approved."}
+        {approved ? `Ready to hand to ${next}.` : `Ready to hand to ${next} once approved.`}
       </p>
     );
   }
@@ -504,7 +512,7 @@ export function HandOver({ projectId, stage, version, noun, approved }: {
   const more = q.data.problems.length - shown.length;
   return (
     <div aria-label="Hand-over" role="status" className="rounded-lg border border-amber-500/40 bg-amber-500/10 p-3 text-xs">
-      <p className="font-medium">This {noun} is not yet ready to hand to Target Architecture:</p>
+      <p className="font-medium">This {noun} is not yet ready to hand to {next}:</p>
       <ul className="mt-1 list-disc pl-4">
         {shown.map((p) => <li key={p}>{p}</li>)}
       </ul>

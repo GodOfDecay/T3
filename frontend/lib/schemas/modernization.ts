@@ -214,6 +214,114 @@ export const DiscoveryAssessment = z.object({
 });
 export type DiscoveryAssessment = z.infer<typeof DiscoveryAssessment>;
 
+/* ── Target Architecture (Phase E) ─────────────────────────────────────────────
+   Mirrors `TargetDesignArtifact` (backend/shared/models/artifacts.py): the hand-over packet's
+   DesignPayload plus what the record tool adds (sources, module paths, inventory totals, notes).
+   Tolerant like the rest: enums fall back rather than blanking the page over one value. */
+
+export const MIGRATION_PATTERNS = [
+  "in_place_upgrade", "strangler_fig", "branch_by_abstraction", "parallel_run",
+  "rewrite", "replatform", "retire", "keep",
+] as const;
+export type MigrationPattern = (typeof MIGRATION_PATTERNS)[number];
+
+const DesignLayer = z.object({ layer: text, today: text, target: text, modules: strings });
+const DesignedModule = z.object({
+  module_id: z.string(),
+  module: text,
+  tier: MigrationTier.catch("llm_assisted"),
+  risk_score: z.number().default(0),
+  patterns: z.array(z.string()).default([]),
+  rationale: text,
+  adr_ids: strings,
+  contract_ids: strings,
+});
+export type DesignedModule = z.infer<typeof DesignedModule>;
+const FrozenContract = z.object({
+  id: z.string(),
+  name: text,
+  kind: z.string().default("http"),
+  legacy_location: text,
+  consumers: strings,
+  proof: text,
+  status: z.enum(["confirmed", "proposed"]).catch("proposed"),
+  brief_item: z.string().nullable().default(null),
+});
+export type FrozenContract = z.infer<typeof FrozenContract>;
+const Trap = z.object({ id: z.string(), change: text, affects: strings, where: text, effect: text, contract_ids: strings });
+export type DesignTrap = z.infer<typeof Trap>;
+const Adr = z.object({
+  id: z.string(), title: text, context: text, options: strings, decision: text, consequences: text,
+  modules: strings, contracts: strings,
+});
+export type DesignAdr = z.infer<typeof Adr>;
+
+export const TargetDesign = z.object({
+  schema_version: z.number().default(1),
+  system_name: text,
+  summary: text,
+  layers: z.array(DesignLayer).default([]),
+  modules: z.array(DesignedModule).default([]),
+  interop: z.object({ routing: text, data: text, shared_libraries: text, jobs: text, identity: text })
+    .partial().default({}),
+  ordering_constraints: strings,
+  frozen_contracts: z.array(FrozenContract).default([]),
+  data_migration: z.object({
+    source: text, target: text, method: text, behaviour_changes: strings, cutover: text,
+  }).nullable().default(null),
+  nfr: z.array(z.object({ measure: text, target: text, source: z.string().default("design") })).default([]),
+  security_design: strings,
+  traps: z.array(Trap).default([]),
+  adrs: z.array(Adr).default([]),
+  diagrams: z.array(z.object({ title: text, mermaid: text })).default([]),
+  departures_from_brief: z.array(z.object({ brief_said: text, design_says: text, adr_id: text })).default([]),
+  open_questions: strings,
+  resolved_questions: z.array(z.object({ question: text, answer: text, source: z.string().default("user") }))
+    .default([]),
+  sources: z.object({
+    brief: z.object({ version: z.number().nullable().default(null), status: z.string().default("") })
+      .partial().nullable().default(null),
+    assessment: z.object({
+      version: z.number().nullable().default(null), status: z.string().default(""),
+      commit: z.string().nullable().default(null), repository: z.string().nullable().default(null),
+    }).partial().nullable().default(null),
+    checkout_commit: z.string().nullable().default(null),
+  }).partial().default({}),
+  module_paths: z.record(z.string(), z.string()).default({}),
+  interfaces: z.object({
+    commit: z.string().nullable().default(null),
+    counts: z.record(z.string(), z.number()).default({}),
+    total: z.number().default(0),
+  }).nullable().default(null),
+  notes: strings,
+  recorded_at: z.string().nullable().default(null),
+});
+export type TargetDesign = z.infer<typeof TargetDesign>;
+
+export const LegacyInterface = z.object({
+  kind: z.string(),
+  direction: z.string(),
+  name: z.string(),
+  location: z.string(),
+  module: z.string().default(""),
+  evidence: z.string().default(""),
+});
+export type LegacyInterface = z.infer<typeof LegacyInterface>;
+
+export const LegacyInterfaces = z.object({
+  projectId: z.string(),
+  status: z.enum(["none", "ready"]).catch("none"),
+  repository: z.string().nullable().optional(),
+  inventory: z.object({
+    commit: z.string().default(""),
+    counts: z.record(z.string(), z.number()).default({}),
+    total: z.number().default(0),
+    truncated: z.boolean().default(false),
+    items: z.array(LegacyInterface).default([]),
+  }).nullable().default(null),
+});
+export type LegacyInterfaces = z.infer<typeof LegacyInterfaces>;
+
 /** The read endpoints' envelope: the newest run holding a value, or nulls. */
 export function stagePayload<T extends z.ZodTypeAny>(payload: T) {
   return z.object({

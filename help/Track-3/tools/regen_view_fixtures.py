@@ -36,6 +36,41 @@ with tempfile.TemporaryDirectory() as tmp:
                             vulnerabilities=findings)
 new["generated_at"] = old["generated_at"]  # stable across regenerations
 data["assessment"] = new
+
+# Phase E: the ClaimTrack target design as `record_target_design` stores it (TargetDesignArtifact),
+# checked by the same rules against the ClaimTrack fixture repository, and that repository's
+# interface inventory as the interfaces route returns it.
+from agents_orchestrator.design_modernization_agent.analysis.interfaces import (  # noqa: E402
+    capture_interfaces, files_with_interfaces,
+)
+from agents_orchestrator.design_modernization_agent.tools.design_tools import _tree, check_design  # noqa: E402
+from agents_orchestrator.modernization_common.handover.packets import DesignPayload  # noqa: E402
+from shared.models.artifacts import TargetDesignArtifact  # noqa: E402
+from tests.design_modernization.claimtrack import build_repo, design_payload, fixture  # noqa: E402
+
+brief, assessment = fixture("brief")["payload"], fixture("assessment")["payload"]
+modules = [{"id": m["id"], "name": m["name"], "path": m["path"]} for m in assessment["modules"]]
+with tempfile.TemporaryDirectory() as tmp:
+    repo = build_repo(pathlib.Path(tmp) / "claimtrack")
+    inventory = capture_interfaces(repo, modules, assessment["commit"])
+    files, dirs = _tree(repo)
+    design = DesignPayload.model_validate(design_payload())
+    problems, notes = check_design(design, brief, assessment, 1, files, dirs, files_with_interfaces(inventory),
+                                   date(2026, 9, 29))
+assert not problems, problems
+data["target_design"] = TargetDesignArtifact(
+    **design.model_dump(mode="json"), system_name=brief["system_name"],
+    sources={"brief": {"version": 1, "status": "published"},
+             "assessment": {"version": 1, "status": "published", "commit": assessment["commit"],
+                            "repository": assessment["repository"]},
+             "checkout_commit": assessment["commit"]},
+    module_paths={m["id"]: m["path"] for m in modules},
+    interfaces={"commit": inventory["commit"], "counts": inventory["counts"], "total": inventory["total"]},
+    notes=notes, recorded_at="2026-10-05T10:00:00+00:00",
+).model_dump(mode="json")
+data["legacy_interfaces"] = {"projectId": "p-claimtrack", "status": "ready", "repository": "claimtrack",
+                             "inventory": inventory}
 FIXTURES.write_text(json.dumps(data, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
 print(f"assessment: schema {new['schema_version']}, {len(new['modules'])} modules, "
       f"{len(new['not_assessable_statically'])} not-assessable questions")
+print(f"target_design: {len(design.modules)} modules, {len(notes)} notes; interfaces: {inventory['total']}")

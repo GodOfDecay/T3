@@ -1,0 +1,24 @@
+{
+ "target": "shared/routers/modernization.py",
+ "tests": [
+  "tests/design_modernization/test_approval_and_routes.py"
+ ],
+ "env_test": true,
+ "mutants": [
+  [
+   "packet-uses-assessment",
+   "             \"design_modernization\": design_packet}[stage]",
+   "             \"design_modernization\": assessment_packet}[stage]"
+  ],
+  [
+   "interfaces-unguarded",
+   "    resolved, _tenant, _user = await _guard(db, request, project_id, stage)\n    pull = legacy_code.current_pull(resolved)",
+   "    resolved = project_id\n    pull = legacy_code.current_pull(resolved)"
+  ],
+  [
+   "interfaces-ids-dropped",
+   "               for m in ((row.payload or {}).get(\"modules\") if row is not None else None) or [] if m.get(\"id\")]",
+   "               for m in [] if m.get(\"id\")]"
+  ]
+ ]
+}

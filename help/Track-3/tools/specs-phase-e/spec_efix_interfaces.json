@@ -1,0 +1,39 @@
+{
+ "target": "agents_orchestrator/design_modernization_agent/analysis/interfaces.py",
+ "tests": [
+  "tests/design_modernization/test_review_fixes.py",
+  "tests/design_modernization/test_interfaces.py"
+ ],
+ "mutants": [
+  [
+   "symlink-followed",
+   "            if path.is_symlink():\n                continue",
+   "            if False:\n                continue"
+  ],
+  [
+   "cs-method-route-replaces",
+   "            method_route = (route.group(1), n)",
+   "            prefix = route.group(1)"
+  ],
+  [
+   "jaxrs-window-crosses-methods",
+   "            for i in [*_annotation_block(lines, n - 1, -1), *_annotation_block(lines, n - 1, +1)]:",
+   "            for i in range(max(0, n - 4), min(len(lines), n + 3)):"
+  ],
+  [
+   "py-mode-ignored",
+   "            mode = next((mm.group(1) for a in args[1:] if (mm := _PY_MODE.match(a))), \"r\")",
+   "            mode = \"r\""
+  ],
+  [
+   "py-split-inside-parens",
+   "        elif ch == \",\" and depth == 0:",
+   "        elif ch == \",\":"
+  ],
+  [
+   "prose-is-sql",
+   "if t.group(2).lower() not in _SQL_NOT_TABLES and _SQL_SHAPE[t.group(1).lower()].search(text):",
+   "if t.group(2).lower() not in _SQL_NOT_TABLES:"
+  ]
+ ]
+}

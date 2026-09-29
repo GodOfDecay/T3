@@ -9,6 +9,7 @@ passes back to the agent (research §5.8 rule 5), and that the page shows beside
 
     brief_packet(payload, envelope)       -> Emitted
     assessment_packet(payload, envelope)  -> Emitted
+    design_packet(payload, envelope)      -> Emitted   (Phase E: Target Architecture → Strategy)
     envelope_of(row)                      the envelope fields from an `artifact_versions` row
 
 WHAT IS MAPPED, AND WHAT IS NOT INVENTED. A field the stored artifact does not have stays
@@ -212,6 +213,20 @@ def assessment_payload(assessment: dict) -> dict:
         "not_assessable_statically": [i.get("question") for i in assessment.get("not_assessable_statically") or []
                                       if i.get("question")],
     }
+
+
+def design_payload(design: dict) -> dict:
+    """The packet's payload from a stored target design (`TargetDesignArtifact` as a dict): the
+    design fields only — sources, paths and notes are the page's, not the hand-over's."""
+    from .packets import DesignPayload  # noqa: PLC0415
+
+    return {name: design[name] for name in DesignPayload.model_fields if name in design}
+
+
+def design_packet(design: dict, envelope: dict) -> Emitted:
+    from .packets import DesignPacket  # noqa: PLC0415
+
+    return _build(DesignPacket, {**envelope, "payload": design_payload(design)})
 
 
 def assessment_packet(assessment: dict, envelope: dict) -> Emitted:

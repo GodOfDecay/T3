@@ -1,0 +1,18 @@
+{
+ "root": "frontend",
+ "target": "components/modernization/version-view.tsx",
+ "cmd": [
+  "node",
+  "node_modules/vitest/vitest.mjs",
+  "run",
+  "__tests__/app/target-architecture-page.test.tsx",
+  "__tests__/app/track3-pages-retrofit.test.tsx"
+ ],
+ "mutants": [
+  [
+   "design-hands-to-itself",
+   "  design_modernization: \"Migration Strategy\",",
+   "  design_modernization: \"Target Architecture\","
+  ]
+ ]
+}

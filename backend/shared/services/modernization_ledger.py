@@ -130,8 +130,39 @@ async def design_approved(db: AsyncSession, *, tenant_id: str, project_id: str, 
                           actor: Optional[str], artifact: ArtifactRef) -> list[ModernizationModule]:
     """An approved target design puts each in-scope module on the ledger as `designed`, with its
     patterns, contracts and ADRs. Re-approving a design updates those fields and records it, but
-    never moves a module backwards."""
+    never moves a module backwards.
+
+    ID DRIFT IS REFUSED (D14). Module ids are stable within one assessed commit, not across
+    commits: a later assessment may call a different folder M-03. A design that names M-03 for
+    a module the ledger already holds at another path is not a revision of that module, and
+    applying it would give one row two histories — so the whole approval is refused, naming
+    both paths, and nothing is written (the caller's transaction rolls back)."""
     rows = []
+    modules = list(modules)
+    # THE OTHER DIRECTION (review fix #8): a module the ledger already holds under one id, named
+    # by another id in this design, would give one folder two rows and two histories.
+    # Locked, so a concurrent approval cannot move a row between this check and the writes below.
+    held_rows = list((await db.execute(
+        select(ModernizationModule).where(ModernizationModule.project_id == project_id).with_for_update()
+    )).scalars().all())
+    by_path = {(r.legacy_path or "").strip().strip("/"): r.module_id
+               for r in held_rows if (r.legacy_path or "").strip().strip("/")}
+    by_id = {r.module_id: (r.legacy_path or "").strip().strip("/") for r in held_rows}
+    for m in modules:  # the same id on another path first: the clearer of the two messages
+        path = (m.get("legacy_path") or "").strip().strip("/")
+        if path and by_id.get(m["module_id"]) not in (None, "", path):
+            raise LedgerRefused(
+                f"{m['module_id']} is {by_id[m['module_id']]} on the ledger but {path} in this design — the module "
+                "ids changed between assessed commits. Re-run the design on the assessment the ledger was built "
+                "from, or ask an Architect to reconcile the ledger first.")
+    for m in modules:
+        path = (m.get("legacy_path") or "").strip().strip("/")
+        held = by_path.get(path)
+        if path and held and held != m["module_id"]:
+            raise LedgerRefused(
+                f"{path} is {held} on the ledger but {m['module_id']} in this design — the module ids changed "
+                "between assessed commits. Re-run the design on the assessment the ledger was built from, or ask "
+                "an Architect to reconcile the ledger first.")
     for m in modules:
         existing = (await db.execute(
             select(ModernizationModule)

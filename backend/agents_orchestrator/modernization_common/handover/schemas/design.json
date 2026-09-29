@@ -193,7 +193,7 @@
     },
     "DesignPayload": {
       "additionalProperties": false,
-      "description": "Refusals checked here: a module with no pattern, a pattern outside the vocabulary, a\ncontract with no legacy location, an ADR with fewer than two options, and any reference\nto a contract/ADR/module the design does not define.\n\nChecked by `record_target_design` (needs other data): a version past end of life (the\nassessment's EOL table); every in-scope module present (the assessment); a contract not\nfound by `capture_legacy_interfaces` may only be `proposed`.",
+      "description": "Refusals checked here: a module with no pattern, a pattern outside the vocabulary, a\ncontract with no legacy location, an ADR with fewer than two options, and any reference\nto a contract/ADR/module the design does not define.\n\nChecked by `record_target_design` (needs other data \u2014 `design_modernization_agent/analysis/\nchecks.py`): a version past end of life (the EOL table); every assessed module present, with\nthe id, name, tier and score of the PINNED assessment (D14); every must-not-change item frozen\nby a contract (`brief_item`); a contract not found by `capture_legacy_interfaces` and not\nnamed by the brief may only be `proposed`; locations that exist in the checkout; the data\nmigration when the database changes; the three diagrams; every not-assessable question\nanswered or kept open.",
       "properties": {
         "adrs": {
           "default": [],
@@ -286,6 +286,14 @@
             "type": "string"
           },
           "title": "Ordering Constraints",
+          "type": "array"
+        },
+        "resolved_questions": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/ResolvedQuestion"
+          },
+          "title": "Resolved Questions",
           "type": "array"
         },
         "security_design": {
@@ -425,6 +433,19 @@
     "FrozenContract": {
       "additionalProperties": false,
       "properties": {
+        "brief_item": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "The brief's must-not-change entry this contract freezes, word for word; None for a contract the brief did not name.",
+          "title": "Brief Item"
+        },
         "consumers": {
           "default": [],
           "items": {
@@ -625,6 +646,37 @@
         }
       },
       "title": "ProducedBy",
+      "type": "object"
+    },
+    "ResolvedQuestion": {
+      "additionalProperties": false,
+      "description": "A question the assessment could not answer from the code (`not_assessable_statically`),\nand the answer the design rests on \u2014 from the user or an approved document, never a guess.",
+      "properties": {
+        "answer": {
+          "minLength": 1,
+          "title": "Answer",
+          "type": "string"
+        },
+        "question": {
+          "minLength": 1,
+          "title": "Question",
+          "type": "string"
+        },
+        "source": {
+          "enum": [
+            "user",
+            "document"
+          ],
+          "title": "Source",
+          "type": "string"
+        }
+      },
+      "required": [
+        "question",
+        "answer",
+        "source"
+      ],
+      "title": "ResolvedQuestion",
       "type": "object"
     },
     "Trap": {

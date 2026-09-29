@@ -35,6 +35,7 @@ _WRITES_UNDER = {
     # Track 3 — agents_orchestrator/modernization_common/files.py::output_dir.
     "requirements_modernization": ("requirements_modernization_agent", "output"),
     "discovery": ("discovery_agent", "output"),
+    "design_modernization": ("design_modernization_agent", "output"),
     "plan": ("orchestrator", "output"),
     "design": ("orchestrator", "output"),
     "testing": ("orchestrator", "output"),

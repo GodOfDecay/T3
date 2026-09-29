@@ -458,7 +458,8 @@ async def serve_agent_socket(
 
 
 #: The page whose versions feed each Track 3 input artifact: (producing stage, noun).
-_UPSTREAM_STAGE = {"migration_intent_payload": ("requirements_modernization", "Migration-intent brief")}
+_UPSTREAM_STAGE = {"migration_intent_payload": ("requirements_modernization", "Migration-intent brief"),
+                   "discovery_artifacts": ("discovery", "Dependency and Risk assessment")}
 
 
 #: (agent, session, producing stage) → the version this chat session already recorded
@@ -474,7 +475,8 @@ async def upstream_from_pages(project_id: str, tenant_id: str, agent_id: str, *,
                               consumed_by: str | None = None,
                               consumer_session: str | None = None) -> str:
     """The work already on the AGENT PAGES that this agent builds on — for Discovery, the
-    brief on the Migration Intent page.
+    brief on the Migration Intent page; for Target Architecture, the brief and the assessment
+    (each read, pinned and recorded on its own).
 
     FROM THE PAGES' VERSIONS, NOT FROM RUNS. The run columns are written by Orchestrator
     conversations too, and an Orchestrator conversation is self-contained: a brief
@@ -534,7 +536,7 @@ async def upstream_from_pages(project_id: str, tenant_id: str, agent_id: str, *,
                     continue
                 if enforced:
                     parts.append(f"{noun}: none approved yet. This project only builds on approved "
-                                 "work, so say that the brief must be approved first; do not use a draft.")
+                                 f"work, so say that the {noun.lower()} must be approved first; do not use a draft.")
                     continue
                 row = await svc.latest_version(db, project_id, stage)
                 if row is not None and row.payload:

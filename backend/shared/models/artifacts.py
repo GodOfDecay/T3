@@ -388,6 +388,46 @@ class DiscoveryArtifact(BaseModel):
     not_assessable_statically: List[Dict[str, Any]] = []
 
 
+class TargetDesignArtifact(BaseModel):
+    """-> runs.target_design_artifacts (0071), and each frozen `design_modernization` version.
+
+    The DESIGN is the hand-over packet's payload (`handover/packets.DesignPayload`, validated by
+    `record_target_design` before this is built), stored field by field so the packet is read
+    back with `emit.design_payload`. Around it, what the PAGE needs and the model never writes:
+    which brief and assessment versions it was built from and the commit, each module's legacy
+    path (the ledger's `legacy_path` on approval), the interface inventory's totals, the stack
+    in force, and the non-blocking notes the checks produced.
+
+    Every field is declared: pydantic drops unknown keys silently (Phase D trap)."""
+
+    schema_version: int = 1
+    system_name: str = ""
+    # ── the design (DesignPayload) ──
+    summary: str
+    layers: List[Dict[str, Any]]
+    modules: List[Dict[str, Any]]
+    interop: Dict[str, Any] = {}
+    ordering_constraints: List[str] = []
+    frozen_contracts: List[Dict[str, Any]] = []
+    data_migration: Optional[Dict[str, Any]] = None
+    nfr: List[Dict[str, Any]] = []
+    security_design: List[str] = []
+    traps: List[Dict[str, Any]] = []
+    adrs: List[Dict[str, Any]] = []
+    diagrams: List[Dict[str, Any]] = []
+    departures_from_brief: List[Dict[str, Any]] = []
+    open_questions: List[str] = []
+    resolved_questions: List[Dict[str, Any]] = []
+    # ── set by the record tool, never by the model ──
+    sources: Dict[str, Any] = {}
+    module_paths: Dict[str, str] = {}
+    interfaces: Optional[Dict[str, Any]] = None
+    tech_stack: Optional[Dict[str, Any]] = None
+    notes: List[str] = []
+    recorded_at: Optional[str] = None
+    agent_session_id: Optional[str] = None
+
+
 # ---------------------------------------------------------------------------
 # Traceability and handoff helpers
 # ---------------------------------------------------------------------------

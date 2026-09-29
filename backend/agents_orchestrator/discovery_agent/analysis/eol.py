@@ -101,9 +101,21 @@ _TABLE: dict[str, dict[str, _Lifecycle]] = {
         "17": _Lifecycle(date(2029, 9, 30), legacy_after=date(2026, 9, 30)),
         "21": _Lifecycle(date(2031, 9, 30), legacy_after=date(2028, 9, 30)),
         "25": _Lifecycle(date(2033, 9, 30), legacy_after=date(2030, 9, 30)),
+        # Non-LTS feature releases: six months of updates, then nothing (Phase E review #3).
+        "9": _Lifecycle(date(2018, 3, 20)), "10": _Lifecycle(date(2018, 9, 25)),
+        "12": _Lifecycle(date(2019, 9, 17)), "13": _Lifecycle(date(2020, 3, 17)),
+        "14": _Lifecycle(date(2020, 9, 15)), "15": _Lifecycle(date(2021, 3, 16)),
+        "16": _Lifecycle(date(2021, 9, 14)), "18": _Lifecycle(date(2022, 9, 20)),
+        "19": _Lifecycle(date(2023, 3, 21)), "20": _Lifecycle(date(2023, 9, 19)),
+        "22": _Lifecycle(date(2024, 9, 17)), "23": _Lifecycle(date(2025, 3, 18)),
+        "24": _Lifecycle(date(2025, 9, 16)),
     },
     "Node.js": {
         "8": _Lifecycle(date(2019, 12, 31)),
+        # Odd-numbered (non-LTS) releases: about eight months of support.
+        "9": _Lifecycle(date(2018, 6, 30)), "11": _Lifecycle(date(2019, 6, 1)),
+        "13": _Lifecycle(date(2020, 6, 1)), "15": _Lifecycle(date(2021, 6, 1)),
+        "17": _Lifecycle(date(2022, 6, 1)),
         "10": _Lifecycle(date(2021, 4, 30)),
         "12": _Lifecycle(date(2022, 4, 30)),
         "14": _Lifecycle(date(2023, 4, 30)),
@@ -127,6 +139,7 @@ _TABLE: dict[str, dict[str, _Lifecycle]] = {
         "3.11": _Lifecycle(date(2027, 10, 31)),
         "3.12": _Lifecycle(date(2028, 10, 31)),
         "3.13": _Lifecycle(date(2029, 10, 31)),
+        "3.14": _Lifecycle(date(2030, 10, 31)),
     },
 }
 

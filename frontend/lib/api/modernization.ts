@@ -4,6 +4,7 @@ import type { ProjectId } from "@/lib/schemas";
 import {
   DiscoveryResponse,
   LegacyCodeRecord,
+  LegacyInterfaces,
   LegacyRepositories,
   MigrationIntentResponse,
 } from "@/lib/schemas/modernization";
@@ -24,13 +25,21 @@ export const getDiscoveryAssessment = (id: ProjectId) =>
 
 /* ── Pulled legacy code, and version downloads ──────────────────────────────── */
 
-export type Track3Stage = "requirements_modernization" | "discovery";
+export type Track3Stage = "requirements_modernization" | "discovery" | "design_modernization";
 
 /** URL segment of each stage's page data on the backend. */
-export const KIND_FOR_STAGE: Record<Track3Stage, "migration-intent" | "discovery"> = {
+export const KIND_FOR_STAGE: Record<Track3Stage, "migration-intent" | "discovery" | "target-architecture"> = {
   requirements_modernization: "migration-intent",
   discovery: "discovery",
+  design_modernization: "target-architecture",
 };
+
+/** What the pulled legacy code exposes and consumes — the inventory Target Architecture freezes
+ *  its contracts from. `status: none` until code is pulled. */
+export const getLegacyInterfaces = (id: ProjectId) =>
+  api(`/projects/${encodeURIComponent(id)}/modernization/legacy-code/interfaces?stage=design_modernization`, {
+    schema: LegacyInterfaces,
+  });
 
 /** The project's legacy code: the latest pull attempt, and the checkout it holds. */
 export const getLegacyCode = (id: ProjectId, stage: Track3Stage) =>

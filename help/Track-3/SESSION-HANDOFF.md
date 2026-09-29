@@ -1,6 +1,6 @@
 # Track 3 (Code Modernization) — Handoff for whoever builds the next agents
 
-**Updated:** 2026-09-29, end of Phase D. **Branch:** `akshat_track3` on `origin` (the team's shared
+**Updated:** 2026-09-29, end of Phase E (uncommitted at hand-off — see §9). **Branch:** `akshat_track3` on `origin` (the team's shared
 branch; never push Track 3 work to `track-3`). Head: `0c814fad` (Phase D), on top of `9f2e81f6` (Phase C
 closed) and `8c90522c` (A, B and most of C). The working tree was clean at hand-off.
 
@@ -25,8 +25,8 @@ Track 3 has ten agents in hand-off order. The two built ones are live on their p
 |---|---|---|---|---|
 | 1 | `requirements_modernization` | Migration Intent | BA | **Built** (Phases A, B, D) |
 | 2 | `discovery` | Dependency and Risk | BA | **Built** (Phases A, B, D) |
-| 3 | `design_modernization` | Target Architecture | Architect | **Next: Phase E** |
-| 4 | `strategy` | Migration Strategy | Architect | Phase F |
+| 3 | `design_modernization` | Target Architecture | Architect | **Built** (Phase E; tile flips after the click-through) |
+| 4 | `strategy` | Migration Strategy | Architect | **Next: Phase F** |
 | 5 | `testing_modernization` | Equivalence Testing | QA | Phase G (baseline), J (verify) |
 | 6 | `development_modernization` | Migration Development | Developer (D10) | Phase H |
 | 7 | `code_review_modernization` | Migration Review | Architect | Phase I |
@@ -176,8 +176,8 @@ Owner rows and permissions for agents 3–10 already exist (migration `0066`, ev
 
 | Phase | Agent | Needs before or while building |
 |---|---|---|
-| **E** | Target Architecture | Reads the brief and assessment **packets**. Turns each `must_not_change` into a `CT-xx` with a legacy location. **Must validate every cited `M-xx` against the pinned assessment version (D14)**: ids are stable within a commit, not across commits. Creates ledger rows via `design_approved` on approval. Asks the assessment's "Not assessable statically" questions instead of assuming. New page at `/target-architecture` (`phaseRoute` already maps `design_modernization` to it; no page exists yet) |
-| F | Migration Strategy | Waves and equivalence criteria (ECs from `equivalence`/`performance` measure kinds). The board write goes through the wired board connector and is Consequential. Replaces the `strategy` stub page |
+| E ✔ | Target Architecture | **Done** (build-log Entry 11, `click-through-phase-E.md`). What F reads: `emit.design_packet` of the APPROVED `design_modernization` version (packet route kind `target-architecture`); ledger rows are `designed` with patterns/contract_ids/adr_ids; `ordering_constraints` restrict wave order; `traps` and `frozen_contracts` become ECs. `upstream_from_pages` needs a `target_design_artifacts` row in `_UPSTREAM_STAGE` and a context formatter for agent 4 |
+| **F** | Migration Strategy | Waves and equivalence criteria (ECs from `equivalence`/`performance` measure kinds). The board write goes through the wired board connector and is Consequential. Replaces the `strategy` stub page |
 | G | Legacy sandbox + Equivalence Testing (baseline) | **User decisions:** sandbox image source, data masking. Needs **real legacy code** for live runs; ClaimTrack is simulated and there is none yet. `golden_master` becomes `{status: captured, baselines: [BL-xx]}` |
 | H | Migration Development | A real target repo and write credential. Pushes through `assert_target_write` plus the Consequential gate. Reverts are new commits, never rewrites |
 | I | Migration Review + Security | Read legacy and target. Run on H's PR. Security prompt byte-identity test (master plan §5) |
@@ -201,7 +201,7 @@ them.
 | Storage | `STORAGE_BACKEND=local`. Windows long paths must be enabled for uploads (admin PowerShell; in the A/B click-through) |
 | Ports | Backend **8001** (docs saying 8004 are stale) |
 | Commands | `uv run python -m alembic …`, `python -m uvicorn process_api:app --port 8001` (`uv run alembic/uvicorn` fail: "uv trampoline"). Tests: `cd backend && set -a && . ./.env.test && set +a && uv run python -m pytest <files> -q -p no:cacheprovider`. Frontend: `node node_modules/typescript/bin/tsc --noEmit`, `node node_modules/vitest/vitest.mjs run`, `node node_modules/eslint/bin/eslint.js` (**never npx**) |
-| Migrations | Code head **`0070_approval_sla_escalation`**. **Test DB 0070; dev DB 0067.** 0068–0070 go on dev only with the user's OK; until then approving a version on dev fails (the ORM has the columns). 0067 reached dev without explicit approval earlier (verified identical; the user was told) |
+| Migrations | Code head **`0071_target_design`**. **Test DB 0071; dev DB 0067.** 0068–0071 go on dev only with the user's OK; until then approving a version on dev fails (the ORM has the columns). 0067 reached dev without explicit approval earlier (verified identical; the user was told) |
 | Personas (dev DB) | `ba@gmail.com`, `projadmin@gmail.com`, `architect@gmail.com`, `dev@gmail.com`, `tester@gmail.com`, `buadmin@gmail.com`, `admin@pwc.dev`. `DEV_LOGINS.txt` personas are NOT in this DB. Projects: "Migration test" (Track 3, ADO wired), "Test" (Greenfield) |
 | Seed | `backend/scripts/seed_track3_fixture.py`: the ClaimTrack project, roster, placeholder repositories and six ledger modules. Idempotent, guarded to localhost. **Not yet run on dev; ask first** |
 | Git | Commit messages end `Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>`. PRs get reviewer `UjjwalTyagi5` and end with the Claude Code line. `git push` may be blocked for Claude in auto mode; ask the user to run `! git push origin akshat_track3` |
@@ -307,7 +307,9 @@ Also decided:
 
 ## 9. Open items for the user
 
-- Apply migrations 0068–0070 to the dev DB, and optionally run the seed script.
+- Apply migrations 0068–0071 to the dev DB (0071 = Phase E), and optionally run the seed script.
+- Run `click-through-phase-E.md`; then flip the Target Architecture tile: add `design_modernization` to `BUILT_AGENTS_BY_TRACK.modernization` in `frontend/lib/agents.ts` (R42).
+- Commit Phase E (nothing is committed yet).
 - Run the click-throughs: `click-through-phase-A-B.md`, `-C.md`, `-D.md`. None has been run yet.
 - **Track 1 issue, reported and not fixed:** `workers/run_sweeper.py` queries `runs` through the
   superuser session, which isn't BYPASSRLS, so it very likely never expires anything. Fix it the way

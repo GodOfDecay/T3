@@ -119,6 +119,7 @@ DISPLAY_NAMES: dict[str, str] = {
     # Track 3 — Code Modernization. Offered only on that track (see `route`).
     "requirements_modernization": "Migration Intent",
     "discovery": "Dependency and Risk",
+    "design_modernization": "Target Architecture",
 }
 
 # An agent that exists but has no display name is unreachable by name — the exact
@@ -180,6 +181,7 @@ def _normalise(text: str) -> str:
 _EXTRA_NAMES: dict[str, tuple[str, ...]] = {
     "requirements_modernization": ("requirements", "migration intent", "requirements (migration intent)"),
     "discovery": ("discovery and assessment", "assessment", "dependency and risk", "dependency & risk", "dependancy and risk"),
+    "design_modernization": ("target architecture", "target design", "architecture", "design"),
 }
 
 _NAME_TO_IDS: dict[str, tuple[str, ...]] = {}
@@ -356,6 +358,13 @@ _CAPABILITIES: dict[str, str] = {
         "dependency graph, flags end-of-life, deprecated and vulnerable dependencies, "
         "and scores every module for migration risk (mechanical, LLM-assisted or "
         "manual-only) — the assessment later planning works from"
+    ),
+    "design_modernization": (
+        "designs the TARGET architecture for the modernization from the brief and the assessment — "
+        "the target per layer, the migration pattern per module (in-place upgrade, strangler fig, "
+        "branch by abstraction, parallel run, rewrite), how the old and new systems coexist during "
+        "the move, the interfaces that must not change, the version traps, and the decisions as "
+        "ADRs with diagrams"
     ),
 }
 
@@ -633,6 +642,10 @@ How a modernization starts:
 - ASSESSING the legacy code is Dependency and Risk work: "proceed to discovery",
   "assess the repository", "scan the codebase", "which modules are riskiest", "which
   dependencies are end-of-life or vulnerable", "map the dependencies".
+- DESIGNING WHAT THE SYSTEM BECOMES is Target Architecture work, when that agent is in the
+  list above: "design the target architecture", "what should each module become", "which
+  migration pattern", "strangler or rewrite", "what must not change", "the ADRs", "the
+  target diagrams", "how do old and new run side by side".
 
 How to decide:
 

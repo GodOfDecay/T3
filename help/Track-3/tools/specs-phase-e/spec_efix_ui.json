@@ -1,0 +1,22 @@
+{
+ "root": "frontend",
+ "target": "components/modernization/target-design-view.tsx",
+ "cmd": [
+  "node",
+  "node_modules/vitest/vitest.mjs",
+  "run",
+  "__tests__/app/target-architecture-page.test.tsx"
+ ],
+ "mutants": [
+  [
+   "rejected-promises-approval",
+   "  if (status === \"rejected\") return",
+   "  if (false) return"
+  ],
+  [
+   "superseded-promises-approval",
+   "  if (status === \"superseded\") {",
+   "  if (false) {"
+  ]
+ ]
+}

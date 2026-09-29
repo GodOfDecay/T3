@@ -309,6 +309,20 @@ def _load_prompt_discovery() -> str:
     return DISCOVERY_SYS_MESSAGE
 
 
+def _load_graph_design_modernization() -> Any:
+    from agents_orchestrator.design_modernization_agent.agents.architect import app
+
+    return app
+
+
+def _load_prompt_design_modernization() -> str:
+    from agents_orchestrator.design_modernization_agent.agents.architect import (
+        DESIGN_MODERNIZATION_SYS_MESSAGE,
+    )
+
+    return DESIGN_MODERNIZATION_SYS_MESSAGE
+
+
 REGISTRY: dict[str, AgentCapability] = {
     "requirements": AgentCapability(
         agent_id="requirements",
@@ -376,6 +390,12 @@ REGISTRY: dict[str, AgentCapability] = {
         agent_id="discovery",
         load_graph=_load_graph_discovery,
         load_prompt=_load_prompt_discovery,
+        mode="stream",
+    ),
+    "design_modernization": AgentCapability(
+        agent_id="design_modernization",
+        load_graph=_load_graph_design_modernization,
+        load_prompt=_load_prompt_design_modernization,
         mode="stream",
     ),
 }

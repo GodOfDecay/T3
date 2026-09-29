@@ -1078,9 +1078,13 @@ from agents_orchestrator.requirements_modernization_agent.requirements_moderniza
     requirements_modernization_router,
 )
 from agents_orchestrator.discovery_agent.discovery_agent_api import discovery_router
+from agents_orchestrator.design_modernization_agent.design_modernization_agent_api import (
+    design_modernization_router,
+)
 from shared.routers.modernization import modernization_router
 app.include_router(requirements_modernization_router, prefix="/sdlc/agent/requirements-modernization", tags=["requirements-modernization"], dependencies=[_VIEW_DEP])
 app.include_router(discovery_router, prefix="/sdlc/agent/discovery", tags=["discovery"], dependencies=[_VIEW_DEP])
+app.include_router(design_modernization_router, prefix="/sdlc/agent/design-modernization", tags=["design-modernization"], dependencies=[_VIEW_DEP])
 app.include_router(modernization_router, tags=["modernization"], dependencies=[_VIEW_DEP])
 app.include_router(deployment_router_orchestrator, prefix="/sdlc/agent/deployment_orchestrator", tags=["deployment-orchestrator"], dependencies=[_VIEW_DEP])
 # Testing: active orchestrated router serves both the primary and legacy prefixes (mirrors dev agent pattern)

@@ -335,7 +335,41 @@ async def publish_stage_version(
     if capacity is not None:
         row.approved_as, row.fallback_reason = capacity.approved_as, capacity.reason
         await db.flush()
+    if stage == "design_modernization":
+        await _design_approved(db, request, project_id, row)
     return await _labelled(db, request, VersionOut.of(row))
+
+
+async def _design_approved(db: AsyncSession, request: Request, project_id: str, row) -> None:
+    """Target Architecture's ledger transition, wired to the version's APPROVAL (Phase E): every
+    designed module enters the Module Migration Ledger as `designed`, in THIS request's
+    transaction — so a ledger refusal (id drift, a trigger) rolls the approval back too, and an
+    approved design never leaves the ledger behind it. Recording a design writes nothing here."""
+    from shared.services import modernization_ledger as ledger  # noqa: PLC0415
+
+    payload = row.payload or {}
+    paths = payload.get("module_paths") or {}
+    modules = [{
+        "module_id": m.get("module_id"), "module_name": m.get("module"),
+        "legacy_path": paths.get(m.get("module_id")) or "", "tier": m.get("tier"),
+        "risk_score": m.get("risk_score"), "patterns": m.get("patterns") or [],
+        "contract_ids": m.get("contract_ids") or [], "adr_ids": m.get("adr_ids") or [],
+    } for m in payload.get("modules") or [] if m.get("module_id")]
+    # A design the agent recorded carries every module's legacy path (from the pinned assessment).
+    # One without them (a payload snapshotted by another caller) cannot be checked for id drift,
+    # so it does not reach the ledger (review fix #8).
+    unplaced = [m["module_id"] for m in modules if not m["legacy_path"]]
+    if unplaced:
+        raise HTTPException(status_code=409, detail=(
+            f"Not approved: this design does not say where {', '.join(unplaced)} live in the legacy code, so the "
+            "ledger cannot check its module ids. Record the design with the Target Architecture agent."))
+    try:
+        await ledger.design_approved(
+            db, tenant_id=str(request.state.tenant_id), project_id=project_id, modules=modules,
+            actor=str(getattr(request.state, "user_id", "") or ""),
+            artifact=ledger.ArtifactRef("target_design_artifacts", row.version))
+    except ledger.LedgerRefused as exc:
+        raise HTTPException(status_code=409, detail=f"Not approved: {exc}") from exc
 
 
 @artifact_versions_router.post(

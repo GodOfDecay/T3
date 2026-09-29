@@ -1,0 +1,48 @@
+{
+ "target": "agents_orchestrator/design_modernization_agent/analysis/interfaces.py",
+ "tests": [
+  "tests/design_modernization/test_interfaces.py"
+ ],
+ "mutants": [
+  [
+   "class-prefix-lost",
+   "                prefix = m.group(1)\n                continue",
+   "                prefix = \"\"\n                continue"
+  ],
+  [
+   "jaxrs-method-path-lost",
+   "                    path = p.group(1)\n                    break",
+   "                    break"
+  ],
+  [
+   "vendored-read",
+   "            if is_vendored_asset(\"\" if rel_dir == \".\" else rel_dir, name):\n                continue",
+   "            if False:\n                continue"
+  ],
+  [
+   "sibling-folder-matches",
+   "        elif rel == path or rel.startswith(path + \"/\"):",
+   "        elif rel.startswith(path):"
+  ],
+  [
+   "cap-silent",
+   "    truncated = len(items) > MAX_ITEMS",
+   "    truncated = False"
+  ],
+  [
+   "literal-not-extracted",
+   "    if quoted:\n        return quoted.group(1).strip()[:160]",
+   "    if False:\n        return quoted.group(1).strip()[:160]"
+  ],
+  [
+   "request-method-ignored",
+   "                verb = rm.group(1).upper() if rm else \"ANY\"",
+   "                verb = \"ANY\""
+  ],
+  [
+   "python-write-read-swapped",
+   "            emit(\"file\", \"writes\" if any(c in mode for c in \"wax\") else \"reads\", _clean(m.group(1)), n, line)",
+   "            emit(\"file\", \"reads\", _clean(m.group(1)), n, line)"
+  ]
+ ]
+}

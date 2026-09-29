@@ -37,6 +37,7 @@ export const qk = {
     legacyCode: (id: ProjectId) => ["modernization", id, "legacy-code"] as const,
     legacyRepositories: (id: ProjectId, stage: string, adoProject: string) =>
       ["modernization", id, "legacy-code", "repositories", stage, adoProject] as const,
+    legacyInterfaces: (id: ProjectId) => ["modernization", id, "legacy-code", "interfaces"] as const,
   },
   users: {
     /** The org-wide people directory (Users & Roles). */
