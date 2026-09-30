@@ -57,8 +57,12 @@ test-results
 !.vscode/extensions.json
 .idea
 
-# npm lock (canonical PM is pnpm)
-package-lock.json
+# NO LOCKFILE IS IGNORED HERE ANY MORE. `package-lock.json` was, from when pnpm was the
+# canonical package manager. npm took over — `docs/dependencies.md` tells a deployer to
+# run `npm ci`, and every deployment does — but the rule stayed, so the one file that
+# command requires was the one file the repository did not carry. A fresh clone could not
+# install the frontend at all, and the natural next move, `npm install`, silently resolves
+# a different dependency tree from the one that was tested.
 
 # local reference docs — the PRD and similar office files are shared out of
 # band, not through the repo
