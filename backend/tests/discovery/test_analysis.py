@@ -108,7 +108,7 @@ def test_sdk_style_csproj(repo):
 def test_package_json_and_pom(repo):
     mods = _by_name(scan_inventory(repo).modules)
     node = parse_module_manifest(repo, mods["billing-notifier"])
-    assert node.runtime == Runtime(name="Node.js", version="14")
+    assert node.runtime == Runtime(name="Node.js", version="14", minimum=True)  # engines ">=14"
     assert {"express", "request", "jest"} <= {d.name for d in node.dependencies}
     java = parse_module_manifest(repo, mods["billing-batch"])
     assert java.runtime == Runtime(name="Java", version="8")

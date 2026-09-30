@@ -1,0 +1,69 @@
+{
+ "target": "agents_orchestrator/strategy_agent/tools/strategy_tools.py",
+ "tests": [
+  "tests/strategy/test_record_board_approval.py"
+ ],
+ "env_test": true,
+ "mutants": [
+  [
+   "records-without-inputs",
+   "    if missing:\n        return (\"NOT RECORDED — a migration plan",
+   "    if False:\n        return (\"NOT RECORDED — a migration plan"
+  ],
+  [
+   "records-despite-problems",
+   "    if problems:\n        return _refusal(problems)",
+   "    if False:\n        return _refusal(problems)"
+  ],
+  [
+   "no-freeze",
+   "    version = await freeze_version(STAGE, artifact)",
+   "    version = None"
+  ],
+  [
+   "no-placements",
+   "        placements=placements(data),",
+   "        placements=[],"
+  ],
+  [
+   "placements-without-patterns",
+   "\"patterns\": list((w.get(\"patterns\") or {}).get(m) or []),",
+   ""
+  ],
+  [
+   "board-no-role-check",
+   "            if not roles & {\"architect\", \"project_admin\"}:",
+   "            if False:"
+  ],
+  [
+   "board-no-consent",
+   "        if not ok:\n            return None, why\n    return conn, None",
+   "        if False:\n            return None, why\n    return conn, None"
+  ],
+  [
+   "board-read-only-ok",
+   "        if not permits(level, mode):",
+   "        if False:"
+  ],
+  [
+   "rejected-written",
+   "    if status in (\"rejected\", \"superseded\"):",
+   "    if False:"
+  ],
+  [
+   "orchestrator-memory-only",
+   "        plan = plan or _LAST_PLAN.get(_session_key())",
+   "        plan = _LAST_PLAN.get(_session_key())"
+  ],
+  [
+   "orchestrator-version-ignored",
+   "        if version:\n            return None, (f\"Plan versions",
+   "        if False:\n            return None, (f\"Plan versions"
+  ],
+  [
+   "draft-crashes",
+   "    except (KeyError, TypeError, AttributeError) as exc:  # an incomplete draft",
+   "    except ZeroDivisionError as exc:  # an incomplete draft"
+  ]
+ ]
+}

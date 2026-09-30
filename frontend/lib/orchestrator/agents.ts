@@ -29,6 +29,7 @@ export const ORCHESTRATOR_AGENT_IDS = [
   "requirements_modernization",
   "discovery",
   "design_modernization",
+  "strategy",
 ] as const;
 
 export const OrchestratorAgentId = z.enum(ORCHESTRATOR_AGENT_IDS);

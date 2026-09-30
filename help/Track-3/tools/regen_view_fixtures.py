@@ -70,6 +70,23 @@ data["target_design"] = TargetDesignArtifact(
 ).model_dump(mode="json")
 data["legacy_interfaces"] = {"projectId": "p-claimtrack", "status": "ready", "repository": "claimtrack",
                              "inventory": inventory}
+
+# Phase F: both plans (ClaimTrack and the unrelated Payroll scenario) as `record_migration_strategy`
+# stores them — checked by the same rules, built by the same builder.
+from agents_orchestrator.modernization_common.handover.packets import PlanPayload  # noqa: E402
+from agents_orchestrator.strategy_agent.tools.strategy_tools import build_artifact, check_plan  # noqa: E402
+from tests.strategy.scenarios import claimtrack, payroll  # noqa: E402
+
+for key, scenario in (("migration_plan", claimtrack), ("migration_plan_payroll", payroll)):
+    b, a, d, p = scenario()
+    plan_data = PlanPayload.model_validate(p).model_dump(mode="json", by_alias=True)
+    problems, computed = check_plan(plan_data, b, a, d)
+    assert not problems, (key, problems)
+    data[key] = build_artifact(
+        plan_data, b, a, d, computed,
+        sources={"brief": {"version": 1, "status": "published"}, "assessment": {"version": 1, "status": "published"},
+                 "design": {"version": 1, "status": "published"}},
+        notes=[], recorded_at="2026-10-07T10:00:00+00:00")
 FIXTURES.write_text(json.dumps(data, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
 print(f"assessment: schema {new['schema_version']}, {len(new['modules'])} modules, "
       f"{len(new['not_assessable_statically'])} not-assessable questions")

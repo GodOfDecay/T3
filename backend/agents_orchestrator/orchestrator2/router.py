@@ -120,6 +120,7 @@ DISPLAY_NAMES: dict[str, str] = {
     "requirements_modernization": "Migration Intent",
     "discovery": "Dependency and Risk",
     "design_modernization": "Target Architecture",
+    "strategy": "Migration Strategy",
 }
 
 # An agent that exists but has no display name is unreachable by name — the exact
@@ -182,6 +183,7 @@ _EXTRA_NAMES: dict[str, tuple[str, ...]] = {
     "requirements_modernization": ("requirements", "migration intent", "requirements (migration intent)"),
     "discovery": ("discovery and assessment", "assessment", "dependency and risk", "dependency & risk", "dependancy and risk"),
     "design_modernization": ("target architecture", "target design", "architecture", "design"),
+    "strategy": ("strategy", "migration plan", "wave plan", "waves", "migration strategy"),
 }
 
 _NAME_TO_IDS: dict[str, tuple[str, ...]] = {}
@@ -365,6 +367,13 @@ _CAPABILITIES: dict[str, str] = {
         "branch by abstraction, parallel run, rewrite), how the old and new systems coexist during "
         "the move, the interfaces that must not change, the version traps, and the decisions as "
         "ADRs with diagrams"
+    ),
+    "strategy": (
+        "sequences the modernization into waves from the target design — which modules move in what "
+        "order and why, what 'equivalent' means for each module as measurable equivalence criteria, "
+        "what behaviour must be recorded from the legacy system first, the legacy change freeze, the "
+        "rollback for each wave, the calendar conflicts and an effort estimate; and can write the "
+        "waves to the connected board"
     ),
 }
 
@@ -646,6 +655,10 @@ How a modernization starts:
   list above: "design the target architecture", "what should each module become", "which
   migration pattern", "strangler or rewrite", "what must not change", "the ADRs", "the
   target diagrams", "how do old and new run side by side".
+- PLANNING THE MOVE is Migration Strategy work, when that agent is in the list above: "plan
+  the waves", "in what order do the modules move", "the migration plan", "equivalence
+  criteria", "what baseline do we need", "the change freeze", "the rollback plan", "does it fit
+  the deadline or budget", "write the waves to the board".
 
 How to decide:
 

@@ -138,6 +138,17 @@ def _iso_date(value: str) -> Optional[str]:
         return None
 
 
+def _milestones(brief: dict) -> list[dict]:
+    """The brief's DATED milestones. One whose date is not a calendar date is left to the
+    constraints in the user's words — never turned into a guessed date."""
+    out = []
+    for m in brief.get("milestones") or []:
+        when = _iso_date(str((m or {}).get("date") or ""))
+        if when and (m.get("label") or "").strip():
+            out.append({"date": when, "label": m["label"].strip(), "kind": m.get("kind") or "other"})
+    return sorted(out, key=lambda m: m["date"])
+
+
 def brief_payload(brief: dict) -> dict:
     """The packet's payload, mapped from a stored `MigrationIntentArtifact` (as a dict)."""
     target = ((brief.get("target_state") or {}).get("stack") or "").strip()
@@ -145,6 +156,11 @@ def brief_payload(brief: dict) -> dict:
     constraints = list(brief.get("constraints") or [])
     if deadline and not _iso_date(deadline):
         constraints.append(f"Deadline: {deadline}")
+    milestones = _milestones(brief)
+    # The dates planning works to (Phase F, universal): the change freeze is the earliest
+    # `freeze` milestone; a deadline written as prose falls back to the earliest `deadline` one.
+    freeze = next((m["date"] for m in milestones if m["kind"] == "freeze"), None)
+    due = _iso_date(deadline) or next((m["date"] for m in milestones if m["kind"] == "deadline"), None)
     owner = next((s.get("name") for s in brief.get("stakeholders") or []
                   if _OWNER_ROLE.search(s.get("role") or "")), None)
     return {
@@ -153,8 +169,12 @@ def brief_payload(brief: dict) -> dict:
         "target_stack": [target] if target else [],
         "scope": {"in": list(brief.get("in_scope") or []), "out": list(brief.get("out_of_scope") or [])},
         "constraints": constraints,
-        "deadline": _iso_date(deadline),
+        "deadline": due,
         "budget": brief.get("budget") or None,
+        "freeze_from": freeze,
+        "downtime_window": (brief.get("downtime_window") or "").strip() or None,
+        "data_residency": (brief.get("data_residency") or "").strip() or None,
+        "milestones": milestones,
         "must_not_change": list(brief.get("must_not_change") or []),
         "success_measures": [
             {"metric": m.get("metric") or "", "today": m.get("current") or None,
@@ -227,6 +247,24 @@ def design_packet(design: dict, envelope: dict) -> Emitted:
     from .packets import DesignPacket  # noqa: PLC0415
 
     return _build(DesignPacket, {**envelope, "payload": design_payload(design)})
+
+
+def plan_payload(plan: dict) -> dict:
+    """The packet's payload from a stored migration plan (`StrategyArtifact` as a dict): the
+    plan fields only — the computed order, calendar and effort tables are the page's."""
+    from .packets import PlanPayload  # noqa: PLC0415
+
+    out = {}
+    for name, fld in PlanPayload.model_fields.items():
+        if name in plan:
+            out[fld.alias or name] = plan[name]
+    return out
+
+
+def plan_packet(plan: dict, envelope: dict) -> Emitted:
+    from .packets import PlanPacket  # noqa: PLC0415
+
+    return _build(PlanPacket, {**envelope, "payload": plan_payload(plan)})
 
 
 def assessment_packet(assessment: dict, envelope: dict) -> Emitted:

@@ -1,0 +1,44 @@
+{
+ "target": "agents_orchestrator/strategy_agent/analysis/ordering.py",
+ "tests": [
+  "tests/strategy/test_analysis.py",
+  "tests/strategy/test_checks.py"
+ ],
+ "mutants": [
+  [
+   "keep-moves",
+   "    return {m for m, ps in patterns.items() if any(p != \"keep\" for p in ps or [])}",
+   "    return set(patterns)"
+  ],
+  [
+   "cycle-split",
+   "                if child in on_stack:\n                    low[node] = min(low[node], index[child])",
+   "                if False:\n                    low[node] = min(low[node], index[child])"
+  ],
+  [
+   "no-layering",
+   "            level[i] = 1 + max((depth(j) for j in comp_deps[i]), default=-1)",
+   "            level[i] = 0"
+  ],
+  [
+   "highest-risk-first",
+   "        level[i], max(int(info[m].get(\"score\") or 0) for m in comps[i]), _id_key(comps[i][0])))",
+   "        level[i], -max(int(info[m].get(\"score\") or 0) for m in comps[i]), _id_key(comps[i][0])))"
+  ],
+  [
+   "later-dependency-ok",
+   "        if later:\n            out.append",
+   "        if False:\n            out.append"
+  ],
+  [
+   "ids-not-dates",
+   "        later = ends[b] > ends[a] if a in ends and b in ends else wave_number(b) > wave_number(a)",
+   "        later = wave_number(b) > wave_number(a)"
+  ],
+  [
+   "wave-string-order",
+   "    return int(wave_id[1:]) if re.fullmatch(r\"W\\d+\", wave_id or \"\") else 10**6",
+   "    return wave_id"
+  ]
+ ]
+}

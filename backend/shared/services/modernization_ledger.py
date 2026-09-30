@@ -205,6 +205,68 @@ async def plan_approved(db: AsyncSession, *, project_id: str, module_id: str, wa
                              actor=actor, artifact=artifact, fields={"wave": wave, "ec_ids": list(ec_ids)})
 
 
+async def strategy_approved(db: AsyncSession, *, project_id: str, placements: Iterable[dict],
+                            actor: Optional[str], artifact: ArtifactRef) -> list[ModernizationModule]:
+    """An approved migration plan places every planned module: `designed → sequenced` with its wave
+    and criteria. A REVISED plan re-approved later updates a module still `sequenced` (history
+    note "plan revised"); a module already past planning keeps its wave — a plan that moves it is
+    refused, naming it, because work (a baseline, code) is already tied to that wave. A module with
+    no ledger row, or a blocked one, is refused too. All or nothing: the caller's transaction rolls
+    back on any refusal.
+
+    THE PLAN MUST BE OF THE APPROVED DESIGN (review fix #4). The ledger holds the approved design's
+    patterns, so a plan built on a draft design, or overtaken by a newer approved one, shows up as
+    a pattern that differs, or as a module the design moves that the plan does not place; either
+    is refused. Past planning, a module's criteria are tied to its baselines and cannot change here."""
+    placements = list(placements)
+    rows = {r.module_id: r for r in (await db.execute(
+        select(ModernizationModule).where(ModernizationModule.project_id == project_id).with_for_update()
+    )).scalars().all()}
+    for p in placements:
+        row = rows.get(p["module_id"])
+        if row is None:
+            raise LedgerRefused(f"{p['module_id']} is not on the ledger — approve the target design that "
+                                "designs it first")
+        if row.state == "blocked":
+            raise LedgerRefused(f"{p['module_id']} is blocked ({row.blocked_reason}); unblock it before planning it")
+        if row.state == "assessed":
+            raise LedgerRefused(f"{p['module_id']} is assessed but not designed — approve the target design first")
+        if sorted(row.patterns or []) != sorted(p.get("patterns") or []):
+            raise LedgerRefused(
+                f"{p['module_id']} is {'+'.join(row.patterns or []) or 'undesigned'} in the approved target design "
+                f"but {'+'.join(p.get('patterns') or []) or 'without patterns'} in this plan — the plan was built on "
+                "another design version. Re-plan it against the approved design")
+        if row.state not in ("designed", "sequenced") and row.wave != p["wave"]:
+            raise LedgerRefused(f"{p['module_id']} is already {row.state} in {row.wave}; this plan moves it to "
+                                f"{p['wave']}. Reopen it first, or keep it in {row.wave}")
+        if row.state not in ("designed", "sequenced") and sorted(row.ec_ids or []) != sorted(p.get("ec_ids") or []):
+            raise LedgerRefused(f"{p['module_id']} is already {row.state} with criteria "
+                                f"{', '.join(row.ec_ids or []) or 'none'}, and its baselines are tied to them; this "
+                                "plan changes them. Keep its criteria, or reopen it first")
+    placed = {p["module_id"] for p in placements}
+    for row in rows.values():
+        if row.module_id not in placed and row.state in ("designed", "sequenced") \
+                and any(x != "keep" for x in row.patterns or []):
+            raise LedgerRefused(f"the approved target design moves {row.module_id} "
+                                f"({'+'.join(row.patterns)}), which this plan does not place — re-plan it against "
+                                "the approved design")
+    out = []
+    for p in placements:
+        row = rows[p["module_id"]]
+        fields = {"wave": p["wave"], "ec_ids": list(p.get("ec_ids") or [])}
+        if row.state == "designed":
+            out.append(await _transition(db, project_id=project_id, module_id=row.module_id, agent="strategy",
+                                         to="sequenced", actor=actor, artifact=artifact, fields=fields))
+            continue
+        for name, value in fields.items():
+            setattr(row, name, value)
+        row.history = [*row.history, _entry(frm=row.state, to=row.state, agent="strategy", actor=actor,
+                                             artifact=artifact, note="plan revised")]
+        out.append(row)
+    await db.flush()
+    return out
+
+
 # ── Equivalence Testing ──────────────────────────────────────────────────────
 
 async def baseline_accepted(db: AsyncSession, *, project_id: str, module_id: str, baseline_ids: list[str],

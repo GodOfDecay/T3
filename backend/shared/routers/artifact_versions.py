@@ -337,7 +337,30 @@ async def publish_stage_version(
         await db.flush()
     if stage == "design_modernization":
         await _design_approved(db, request, project_id, row)
+    elif stage == "strategy":
+        await _strategy_approved(db, request, project_id, row)
     return await _labelled(db, request, VersionOut.of(row))
+
+
+async def _strategy_approved(db: AsyncSession, request: Request, project_id: str, row) -> None:
+    """Migration Strategy's ledger transition on APPROVAL (Phase F): every planned module
+    `designed → sequenced` with its wave and criteria, in this request's transaction — a ledger
+    refusal rolls the approval back. The placements are the record tool's, computed from the
+    plan when it was checked; a plan without them was not recorded by the agent."""
+    from shared.services import modernization_ledger as ledger  # noqa: PLC0415
+
+    placements = (row.payload or {}).get("placements")
+    if not placements:
+        raise HTTPException(status_code=409, detail=(
+            "Not approved: this plan does not place its modules in waves the ledger can apply. Record the plan "
+            "with the Migration Strategy agent."))
+    try:
+        await ledger.strategy_approved(
+            db, project_id=project_id, placements=placements,
+            actor=str(getattr(request.state, "user_id", "") or ""),
+            artifact=ledger.ArtifactRef("strategy_artifacts", row.version))
+    except ledger.LedgerRefused as exc:
+        raise HTTPException(status_code=409, detail=f"Not approved: {exc}") from exc
 
 
 async def _design_approved(db: AsyncSession, request: Request, project_id: str, row) -> None:

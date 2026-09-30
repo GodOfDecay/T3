@@ -30,7 +30,7 @@ import type { LegacyInterface } from "@/lib/schemas/modernization";
  * the agent cannot tie to an entry here is recorded as "proposed" until someone confirms it.
  */
 export const KIND_LABEL: Record<string, string> = {
-  http: "HTTP", file: "Files", job: "Jobs", db: "Database", queue: "Queues",
+  http: "HTTP", rpc: "RPC", file: "Files", job: "Jobs", db: "Database", queue: "Queues", ui: "Screens",
 };
 
 export function LegacyInterfacesButton({ projectId }: { projectId: ProjectId }) {
@@ -47,9 +47,10 @@ export function LegacyInterfacesButton({ projectId }: { projectId: ProjectId }) 
             <DialogTitle>Legacy interfaces</DialogTitle>
             <DialogDescription>
               What the pulled legacy code exposes and consumes, found by scanning it — the evidence frozen contracts
-              are drawn from. It scans Java, C#, Python, JavaScript/TypeScript, SQL, web.xml, JSP/ASPX pages and cron
-              configuration — code in other languages is not scanned — and can miss an interface built at run time. A
-              contract the brief did not name can only be confirmed where this list shows it.
+              are drawn from. It scans Java, Kotlin, Scala, C#, VB.NET, Python, JavaScript/TypeScript, Go, PHP, Ruby,
+              COBOL, JCL and SQL, declared contracts (OpenAPI, WSDL, gRPC, GraphQL), web.xml, JSP/ASPX pages and cron,
+              Quartz and Kubernetes schedules — other code is not scanned — and can miss an interface built at run time.
+              A contract the brief did not name can only be confirmed where this list shows it.
             </DialogDescription>
           </DialogHeader>
           {open && <LegacyInterfacesPanel projectId={projectId} />}

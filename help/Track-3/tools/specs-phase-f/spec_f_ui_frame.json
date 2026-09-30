@@ -1,0 +1,24 @@
+{
+ "root": "frontend",
+ "target": "components/modernization/track3-agent-page.tsx",
+ "cmd": [
+  "node",
+  "node_modules/vitest/vitest.mjs",
+  "run",
+  "__tests__/app/strategy-page.test.tsx",
+  "__tests__/app/target-architecture-page.test.tsx",
+  "__tests__/app/track3-pages-retrofit.test.tsx"
+ ],
+ "mutants": [
+  [
+   "legacy-queried-anyway",
+   "  const legacyQ = useLegacyCode(projectId, phase, showLegacyCode);",
+   "  const legacyQ = useLegacyCode(projectId, phase, true);"
+  ],
+  [
+   "pull-shown-anyway",
+   "            {showLegacyCode && (\n              <Button",
+   "            {true && (\n              <Button"
+  ]
+ ]
+}

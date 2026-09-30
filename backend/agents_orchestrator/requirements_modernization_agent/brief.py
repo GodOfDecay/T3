@@ -186,6 +186,10 @@ def key_facts(brief: MigrationIntentArtifact) -> list[tuple[str, str]]:
         facts.append(("Deadline", pretty_date(brief.deadline)))
     if brief.budget:
         facts.append(("Budget", brief.budget))
+    if brief.downtime_window:
+        facts.append(("Cutover window", brief.downtime_window))
+    if brief.data_residency:
+        facts.append(("Data residency", brief.data_residency))
     in_scope = [s for s in brief.in_scope if str(s).strip()]
     if in_scope:
         facts.append(("In scope", f"{len(in_scope)} item{'s' if len(in_scope) != 1 else ''}"))

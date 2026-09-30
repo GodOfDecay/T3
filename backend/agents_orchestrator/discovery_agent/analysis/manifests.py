@@ -200,11 +200,13 @@ def _parse_package_json(root: Path, module: ModuleFacts) -> ManifestFacts:
     facts = ManifestFacts()
     data = json.loads(_read(root / module.manifest))
     engine = str((data.get("engines") or {}).get("node") or "")
-    if not engine:
-        nvmrc = (root / module.manifest).parent / ".nvmrc"
-        engine = _read(nvmrc).strip() if nvmrc.exists() else ""
+    # ">=14", ">14", "14 || 16", "14 - 18" accept later lines; "14", "14.x", "^14", "~14.2" are the line.
+    minimum = bool(re.match(r"\s*>", engine) or "||" in engine or re.search(r"\d\s+-\s+\d", engine))
+    nvmrc = (root / module.manifest).parent / ".nvmrc"
+    if (not engine or minimum) and nvmrc.exists() and re.search(r"\d", _read(nvmrc)):
+        engine, minimum = _read(nvmrc).strip(), False  # a pin file says what it runs on: it wins over a minimum
     if m := re.search(r"(\d+)", engine):
-        facts.runtime = Runtime("Node.js", m.group(1))
+        facts.runtime = Runtime("Node.js", m.group(1), minimum=minimum)
     for section in ("dependencies", "devDependencies"):
         for name, version in (data.get(section) or {}).items():
             facts.dependencies.append(Dependency(name, str(version)))
@@ -217,8 +219,12 @@ _REQ_LINE = re.compile(r"^\s*([A-Za-z0-9][A-Za-z0-9._-]*)\s*(?:\[[^\]]*\])?\s*(?
 
 
 def _python_runtime(value: str) -> Runtime | None:
+    """">=3.8", ">3.7", "~=3.8", Poetry's "^3.8" accept later 3.x lines (a minimum); "==3.9.*", "3.9"
+    and a pin file (runtime.txt, .python-version) are the line."""
     m = re.search(r"(\d+\.\d+)", value or "")
-    return Runtime("Python", m.group(1)) if m else None
+    if not m:
+        return None
+    return Runtime("Python", m.group(1), minimum=bool(re.match(r"\s*(?:>|~=|\^)", value)))
 
 
 def _parse_python(root: Path, module: ModuleFacts) -> ManifestFacts:
@@ -245,10 +251,10 @@ def _parse_python(root: Path, module: ModuleFacts) -> ManifestFacts:
                 continue
             if m := _REQ_LINE.match(line):
                 facts.dependencies.append(Dependency(m.group(1), m.group(3) or ""))
-    for pin in ("runtime.txt", ".python-version"):
+    for pin in ("runtime.txt", ".python-version"):  # a pin file says what it runs on: it wins over a minimum
         path = directory / pin
-        if facts.runtime is None and path.exists():
-            facts.runtime = _python_runtime(_read(path))
+        if (facts.runtime is None or facts.runtime.minimum) and path.exists():
+            facts.runtime = _python_runtime(_read(path)) or facts.runtime
     return facts
 
 
@@ -273,8 +279,11 @@ def parse_module_manifest(root: Path, module: ModuleFacts) -> ManifestFacts:
             return _parse_python(root, module)
         if name == "go.mod":
             text = _read(root / module.manifest)
-            m = re.search(r"(?m)^go\s+(\d+\.\d+)", text)
-            return ManifestFacts(runtime=Runtime("Go", m.group(1)) if m else None)
+            toolchain = re.search(r"(?m)^toolchain\s+go(\d+\.\d+)", text)
+            if toolchain:
+                return ManifestFacts(runtime=Runtime("Go", toolchain.group(1)))
+            m = re.search(r"(?m)^go\s+(\d+\.\d+)", text)  # the language minimum, not the toolchain
+            return ManifestFacts(runtime=Runtime("Go", m.group(1), minimum=True) if m else None)
     except Exception as exc:  # noqa: BLE001 — one broken file must not cost the assessment
         return ManifestFacts(parse_error=f"{module.manifest}: {type(exc).__name__}: {exc}"[:300])
     return ManifestFacts()

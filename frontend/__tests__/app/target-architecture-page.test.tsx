@@ -289,7 +289,7 @@ describe("the design view", () => {
     await user.click(screen.getByRole("tab", { name: /Diagrams/ }));
     expect(screen.getByLabelText("mermaid").textContent).toContain("flowchart LR");
     await user.click(screen.getByRole("button", { name: "TO-BE container" }));
-    expect(screen.getByLabelText("mermaid").textContent).toContain("Azure MySQL 8.0");
+    expect(screen.getByLabelText("mermaid").textContent).toContain("Azure MySQL 8.4");
   });
 
   it("shows the checks' notes, never hiding them", () => {

@@ -1,0 +1,113 @@
+{
+ "target": "agents_orchestrator/strategy_agent/analysis/checks.py",
+ "tests": [
+  "tests/strategy/test_checks.py"
+ ],
+ "mutants": [
+  [
+   "unplaced-ok",
+   "    for m in sorted(moved - set(placed)):",
+   "    for m in []:"
+  ],
+  [
+   "foreign-module-ok",
+   "        if m not in patterns:\n            problems.append(",
+   "        if False:\n            problems.append("
+  ],
+  [
+   "kept-in-wave-ok",
+   "        if m not in moved:\n            problems.append(",
+   "        if False:\n            problems.append("
+  ],
+  [
+   "missing-patterns-ok",
+   "        if given is None:\n            problems.append(",
+   "        if False:\n            problems.append("
+  ],
+  [
+   "changed-pattern-ok",
+   "        elif sorted(given) != sorted(patterns[m]):",
+   "        elif False:"
+  ],
+  [
+   "violation-ok",
+   "        if x is None:\n            problems.append(f\"{dependent} moves in",
+   "        if False:\n            problems.append(f\"{dependent} moves in"
+  ],
+  [
+   "foreign-adr-ok",
+   "        if x[\"adr_id\"] not in design_adrs:",
+   "        if False:"
+  ],
+  [
+   "unknown-protect-ok",
+   "        if unknown:\n            problems.append(f\"{c['id']} protects",
+   "        if False:\n            problems.append(f\"{c['id']} protects"
+  ],
+  [
+   "contract-uncovered-ok",
+   "    for cid in sorted(contracts - protected):",
+   "    for cid in []:"
+  ],
+  [
+   "trap-uncovered-ok",
+   "    for tid in sorted(traps - protected):",
+   "    for tid in []:"
+  ],
+  [
+   "measure-uncovered-ok",
+   "        if key not in covered:",
+   "        if False:"
+  ],
+  [
+   "cost-measure-required",
+   "    measured = {words(m[\"metric\"]): m for m in brief_measures if m.get(\"kind\") in PROVEN_KINDS}",
+   "    measured = {words(m[\"metric\"]): m for m in brief_measures}"
+  ],
+  [
+   "invented-measure-ok",
+   "            if words(x) not in known:",
+   "            if False:"
+  ],
+  [
+   "exits-ok",
+   "        if missing:\n            problems.append(f\"{w['id']}'s exit",
+   "        if False:\n            problems.append(f\"{w['id']}'s exit"
+  ],
+  [
+   "baseline-ok",
+   "            for c in criteria if c.get(\"protects\") and c[\"id\"] not in planned]",
+   "            for c in criteria if False]"
+  ],
+  [
+   "parallel-ok",
+   "        if runs and not (pr.get(\"required\") and (pr.get(\"period\") or \"\").strip()):",
+   "        if False:"
+  ],
+  [
+   "freeze-moved-ok",
+   "    if freeze and str(given) != str(freeze):",
+   "    if False:"
+  ],
+  [
+   "given-dates-trusted",
+   "        if w.get(\"date_status\") == \"given\" and not {str(w.get(\"starts\")), str(w.get(\"ends\"))} & brief_dates:",
+   "        if False:"
+  ],
+  [
+   "unreported-ok",
+   "        if c[\"ref\"] not in reported:",
+   "        if False:"
+  ],
+  [
+   "effort-ok",
+   "                for w in plan.get(\"waves\") or [] if w[\"id\"] not in have]",
+   "                for w in []]"
+  ],
+  [
+   "budget-ok",
+   "    if brief.get(\"budget\") and not (plan.get(\"budget_fit\") or \"\").strip():",
+   "    if False:"
+  ]
+ ]
+}

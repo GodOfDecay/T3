@@ -1,0 +1,99 @@
+{
+ "target": "agents_orchestrator/strategy_agent/analysis/calendar.py",
+ "tests": [
+  "tests/strategy/test_analysis.py",
+  "tests/strategy/test_checks.py"
+ ],
+ "mutants": [
+  [
+   "deadline-ignored",
+   "        if deadline and ends > deadline:",
+   "        if False:"
+  ],
+  [
+   "milestone-ignored",
+   "            if when and ends > when and when != deadline:",
+   "            if False:"
+  ],
+  [
+   "freeze-ignored",
+   "        if freeze and due > freeze:",
+   "        if False:"
+  ],
+  [
+   "late-baseline-ignored",
+   "        if needed and due > needed:",
+   "        if False:"
+  ],
+  [
+   "all-ec-ignored",
+   "        needed = first_move if module == \"all\" else wave_start.get(module)",
+   "        needed = wave_start.get(module)"
+  ],
+  [
+   "day-ignored",
+   "        if allowed_days and cut_days and not (cut_days <= allowed and cut_days & allowed_days):",
+   "        if False:"
+  ],
+  [
+   "night-spill-refused",
+   "            allowed |= {(d + 1) % 7 for d in allowed_days}",
+   "            pass"
+  ],
+  [
+   "spill-only-day-ok",
+   "not (cut_days <= allowed and cut_days & allowed_days):",
+   "not cut_days <= allowed:"
+  ],
+  [
+   "length-ignored",
+   "        if limit is not None and length is not None and length > limit:",
+   "        if False:"
+  ],
+  [
+   "window-span-not-limit",
+   "    return limit if limit is not None else span_minutes(window)",
+   "    return limit"
+  ],
+  [
+   "span-days-ignored",
+   "    days = (_day(m.group(4)) - _day(m.group(1))) % 7",
+   "    days = 0"
+  ],
+  [
+   "cut-span-unread",
+   "        length = span_minutes(cut)",
+   "        length = range_minutes(cut)"
+  ],
+  [
+   "timed-day-range-unread",
+   "(?:\\s+\\d{{1,2}}(?::\\d{{2}})?\\s*(?:am|pm)?)?{_TO}",
+   "{_TO}"
+  ],
+  [
+   "unread-part-hidden",
+   "    elif unread:\n",
+   "    elif False:\n"
+  ],
+  [
+   "midnight-wrong",
+   "    return (end - start) % (24 * 60) or 24 * 60",
+   "    return end - start"
+  ],
+  [
+   "hours-as-minutes",
+   "    return int(round(value * 60)) if unit.startswith(\"h\") else int(round(value))",
+   "    return int(round(value))"
+  ],
+  [
+   "range-ignored",
+   "        days.update(range(a, b + 1) if a <= b else [*range(a, 7), *range(0, b + 1)])",
+   "        days.update({a, b})"
+  ],
+  [
+   "weekend-ignored",
+   "    if re.search(r\"(?i)\\bweek-?ends?\\b\", text):\n        days.update({5, 6})",
+   "    if False:\n        days.update({5, 6})"
+  ]
+ ]
+}

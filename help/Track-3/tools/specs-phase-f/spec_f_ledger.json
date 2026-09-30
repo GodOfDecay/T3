@@ -1,0 +1,39 @@
+{
+ "target": "shared/services/modernization_ledger.py",
+ "tests": [
+  "tests/strategy/test_record_board_approval.py"
+ ],
+ "env_test": true,
+ "mutants": [
+  [
+   "unknown-module-ok",
+   "        if row is None:\n            raise LedgerRefused(f\"{p['module_id']} is not on the ledger",
+   "        if row is None:\n            continue\n            raise LedgerRefused(f\"{p['module_id']} is not on the ledger"
+  ],
+  [
+   "rewave-migrating-ok",
+   "        if row.state not in (\"designed\", \"sequenced\") and row.wave != p[\"wave\"]:",
+   "        if False:"
+  ],
+  [
+   "other-design-ok",
+   "        if sorted(row.patterns or []) != sorted(p.get(\"patterns\") or []):",
+   "        if False:"
+  ],
+  [
+   "unplaced-ok",
+   "        if row.module_id not in placed and row.state in",
+   "        if False and row.state in"
+  ],
+  [
+   "criteria-rewritten",
+   "        if row.state not in (\"designed\", \"sequenced\") and sorted(row.ec_ids or [])",
+   "        if False and sorted(row.ec_ids or [])"
+  ],
+  [
+   "revision-not-recorded",
+   "                                             artifact=artifact, note=\"plan revised\")]",
+   "                                             artifact=artifact)]"
+  ]
+ ]
+}

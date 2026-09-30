@@ -25,13 +25,14 @@ export const getDiscoveryAssessment = (id: ProjectId) =>
 
 /* ── Pulled legacy code, and version downloads ──────────────────────────────── */
 
-export type Track3Stage = "requirements_modernization" | "discovery" | "design_modernization";
+export type Track3Stage = "requirements_modernization" | "discovery" | "design_modernization" | "strategy";
 
 /** URL segment of each stage's page data on the backend. */
-export const KIND_FOR_STAGE: Record<Track3Stage, "migration-intent" | "discovery" | "target-architecture"> = {
+export const KIND_FOR_STAGE: Record<Track3Stage, "migration-intent" | "discovery" | "target-architecture" | "strategy"> = {
   requirements_modernization: "migration-intent",
   discovery: "discovery",
   design_modernization: "target-architecture",
+  strategy: "strategy",
 };
 
 /** What the pulled legacy code exposes and consumes — the inventory Target Architecture freezes

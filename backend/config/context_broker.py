@@ -399,10 +399,35 @@ def _fmt_assessment(assessment: Dict[str, Any]) -> str:
     return "\n".join(lines)
 
 
+def _fmt_target_design(design: Dict[str, Any]) -> str:
+    """Track 3's target design, compact, as Migration Strategy reads it first: the pattern per
+    module, what restricts the order, and the contract and trap ids its criteria must protect.
+    The full design is one tool call away (`read_target_design`)."""
+    lines = ["TARGET DESIGN:"]
+    modules = design.get("modules") or []
+    for m in modules[:60]:
+        lines.append(f"    - {m.get('module_id')} {m.get('module')}: {' + '.join(m.get('patterns') or [])}")
+    if len(modules) > 60:
+        lines.append(f"    … and {len(modules) - 60} more modules — read_target_design lists them all")
+    if design.get("ordering_constraints"):
+        lines.append("  ORDERING CONSTRAINTS: " + "; ".join(design["ordering_constraints"]))
+    contracts = [f"{c.get('id')} {c.get('name')}" for c in design.get("frozen_contracts") or []]
+    if contracts:
+        lines.append("  FROZEN CONTRACTS (each needs a criterion): " + "; ".join(contracts))
+    traps = [f"{t.get('id')} {t.get('change')}" for t in design.get("traps") or []]
+    if traps:
+        lines.append("  TRAPS (each needs a criterion): " + "; ".join(traps))
+    adrs = [f"{a.get('id')} {a.get('title')}" for a in design.get("adrs") or []]
+    if adrs:
+        lines.append("  ADRS: " + "; ".join(adrs))
+    return "\n".join(lines)
+
+
 _ARTIFACT_FORMATTERS = {
     "requirements_payload": _fmt_requirements,
     "migration_intent_payload": _fmt_migration_intent,
     "discovery_artifacts": _fmt_assessment,
+    "target_design_artifacts": _fmt_target_design,
     "design_artifacts": _fmt_design,
     "development_artifacts": _fmt_development,
     "testing_artifacts": _fmt_testing,
@@ -448,8 +473,9 @@ _ARTIFACT_FIELDS = (
     "requirements_payload",
     # Track 3 — the Dependency and Risk agent reads the migration-intent brief.
     "migration_intent_payload",
-    # Track 3 — Target Architecture reads the assessment too.
+    # Track 3 — Target Architecture reads the assessment too; Migration Strategy the design.
     "discovery_artifacts",
+    "target_design_artifacts",
     "design_artifacts",
     "development_artifacts",
     "testing_artifacts",

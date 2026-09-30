@@ -1,0 +1,34 @@
+{
+ "target": "agents_orchestrator/modernization_common/handover/packets.py",
+ "tests": [
+  "tests/strategy/test_checks.py",
+  "tests/modernization_common/test_handover_packets.py"
+ ],
+ "mutants": [
+  [
+   "undefined-ec-ok",
+   "        if cited:\n            raise ValueError(f\"wave criteria cite",
+   "        if False:\n            raise ValueError(f\"wave criteria cite"
+  ],
+  [
+   "unplaced-exception-ok",
+   "        if unplaced:\n            raise ValueError(f\"order exceptions",
+   "        if False:\n            raise ValueError(f\"order exceptions"
+  ],
+  [
+   "w0-modules-ok",
+   "        if self.id == \"W0\" and self.modules:",
+   "        if False:"
+  ],
+  [
+   "no-entry-ok",
+   "        if self.modules and not [c for c in self.entry_criteria if c.strip()]:",
+   "        if False:"
+  ],
+  [
+   "duplicate-ref-ok",
+   "        _require_unique([c.ref for c in self.calendar_conflicts if c.ref], \"calendar conflict refs\")",
+   "        pass"
+  ]
+ ]
+}

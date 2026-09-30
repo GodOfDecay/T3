@@ -1,0 +1,38 @@
+{
+ "target": "agents_orchestrator/discovery_agent/analysis/eol.py",
+ "tests": [
+  "tests/design_modernization/test_universal.py"
+ ],
+ "mutants": [
+  [
+   "mysql-patch-unread",
+   "    if name in {\"Python\", \"MySQL\", \"PHP\", \"Ruby\", \"Go\"}:",
+   "    if name in {\"Python\"}:"
+  ],
+  [
+   "pg-major-unread",
+   "        return parts[0] if parts[0].isdigit() and int(parts[0]) >= 10 else \".\".join(parts[:2])",
+   "        return \".\".join(parts[:2])"
+  ],
+  [
+   "go-minimum-scored",
+   "    if runtime.minimum and runtime.name in _MINIMUM_NOT_SCORED:",
+   "    if False:"
+  ],
+  [
+   "every-minimum-unscored",
+   "_MINIMUM_NOT_SCORED = {\"Go\"}",
+   "_MINIMUM_NOT_SCORED = {\"Go\", \"Node.js\", \"Python\"}"
+  ],
+  [
+   "minimum-not-labelled",
+   "    if runtime.minimum and status.status != \"unknown\":",
+   "    if False:"
+  ],
+  [
+   "mysql80-supported",
+   "\"8.0\": _Lifecycle(date(2026, 4, 30)), \"8.4\": _Lifecycle(date(2032, 4, 30)),",
+   "\"8.0\": _Lifecycle(date(2032, 4, 30)), \"8.4\": _Lifecycle(date(2032, 4, 30)),"
+  ]
+ ]
+}

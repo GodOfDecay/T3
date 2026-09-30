@@ -31,6 +31,7 @@ second vocabulary is a translation table waiting to drift. "Approved" in the doc
 """
 from __future__ import annotations
 
+import re
 from collections import Counter
 from datetime import date, datetime
 from typing import Literal, Optional
@@ -121,6 +122,17 @@ class Scope(_Strict):
     model_config = ConfigDict(extra="forbid", populate_by_name=True)
 
 
+MilestoneKind = Literal["start", "freeze", "compliance", "deadline", "cutover", "decommission", "other"]
+
+
+class BriefMilestone(_Strict):
+    """A dated commitment from the brief. Migration Strategy lays its waves against these."""
+
+    date: date
+    label: str = NonEmpty
+    kind: MilestoneKind = "other"
+
+
 class BriefPayload(_Strict):
     """The brief as later agents need it. `must_not_change` holds the user's own words
     (Target Architecture turns each into a CT-xx); a vague entry is a question the Migration
@@ -140,6 +152,7 @@ class BriefPayload(_Strict):
     success_measures: list[SuccessMeasure] = Field(min_length=1)
     business_owner: Optional[str] = None
     open_questions: list[str] = []
+    milestones: list[BriefMilestone] = []
 
     @model_validator(mode="after")
     def _words_kept(self):
@@ -236,7 +249,11 @@ class AssessmentPacket(_Envelope):
 
 Pattern = Literal["in_place_upgrade", "strangler_fig", "branch_by_abstraction", "parallel_run",
                   "rewrite", "replatform", "retire", "keep"]
-ContractKind = Literal["http", "file", "report", "db", "queue", "event"]
+#: What a frozen contract IS, for any system: an HTTP API, an RPC interface (SOAP, gRPC, RMI,
+#: CORBA), a file exchanged, a report, a database others read or write, a queue or event, a UI
+#: screen other people work in, a scheduled job others depend on, or a library other systems
+#: link against.
+ContractKind = Literal["http", "rpc", "file", "report", "db", "queue", "event", "ui", "job", "library"]
 
 
 class Layer(_Strict):
@@ -437,6 +454,10 @@ class Wave(_Strict):
             raise ValueError(f"{self.id} ends ({self.ends}) before it starts ({self.starts})")
         if self.id != "W0" and not self.modules:
             raise ValueError(f"{self.id} moves no module; only W0 (the foundation) may be empty")
+        if self.id == "W0" and self.modules:
+            raise ValueError(f"W0 is the foundation and moves no module; put {', '.join(self.modules)} in W1 or later")
+        if self.modules and not [c for c in self.entry_criteria if c.strip()]:
+            raise ValueError(f"{self.id} has no entry criteria; say what must be true before it starts")
         stray = sorted(set(self.patterns) - set(self.modules))
         if stray:
             raise ValueError(f"{self.id} gives patterns for modules it does not move: {', '.join(stray)}")
@@ -493,6 +514,20 @@ class CalendarConflict(_Strict):
     impact: str = NonEmpty
     options: list[str] = []
     resolution: Optional[str] = None
+    ref: Optional[str] = Field(
+        default=None, description="The `check_calendar` reference this reports (e.g. deadline:W4); "
+                                  "None for a conflict the user raised that no check computes.")
+
+
+class OrderException(_Strict):
+    """A module that moves in an EARLIER wave than something it depends on. Only allowed when the
+    target design says how both sides coexist meanwhile — an ADR (dual build, a facade, an
+    abstraction), cited by id."""
+
+    module_id: ModuleId
+    depends_on: ModuleId
+    reason: str = NonEmpty
+    adr_id: AdrId
 
 
 class Risk(_Strict):
@@ -520,11 +555,15 @@ class PlanPayload(_Strict):
     an input set or a comparison; a normalization rule without a reason; a wave without a
     rollback; a baseline-plan item for a criterion the plan does not define.
 
-    Checked by `record_migration_strategy`: every in-scope module is in a wave (needs the
-    design); the order respects the dependency graph (`propose_wave_order`)."""
+    Checked by `record_migration_strategy` (`strategy_agent/analysis/checks.py`): every module
+    the design moves is in a wave, with the design's patterns; the order respects the dependency
+    graph unless an `order_exceptions` entry cites a design ADR; every contract, trap and
+    equivalence/performance/security success measure is protected; every calendar conflict the
+    check computes is reported; the brief's freeze date is kept."""
 
     summary: str = NonEmpty
     waves: list[Wave] = Field(min_length=1)
+    order_exceptions: list[OrderException] = []
     equivalence_criteria: list[Criterion] = []
     baseline_plan: list[BaselinePlanItem] = []
     freeze_policy: FreezePolicy
@@ -557,6 +596,14 @@ class PlanPayload(_Strict):
         effort_waves = sorted({e.wave for e in self.effort} - set(wave_ids))
         if effort_waves:
             raise ValueError(f"effort names waves the plan does not define: {', '.join(effort_waves)}")
+        cited = sorted({ec for w in self.waves for text in w.exit_criteria + w.entry_criteria
+                        for ec in re.findall(r"\bEC-\d{2,}\b", text)} - set(ec_ids))
+        if cited:
+            raise ValueError(f"wave criteria cite criteria the plan does not define: {', '.join(cited)}")
+        unplaced = sorted({m for x in self.order_exceptions for m in (x.module_id, x.depends_on)} - set(placed))
+        if unplaced:
+            raise ValueError(f"order exceptions name modules that are in no wave: {', '.join(unplaced)}")
+        _require_unique([c.ref for c in self.calendar_conflicts if c.ref], "calendar conflict refs")
         return self
 
 

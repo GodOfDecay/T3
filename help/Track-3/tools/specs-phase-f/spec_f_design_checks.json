@@ -1,0 +1,29 @@
+{
+ "target": "agents_orchestrator/design_modernization_agent/analysis/checks.py",
+ "tests": [
+  "tests/design_modernization/test_universal.py",
+  "tests/design_modernization/test_checks.py"
+ ],
+ "mutants": [
+  [
+   "managed-mysql-unread",
+   "    (\"MySQL\", re.compile(r\"(?i)\\bmysql(?:\\s+[a-z][\\w-]*){0,3}?\\s*v?(\\d+\\.\\d+)\")),",
+   "    (\"MySQL\", re.compile(r\"(?i)\\bmysql\\s*v?(\\d+\\.\\d+)\")),"
+  ],
+  [
+   "sqlserver-unread",
+   "    (\"SQL Server\", re.compile(r\"(?i)\\bsql\\s*server(?:\\s+[a-z][\\w-]*){0,3}?\\s*(\\d{4})\\b\")),",
+   ""
+  ],
+  [
+   "replaced-read",
+   "            if _REPLACED.search(text[max(0, m.start() - 60):m.start()]):",
+   "            if False:"
+  ],
+  [
+   "replaced-past-to",
+   "(?:(?!(?:to|onto|into|with)\\b)[\\w-]+\\s+){0,4}$",
+   "(?:[\\w-]+\\s+){0,4}$"
+  ]
+ ]
+}

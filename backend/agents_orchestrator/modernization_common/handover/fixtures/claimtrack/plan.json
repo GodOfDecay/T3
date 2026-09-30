@@ -34,7 +34,7 @@
        "owner": "Architect", "order_reason": "Pulled ahead of the tool's order and of batch so Log4j 1.x is out of production before the SOC 2 audit in March 2027."},
       {"id": "W3", "name": "Settlement batch", "modules": ["M-03"], "patterns": {"M-03": ["in_place_upgrade", "parallel_run"]},
        "starts": "2027-03-01", "ends": "2027-04-25", "date_status": "proposed",
-       "entry_criteria": ["BL-03 accepted", "W2 cut over"], "exit_criteria": ["EC-02", "EC-09", "EC-08", "security sign-off", "28 consecutive identical nights"],
+       "entry_criteria": ["BL-03 accepted", "W2 cut over"], "exit_criteria": ["EC-02", "EC-09", "EC-10", "EC-08", "security sign-off", "28 consecutive identical nights"],
        "parallel_run": {"required": true, "period": "4 weeks", "system_of_record": "legacy"}, "cutover_window": "Sun 25 Apr 2027",
        "rollback": {"trigger": "any settlement difference after the send switch", "method": "switch sending back to legacy", "max_time": "same night"},
        "owner": "Developer lead", "order_reason": "Depends on M-01 (dual-built until here); financial output needs the parallel run."},
@@ -47,20 +47,21 @@
     ],
     "equivalence_criteria": [
       {"id": "EC-01", "module_id": "M-01", "protects_measures": ["payouts on 10,000 recorded claims"], "observable": "payout per claim", "input_set": "10,000 recorded claims, Jan 2025 – Jun 2026", "comparison": "exact", "normalization": []},
-      {"id": "EC-02", "module_id": "M-03", "protects": ["CT-02", "TR-02", "TR-06"], "observable": "bank payment file", "input_set": "20 recorded nights", "comparison": "byte_identical",
+      {"id": "EC-02", "module_id": "M-03", "protects": ["CT-02", "TR-02", "TR-06"], "protects_measures": ["bank files and Q4 2026 CR-4 return"], "observable": "bank payment file", "input_set": "20 recorded nights", "comparison": "byte_identical",
        "normalization": [{"field": "HDR-07 creation time", "rule": "ignore value, require format", "reason": "written at run time"},
                          {"field": "file sequence number", "rule": "ignore value, require increment", "reason": "generated per run"}]},
-      {"id": "EC-03", "module_id": "M-05", "protects": ["CT-03", "TR-03", "TR-06"], "observable": "CR-4 Q4 2026 return", "input_set": "Q4 2026 snapshot", "comparison": "byte_identical",
+      {"id": "EC-03", "module_id": "M-05", "protects": ["CT-03", "TR-03", "TR-06"], "protects_measures": ["bank files and Q4 2026 CR-4 return"], "observable": "CR-4 Q4 2026 return", "input_set": "Q4 2026 snapshot", "comparison": "byte_identical",
        "normalization": [{"field": "generation timestamp", "rule": "ignore value", "reason": "written at run time"}]},
       {"id": "EC-04", "module_id": "M-02", "protects": ["CT-01", "TR-01", "TR-07"], "observable": "/api/v1 status and body", "input_set": "25,000 recorded calls", "comparison": "exact",
        "normalization": [{"field": "object key order", "rule": "ignore", "reason": "JSON objects are unordered"},
                          {"field": "error.requestId", "rule": "ignore value, require presence", "reason": "UUID generated per request (legacy noise floor 100%)"}]},
       {"id": "EC-05", "module_id": "M-02", "protects_measures": ["API p95"], "observable": "API p95 latency", "input_set": "recorded peak profile", "comparison": "percentile_threshold", "threshold": "p95 ≤ 300 ms", "normalization": []},
-      {"id": "EC-06", "module_id": "M-05", "protects": ["TR-04"], "observable": "monthly reports: rows and totals", "input_set": "Sep – Oct 2026 monthly reports", "comparison": "set_equal", "normalization": []},
+      {"id": "EC-06", "module_id": "M-05", "protects": ["TR-04", "TR-05"], "observable": "monthly reports: rows and totals", "input_set": "Sep – Oct 2026 monthly reports", "comparison": "set_equal", "normalization": []},
       {"id": "EC-07", "module_id": "M-04", "protects": ["CT-01"], "observable": "broker journeys: API calls and visible values", "input_set": "42 scripted broker journeys", "comparison": "exact",
        "normalization": [{"field": "layout", "rule": "excluded", "reason": "the rewrite changes layout by design (ADR-01)"}]},
       {"id": "EC-08", "module_id": "all", "protects_measures": ["critical/high vulnerabilities at go-live"], "observable": "critical/high vulnerabilities", "input_set": "security scan per module", "comparison": "numeric_tolerance", "threshold": "0", "normalization": []},
-      {"id": "EC-09", "module_id": "M-03", "protects": ["CT-02"], "observable": "settlement totals per run", "input_set": "20 recorded nights", "comparison": "exact", "normalization": []}
+      {"id": "EC-09", "module_id": "M-03", "protects": ["CT-02"], "observable": "settlement totals per run", "input_set": "20 recorded nights", "comparison": "exact", "normalization": []},
+      {"id": "EC-10", "module_id": "M-03", "protects": ["CT-04"], "observable": "PolicyHub nightly extract accepted and parsed", "input_set": "20 recorded nightly extracts", "comparison": "exact", "normalization": []}
     ],
     "baseline_plan": [
       {"ec_id": "EC-01", "inputs": "10,000 claims Jan 2025 – Jun 2026", "environment": "legacy sandbox, Java 8", "data_source": "Dallas MySQL snapshot", "masking": "tokenize policyholder PII", "due": "2026-12-11"},
@@ -68,14 +69,16 @@
       {"ec_id": "EC-03", "inputs": "Q4 2026 CR-4", "environment": "legacy sandbox, Python 2.7", "data_source": "snapshot at run", "masking": "tokenize claimant fields", "due": "2027-01-08"},
       {"ec_id": "EC-04", "inputs": "25,000 mirrored /api/v1 calls via gateway (W0)", "environment": "legacy sandbox, Tomcat 8", "data_source": "gateway mirror", "masking": "tokenize claimant fields", "due": "2026-12-18"},
       {"ec_id": "EC-06", "inputs": "Sep – Oct 2026 monthly reports", "environment": "legacy sandbox, Python 2.7", "data_source": "month-end snapshots", "masking": "tokenize claimant fields", "due": "2026-11-27"},
-      {"ec_id": "EC-07", "inputs": "42 scripted broker journeys", "environment": "legacy sandbox, Node 8", "data_source": "synthetic broker accounts", "masking": "synthetic data only", "due": "2027-01-08"}
+      {"ec_id": "EC-07", "inputs": "42 scripted broker journeys", "environment": "legacy sandbox, Node 8", "data_source": "synthetic broker accounts", "masking": "synthetic data only", "due": "2027-01-08"},
+      {"ec_id": "EC-09", "inputs": "20 nightly settlement runs", "environment": "legacy sandbox, Java 7/8", "data_source": "nightly snapshots", "masking": "tokenize account holder fields", "due": "2026-12-18"},
+      {"ec_id": "EC-10", "inputs": "20 recorded PolicyHub extracts", "environment": "legacy sandbox, Java 7/8", "data_source": "PolicyHub drop folder copies", "masking": "tokenize policyholder PII", "due": "2026-12-18"}
     ],
     "freeze_policy": {"from": "2027-02-01", "allowed": "P1 fixes only", "carry_forward": "each P1 fix carried to the target within 5 working days and re-baselined"},
     "critical_path": ["W0 baselines", "W2 database switch 14 Feb 2027", "W3 send switch 25 Apr 2027", "W4 last route 13 Jun 2027", "lease end 30 Jun 2027"],
     "calendar_conflicts": [
       {"conflict": "brief says off the old servers by end of June and switched off by end of September", "impact": "no rollback copy after the lease ends", "options": ["keep stopped Azure VMs until 30 Sep"], "resolution": "stopped VMs until 30 Sep (user)"},
       {"conflict": "W4 hypercare ends 27 Jun, three days before the lease ends", "impact": "no slack", "options": ["accept", "start W4 in February"], "resolution": "start W4 on 15 Feb (user)"},
-      {"conflict": "Q4 2026 CR-4 baseline depends on legacy producing the return in early January", "impact": "EC-03 baseline date", "options": ["confirm the date with Finance Reporting"], "resolution": "Finance Reporting confirms 8 Jan (user)"}
+      {"conflict": "Q4 2026 CR-4 baseline depends on legacy producing the return in early January", "impact": "EC-03 baseline date is after W1 starts", "options": ["confirm the date with Finance Reporting"], "resolution": "Finance Reporting confirms 8 Jan; W1 runs on the monthly-report baselines until then (user)", "ref": "baseline-late:EC-03"}
     ],
     "raid": {
       "risks": [{"risk": "batch and web have no automated tests", "evidence": "assessment: no tests factor on M-02, M-03", "mitigation": "baselines are the test oracle"}],

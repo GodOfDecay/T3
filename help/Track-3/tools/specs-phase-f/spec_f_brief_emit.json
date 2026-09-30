@@ -1,0 +1,28 @@
+{
+ "target": "agents_orchestrator/modernization_common/handover/emit.py",
+ "tests": [
+  "tests/design_modernization/test_universal.py"
+ ],
+ "mutants": [
+  [
+   "freeze-not-handed",
+   "    freeze = next((m[\"date\"] for m in milestones if m[\"kind\"] == \"freeze\"), None)",
+   "    freeze = None"
+  ],
+  [
+   "prose-deadline-lost",
+   "    due = _iso_date(deadline) or next((m[\"date\"] for m in milestones if m[\"kind\"] == \"deadline\"), None)",
+   "    due = _iso_date(deadline)"
+  ],
+  [
+   "undated-milestone-guessed",
+   "        if when and (m.get(\"label\") or \"\").strip():",
+   "        if (m.get(\"label\") or \"\").strip():"
+  ],
+  [
+   "window-dropped",
+   "        \"downtime_window\": (brief.get(\"downtime_window\") or \"\").strip() or None,",
+   "        \"downtime_window\": None,"
+  ]
+ ]
+}

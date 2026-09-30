@@ -181,7 +181,7 @@ def test_a_changing_database_needs_the_data_migration(code):
     d = design_payload()
     d["data_migration"] = None
     _only(_check(d, code)[0], "The Database layer changes", "no data-migration plan")
-    d["layers"][3]["target"] = d["layers"][3]["today"]
+    d["layers"][3]["today"] = d["layers"][3]["target"]  # the database stays as it is
     assert _check(d, code)[0] == []
 
 

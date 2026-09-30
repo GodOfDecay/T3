@@ -110,6 +110,7 @@ def test_the_brief_states_the_stack(stack, expected):
     ("agents_orchestrator.requirements_modernization_agent.agents.intake", "MIGRATION_INTENT_SYS_MESSAGE"),
     ("agents_orchestrator.discovery_agent.agents.assessor", "DISCOVERY_SYS_MESSAGE"),
     ("agents_orchestrator.design_modernization_agent.agents.architect", "DESIGN_MODERNIZATION_SYS_MESSAGE"),
+    ("agents_orchestrator.strategy_agent.agents.planner", "STRATEGY_SYS_MESSAGE"),
 ])
 def test_every_tool_a_prompt_names_is_bound(module, prompt_attr):
     """A prompt naming an unbound tool sends the model after a call that fails."""
@@ -129,6 +130,7 @@ def test_every_tool_a_prompt_names_is_bound(module, prompt_attr):
     "agents_orchestrator.requirements_modernization_agent.agents.intake",
     "agents_orchestrator.discovery_agent.agents.assessor",
     "agents_orchestrator.design_modernization_agent.agents.architect",
+    "agents_orchestrator.strategy_agent.agents.planner",
 ])
 def test_the_graph_is_built_with_the_document_tools(module, monkeypatch):
     """What reaches `build_tool_agent_graph` — not a list beside it — is what the model can call."""

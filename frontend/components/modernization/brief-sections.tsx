@@ -164,7 +164,8 @@ export function Section({ n, title, children, id }: { n: number; title: string; 
 /* ── the hero ─────────────────────────────────────────────────────────────── */
 
 const FACT_ICON: Record<KeyFact["key"], React.ElementType> = {
-  deadline: CalendarClock, budget: Wallet, scope: Boxes, eol: TriangleAlert, target: Sparkles,
+  deadline: CalendarClock, budget: Wallet, window: Clock, residency: Globe, scope: Boxes, eol: TriangleAlert,
+  target: Sparkles,
 };
 
 export function BriefHero({ brief, recordedAt }: { brief: MigrationIntentBrief; recordedAt?: string | null }) {

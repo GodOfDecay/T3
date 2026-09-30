@@ -133,6 +133,8 @@ async def record_migration_intent(
     must_not_change: list[str] | None = None,
     deadline: str = "",
     budget: str = "",
+    downtime_window: str = "",
+    data_residency: str = "",
     milestones: list[dict] | None = None,
     success_criteria: list[str] | None = None,
     success_measures: list[dict] | None = None,
@@ -181,6 +183,9 @@ async def record_migration_intent(
                         "change_type": "upgrade", "effort": "low|medium|high",
                         "changes": ["concrete change 1", "concrete change 2"]}]
       trade_offs: [{"decision": "Rebuild the portal in React", "gain": "...", "cost": "..."}]
+      downtime_window: when a cutover may take the system down, and for how long, in the user's
+                       words ("Sunday nights, at most 2 hours"); empty when they gave none.
+      data_residency: where the data must stay, in the user's words ("EU regions only").
       milestones: [{"date": "2027-06-30", "label": "Dallas data-centre exit",
                     "kind": "start|freeze|compliance|deadline|cutover|decommission|other"}]
       success_measures: [{"metric": "API p95 latency", "current": "~800 ms", "target": "<= 300 ms",
@@ -227,6 +232,7 @@ async def record_migration_intent(
             trade_offs=trade_offs or [],
             in_scope=in_scope or [], out_of_scope=out_of_scope or [],
             constraints=constraints or [], deadline=deadline.strip(), budget=budget.strip(),
+            downtime_window=downtime_window.strip(), data_residency=data_residency.strip(),
             must_not_change=[str(s).strip() for s in must_not_change or [] if str(s).strip()],
             milestones=milestones or [],
             success_criteria=success_criteria or [], success_measures=success_measures or [],

@@ -1,0 +1,48 @@
+{
+ "target": "agents_orchestrator/discovery_agent/analysis/manifests.py",
+ "tests": [
+  "tests/design_modernization/test_universal.py"
+ ],
+ "mutants": [
+  [
+   "toolchain-unread",
+   "            if toolchain:\n",
+   "            if False:\n"
+  ],
+  [
+   "go-line-is-runtime",
+   "Runtime(\"Go\", m.group(1), minimum=True)",
+   "Runtime(\"Go\", m.group(1))"
+  ],
+  [
+   "node-range-is-runtime",
+   "    minimum = bool(re.match(r\"\\s*>\", engine) or \"||\" in engine or re.search(r\"\\d\\s+-\\s+\\d\", engine))",
+   "    minimum = False"
+  ],
+  [
+   "node-or-range-is-runtime",
+   " or \"||\" in engine or re.search",
+   " or re.search"
+  ],
+  [
+   "nvmrc-loses-to-minimum",
+   "    if (not engine or minimum) and nvmrc.exists()",
+   "    if not engine and nvmrc.exists()"
+  ],
+  [
+   "python-range-is-runtime",
+   "minimum=bool(re.match(r\"\\s*(?:>|~=|\\^)\", value))",
+   "minimum=False"
+  ],
+  [
+   "python-caret-is-runtime",
+   "minimum=bool(re.match(r\"\\s*(?:>|~=|\\^)\", value))",
+   "minimum=bool(re.match(r\"\\s*(?:>|~=)\", value))"
+  ],
+  [
+   "pin-file-loses-to-minimum",
+   "        if (facts.runtime is None or facts.runtime.minimum) and path.exists():",
+   "        if facts.runtime is None and path.exists():"
+  ]
+ ]
+}

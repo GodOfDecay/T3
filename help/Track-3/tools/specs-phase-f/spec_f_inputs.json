@@ -1,0 +1,26 @@
+{
+ "target": "agents_orchestrator/modernization_common/inputs.py",
+ "tests": [
+  "tests/strategy/test_record_board_approval.py",
+  "tests/design_modernization/test_record_tool.py",
+  "tests/strategy/test_agent.py"
+ ],
+ "env_test": true,
+ "mutants": [
+  [
+   "orchestrator-reads-pages",
+   "            if get_orchestrator_run():\n                run_id",
+   "            if False:\n                run_id"
+  ],
+  [
+   "pins-ignored",
+   "            for pin in turn_built_from() or []:",
+   "            for pin in []:"
+  ],
+  [
+   "db-error-is-nothing",
+   "        for item in out.values():\n            item.problems = [\"It could not",
+   "        for item in []:\n            item.problems = [\"It could not"
+  ]
+ ]
+}

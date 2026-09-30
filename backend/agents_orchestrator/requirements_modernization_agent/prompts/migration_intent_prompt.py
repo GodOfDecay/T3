@@ -24,7 +24,9 @@ From the USER (never invent these):
 3. Scope — which modules, services or applications are in, and what is explicitly out.
 4. Constraints — deadline, budget, compliance dates, change-freeze windows on the
    legacy side, interfaces and data contracts that must not change, data residency,
-   availability during cutover.
+   availability during cutover. Record a change freeze as a milestone of kind "freeze"
+   with its date, the cutover window as downtime_window and residency as data_residency,
+   each in the user's words — Migration Strategy plans the waves against them.
 5. Success criteria — how everyone will know it worked, measurably: behaviour preserved
    (e.g. identical outputs on recorded inputs), performance at or better than today,
    zero critical vulnerabilities, legacy decommissioned by a date.

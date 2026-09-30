@@ -462,11 +462,15 @@
         "kind": {
           "enum": [
             "http",
+            "rpc",
             "file",
             "report",
             "db",
             "queue",
-            "event"
+            "event",
+            "ui",
+            "job",
+            "library"
           ],
           "title": "Kind",
           "type": "string"

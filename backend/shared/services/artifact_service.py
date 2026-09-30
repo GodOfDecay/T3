@@ -43,6 +43,7 @@ _COLUMN_MAP = {
     "requirements_modernization": "migration_intent_payload",
     "discovery": "discovery_artifacts",
     "design_modernization": "target_design_artifacts",  # 0071
+    "strategy": "strategy_artifacts",  # 0072
 }
 
 

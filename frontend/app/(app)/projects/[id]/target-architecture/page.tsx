@@ -47,7 +47,7 @@ export default function TargetArchitecturePage() {
         },
         {
           title: "Run the Target Architecture agent",
-          body: "It proposes the target per part of the system and a pattern for every module, asks what the code could not tell it, and records the design once you agree. It refuses a design that drops a module, changes a score, leaves a must-not-change item unfrozen, or targets a .NET, Java, Node.js or Python version past or near its end of support (other versions are noted as not checked).",
+          body: "It proposes the target per part of the system and a pattern for every module, asks what the code could not tell it, and records the design once you agree. It refuses a design that drops a module, changes a score, leaves a must-not-change item unfrozen, or targets a runtime or database version past or near its end of support (.NET, Java, Node.js, Python, PHP, Ruby, Go, MySQL, PostgreSQL, SQL Server; others are noted as not checked).",
           action: { label: "Run Target Architecture agent", onClick: run },
         },
         {

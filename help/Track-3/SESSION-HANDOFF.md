@@ -1,15 +1,15 @@
 # Track 3 (Code Modernization) — Handoff for whoever builds the next agents
 
-**Updated:** 2026-09-29, end of Phase E. **Branch:** `akshat_track3` on `origin` (the team's shared
-branch; never push Track 3 work to `track-3`). Head: `999b1b3e` (Phase E), on top of `0c814fad` (Phase D),
-`9f2e81f6` (Phase C closed) and `8c90522c` (A, B and most of C). The working tree was clean at hand-off.
+**Updated:** 2026-09-30, end of Phase F (built, verified, dev DB at 0072, tile unlocked, committed). **Branch:** `akshat_track3` on `origin` (the team's shared branch; never push Track 3
+work to `track-3`). Last commit: `12418303` (handoff) on `999b1b3e` (Phase E), `0c814fad` (Phase D),
+`9f2e81f6` (Phase C closed) and `8c90522c` (A, B and most of C).
 
 **Read in this order:**
 1. This file.
 2. `help/Track-3/track3-research.md` §6.x for **the one agent you are building**. Do not read the ~8,000
    lines of design docs up front.
 3. `help/Track-3/Track-3 Lessons from Track 1-2.md` (rules R1–R57).
-4. `help/Track-3/build-log.md` for the evidence behind any decision below (Entries 1–11).
+4. `help/Track-3/build-log.md` for the evidence behind any decision below (Entries 1–12).
 
 The phase map is `docs/superpowers/plans/2026-09-28-track3-master-plan.md`. The binding rules and the
 mandatory stops are in `help/Track-3/Track-3 Implementation Prompt.md` §9.
@@ -18,7 +18,7 @@ mandatory stops are in `help/Track-3/Track-3 Implementation Prompt.md` §9.
 
 ## 1. Where it stands
 
-Track 3 has ten agents in hand-off order. The three built ones are live on their pages; tiles 4–10 show
+Track 3 has ten agents in hand-off order. The four built ones are live on their pages (4 by URL until its tile flips); tiles 4–10 show
 **Coming soon** until built and click-through-verified (R42).
 
 | # | Agent id | UI name | Owner role | Status |
@@ -26,7 +26,7 @@ Track 3 has ten agents in hand-off order. The three built ones are live on their
 | 1 | `requirements_modernization` | Migration Intent | BA | **Built** (Phases A, B, D) |
 | 2 | `discovery` | Dependency and Risk | BA | **Built** (Phases A, B, D) |
 | 3 | `design_modernization` | Target Architecture | Architect | **Built** (Phase E; tile unlocked, user-tested) |
-| 4 | `strategy` | Migration Strategy | Architect | **Next: Phase F** |
+| 4 | `strategy` | Migration Strategy | Architect | **Built** (Phase F; tile unlocked at the user's request) |
 | 5 | `testing_modernization` | Equivalence Testing | QA | Phase G (baseline), J (verify) |
 | 6 | `development_modernization` | Migration Development | Developer (D10) | Phase H |
 | 7 | `code_review_modernization` | Migration Review | Architect | Phase I |
@@ -43,7 +43,7 @@ fallback approval, SLA escalation and the Programme board. Agents 1–2 now emit
 - tests first where possible;
 - every guard mutation-proven;
 - an independent adversarial review, followed by a fix wave that is also mutation-proven;
-- the Track 1 regression set green (last run 1,420 + 760 + 41 passed, 0 failed);
+- the Track 1 regression set green (last run 1,687 + 780 + 41 passed, Phase F);
 - a click-through script for the user.
 Keep that bar (§6).
 
@@ -177,7 +177,7 @@ Owner rows and permissions for agents 3–10 already exist (migration `0066`, ev
 | Phase | Agent | Needs before or while building |
 |---|---|---|
 | E ✔ | Target Architecture | **Done** (build-log Entry 11, `click-through-phase-E.md`). What F reads: `emit.design_packet` of the APPROVED `design_modernization` version (packet route kind `target-architecture`); ledger rows are `designed` with patterns/contract_ids/adr_ids; `ordering_constraints` restrict wave order; `traps` and `frozen_contracts` become ECs. `upstream_from_pages` needs a `target_design_artifacts` row in `_UPSTREAM_STAGE` and a context formatter for agent 4 |
-| **F** | Migration Strategy | Waves and equivalence criteria (ECs from `equivalence`/`performance` measure kinds). The board write goes through the wired board connector and is Consequential. Replaces the `strategy` stub page |
+| F ✔ | Migration Strategy | **Done** (build-log Entry 12, `click-through-phase-F.md`), with a universal pass over A–E (brief dates/window/residency, more EOL runtimes and databases, a polyglot + declared-contract scanner, a shared input reader `modernization_common/inputs.py`). What G reads: `emit.plan_packet` of the APPROVED `strategy` version (packet route kind `strategy`); `equivalence_criteria` (id, module_id or "all", protects, protects_measures, observable, normalization rules) and `baseline_plan` (ec_id, environment, data source, masking, due); ledger rows are `sequenced` with `wave` and `ec_ids`. `baseline_accepted` moves them to `baselined`. Add `strategy_artifacts` to `_UPSTREAM_STAGE` consumers for agent 5 |
 | G | Legacy sandbox + Equivalence Testing (baseline) | **User decisions:** sandbox image source, data masking. Needs **real legacy code** for live runs; ClaimTrack is simulated and there is none yet. `golden_master` becomes `{status: captured, baselines: [BL-xx]}` |
 | H | Migration Development | A real target repo and write credential. Pushes through `assert_target_write` plus the Consequential gate. Reverts are new commits, never rewrites |
 | I | Migration Review + Security | Read legacy and target. Run on H's PR. Security prompt byte-identity test (master plan §5) |
@@ -201,7 +201,7 @@ them.
 | Storage | `STORAGE_BACKEND=local`. Windows long paths must be enabled for uploads (admin PowerShell; in the A/B click-through) |
 | Ports | Backend **8001** (docs saying 8004 are stale) |
 | Commands | `uv run python -m alembic …`, `python -m uvicorn process_api:app --port 8001` (`uv run alembic/uvicorn` fail: "uv trampoline"). Tests: `cd backend && set -a && . ./.env.test && set +a && uv run python -m pytest <files> -q -p no:cacheprovider`. Frontend: `node node_modules/typescript/bin/tsc --noEmit`, `node node_modules/vitest/vitest.mjs run`, `node node_modules/eslint/bin/eslint.js` (**never npx**) |
-| Migrations | Code head **`0071_target_design`**. **Test DB 0071; dev DB 0071** (0068–0071 applied to dev with the user's OK on 2026-09-29, grants re-applied). A new migration goes on dev only with the user's OK. 0067 reached dev without explicit approval earlier (verified identical; the user was told) |
+| Migrations | Code head **`0072_strategy`**. **Test DB 0072; dev DB 0072** (0068–0071 applied to dev with the user's OK on 2026-09-29, grants re-applied; 0072 on 2026-09-30 at the user's request — a column only, no grants needed). A new migration goes on dev only with the user's OK. 0067 reached dev without explicit approval earlier (verified identical; the user was told) |
 | Personas (dev DB) | `ba@gmail.com`, `projadmin@gmail.com`, `architect@gmail.com`, `dev@gmail.com`, `tester@gmail.com`, `buadmin@gmail.com`, `admin@pwc.dev`. `DEV_LOGINS.txt` personas are NOT in this DB. Projects: "Migration test" (Track 3, ADO wired), "Test" (Greenfield) |
 | Seed | `backend/scripts/seed_track3_fixture.py`: the ClaimTrack project, roster, placeholder repositories and six ledger modules. Idempotent, guarded to localhost. **Not yet run on dev; ask first** |
 | Git | Commit messages end `Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>`. PRs get reviewer `UjjwalTyagi5` and end with the Claude Code line. `git push` may be blocked for Claude in auto mode; ask the user to run `! git push origin akshat_track3` |
@@ -306,6 +306,10 @@ Also decided:
 ---
 
 ## 9. Open items for the user
+
+- Run `click-through-phase-F.md` (the tile is already unlocked at the user's request).
+- Declared runtime minimums are decided (build-log Entry 12, F5): Go's is not scored, Node/Python's are
+  scored and labelled "(minimum)" with the production version to confirm.
 
 - Optionally run the seed script on dev (`scripts/seed_track3_fixture.py`; ask first).
 - The remaining click-through steps in `click-through-phase-E.md`, if not all were run.

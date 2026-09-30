@@ -36,10 +36,11 @@ import { cn } from "@/lib/utils";
  * not by page. While a pull runs the status is polled; the page learns it finished
  * without anyone refreshing.
  */
-export function useLegacyCode(projectId: ProjectId, stage: Track3Stage) {
+export function useLegacyCode(projectId: ProjectId, stage: Track3Stage, enabled = true) {
   return useQuery({
     queryKey: qk.modernization.legacyCode(projectId),
     queryFn: () => getLegacyCode(projectId, stage),
+    enabled,
     refetchInterval: (query) => (query.state.data?.status === "pulling" ? 3000 : false),
   });
 }

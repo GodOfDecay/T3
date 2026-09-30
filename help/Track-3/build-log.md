@@ -631,3 +631,135 @@ two roster pins were updated (the deliverables CHECK list is pinned from the new
 one head; up/down/up clean. Frontend: full suite **1,211/1,211**, `tsc` and eslint clean on touched files.
 One page-test failure appeared once while a DB mutation run loaded the machine; three control runs and the
 full suite passed — noted, not dismissed, and not reproduced. The backend has no ruff installed, so no lint ran there.
+
+## Entry 12 — 2026-09-30 — Phase F: Migration Strategy (agent 4) and the universal pass
+
+Implements research §6.4 (+ §9 stage 4), master plan row F. Plan:
+`docs/superpowers/plans/2026-09-30-track3-phase-f-migration-strategy.md`. Click-through:
+`click-through-phase-F.md`. Migration 0072 on the test database, then on the DEV database at the user's
+request (2026-09-30, after a first attempt was blocked by the permission classifier); backend restarted;
+tile unlocked at the user's request.
+
+**The universal pass (the user's brief: "fit any use case of migration, not just ClaimTrack")** — what the
+earlier phases handed over was checked against unrelated systems (a .NET payroll, a Go/PHP/Ruby/VB/COBOL
+polyglot), and changed where it assumed ClaimTrack:
+- U1. The brief hands over its planning dates: dated milestones (kinds deadline, freeze, decommission,
+  external…), the freeze as a milestone, a deadline written in prose falls back to the deadline milestone,
+  and `downtime_window` / `data_residency` (Migration Intent records them; the page shows both as key facts).
+- U2. The lifecycle table covers databases and more runtimes: MySQL, PostgreSQL, SQL Server, PHP, Ruby, Go;
+  the design check reads managed-service names ("Azure Database for MySQL Flexible Server 8.0"). The
+  ClaimTrack design moved to MySQL 8.4 (8.0 ended 2026-04-30).
+- U3. The interface scanner reads Go, PHP, Ruby, VB.NET, COBOL (EXEC SQL / CICS / MQ), JCL, and DECLARED
+  contracts: OpenAPI paths, WSDL operations, gRPC services, GraphQL root fields, Kubernetes CronJobs.
+- U4. A frozen contract can be any kind of interface (rpc, ui, job, library added).
+- A shared input reader (`modernization_common/inputs.py`) replaces Target Architecture's private one;
+  agents 3–10 read their upstream packets the same way.
+
+**What was built (agent 4)**
+- `strategy_agent/`: prompt, graph, page socket `/sdlc/agent/strategy/ws`; tools `read_migration_brief`,
+  `read_assessment`, `read_target_design`, `propose_wave_order`, `check_calendar`, `estimate_effort`,
+  `record_migration_strategy`, `export_strategy_document`, `preview_wave_work_items`, `list_board_projects`,
+  `create_wave_work_items` + documents/approval, compare/restore.
+- Deterministic analysis, generic in the graph, the patterns and the brief's words:
+  - ordering: Tarjan SCCs (a cycle moves together), layered by dependency, lowest risk first; kept modules
+    move in no wave. A dependency is ready first when its wave ENDS no later than the dependent's (waves
+    may overlap and ids are names, not the order); moving earlier needs an order exception citing a design ADR.
+  - calendar: deadline, deadline/decommission milestones, baselines after the freeze or after their wave
+    starts, cutover day and length against the brief's window. Each conflict has a stable ref and must be
+    reported by it.
+  - effort: a stated table (size × tier × pattern, ±30 %); an unmeasured module is "not estimated", never 0.
+  - record-time rules: every moved module is in exactly one wave with the design's patterns; W0 moves none; every
+    moving wave has entry criteria and its modules' criteria in its exits; every contract, trap and
+    equivalence/performance/security measure is protected, in the brief's words; baselines for protecting
+    criteria; parallel runs have a period; the brief's freeze is kept; "given" dates are the brief's; effort per
+    wave; budget fit when the brief has a budget.
+- Ledger on APPROVAL: `strategy_approved` sequences every placed module in its wave with its criteria; a
+  revision updates sequenced modules ("plan revised") and refuses to re-wave, or change the criteria of, a
+  module past planning; a plan whose patterns differ from the APPROVED design's, or that leaves out a module
+  it moves, is refused (409) and rolls the approval back.
+- Board: preview exactly what is written (one Feature per wave, one item per module); writing needs an
+  Architect or Project Admin OF THIS PROJECT plus this-turn consent, a read-write connection, and a plan that
+  is not rejected or superseded.
+- Wiring: registry entry (position 4) and portfolio, orchestrator2 (registry, router names "strategy",
+  "migration plan", "wave plan", "waves", capability, prompt bullet, deliverables), migration 0072
+  (`runs.strategy_artifacts`, deliverables CHECK), context formatter for the target design, page routes (kind
+  `strategy`: latest, packet, export; `GET modernization/strategy`), `built_from` for the design.
+- Frontend: `/strategy` page on `Track3AgentPage` (new `showLegacyCode={false}`: this agent reads no code),
+  `StrategyView` (summary, timeline with freeze/milestones/deadline, module ledger, tabs: waves, criteria
+  with a module filter, baselines with late flags, calendar with reported/open/resolved, order with cycles
+  and exceptions, RAID, effort), schemas, BFF allow-lists, chat socket map, orchestrator ids, hand-over line
+  "Ready to hand to Equivalence Testing". **Tile not flipped** (R42).
+
+**Proven universal**: two unrelated scenarios pass every rule (`tests/strategy/scenarios.py`): ClaimTrack
+(Java/Node, strangler + parallel run, overlapping waves) and Payroll (.NET, a PayCalc ⇄ PayRules cycle, an
+order exception with its ADR, a kept module, a weekend 4-hour window, a freeze milestone).
+
+**Decisions**
+- F1. Readiness is by date, not by wave number: a module is cut over when its wave ends, so a dependency must
+  be in a wave that ends no later than its dependent's. Wave ids are names; waves may overlap (ClaimTrack's
+  W4 starts before W3).
+- F2. The ledger is the authority on which design is approved: approval compares each placement's patterns
+  with the ledger row and refuses a plan built on any other design version, or one that leaves out a module
+  the approved design moves.
+- F3. A cutover window is read from the user's words (days, day ranges with times, "nights", a stated limit or
+  the window's own span). What cannot be read is reported by part and never guessed.
+- F4. Dates marked "given" must be dates in the brief; otherwise the plan marks them proposed.
+- F5. Declared MINIMUMS are marked (`Runtime.minimum`) — go.mod `go`, Node `engines` ">=14" / "14 || 16" /
+  "14 - 18", Python ">=3.8" / "~=3.8" / Poetry "^3.8"; a pin ("14.x", "^14", `.nvmrc`, "==3.9.*",
+  `runtime.txt`, `.python-version`) is the runtime, and a pin file wins over a minimum. Scoring (the user
+  asked for what suits the use case): Go's minimum is reported, not scored (the Go 1 compatibility promise;
+  `toolchain` is scored). A Node/Python minimum IS scored — a legacy app's minimum is the line it was
+  written and tested against and majors break — labelled "(minimum)", with a note asking for the version
+  production runs. ClaimTrack's `">=14"` keeps its EOL score and now says so honestly.
+- F6. The Strategy page shows no legacy-code controls (`showLegacyCode={false}`): this agent works from the
+  three documents only.
+
+**Independent review (R54)**: 12 findings (6 Important, 6 Minor), each verified against the code (the
+reviewer's probes reproduced 1, 3, 5, 6 and 10), then fixed with a test that fails without the fix.
+| # | Finding | Result |
+|---|---|---|
+| 1 | Order compared wave ids, not dates: a false refusal (a later id that ends first) and a missed one | **Fixed** (F1) |
+| 2 | Discovery scored go.mod's `go 1.21` minimum as an EOL runtime (a regression from the new Go rows) | **Fixed** (F5) |
+| 3 | PHP 8 `#[Route]` attributes and docblock `@Route` read as comments: Symfony apps had no endpoints | **Fixed** |
+| 4 | Approval never checked which design the plan was built from | **Fixed** (F2) |
+| 5 | Modules could be placed in W0 and skip the exit/effort rules | **Fixed**: W0 moves none |
+| 6 | Window parsing: "Fri 22:00 – Mon 06:00" misread, a night spilling past midnight flagged, the window's own span not a limit, "checked" claimed when only days were read | **Fixed** (F3) |
+| 7 | A revision could rewrite the criteria of a baselined module; "assessed in None" message; dropped modules unnoticed | **Fixed**: criteria kept past planning, `assessed` refused by name, dropped moved modules refused (F2) |
+| 8 | "given" dates and entry criteria shown but not enforced | **Fixed** (F4; entry criteria required on every moving wave) |
+| 9 | The Orchestrator board write read an in-process copy and ignored `version`; a rejected plan could be written | **Fixed**: read from the run's column; a version is refused there; rejected/superseded never written |
+| 10 | "PostgreSQL 16 (replacing MySQL 5.7)" refused on MySQL 5.7 | **Fixed**: a version after replacing/from/was/instead of… is the one left |
+| 11 | Context cut a >60-module design silently | **Fixed**: "… and N more modules" |
+| 12 | `check_calendar` / `estimate_effort` crashed on an incomplete draft | **Fixed**: they say what is missing |
+
+**Mutation (R46)** — `help/Track-3/tools/specs-phase-f/` (`make_specs.py` writes 18 specs, 120 mutants that run).
+| Pass | Result | Notes |
+|---|---|---|
+| First (after the fix wave) | 107/116 | 9 survivors: 7 real test gaps (a baseline for "all" modules against the first move; a multi-day cutover's length; a "to" inside the replaced-version window; a JCL comment assertion that compared exact names; routes under an OpenAPI vendor key; `schedule:` outside a CronJob; the ledger panel re-reading on approval), 1 spec anchored on the DESIGN hook instead of strategy's (re-anchored), 1 board role check whose test user was also refused by consent (new test: an Architect of ANOTHER project passes consent, only the role check stops them) |
+| Second | all killed | `jcl-comment-read` is EQUIVALENT (both JCL rules need `//name<space>`, which `//*` never matches) — removed from the spec, the branch itself stays proven by `jcl-statements-skipped` |
+| Added | router 2/2, shared reader 3/3 | the Phase E Orchestrator guard moved into `modernization_common/inputs.py` (its E anchor is gone); a database error was untested (test added) |
+- `verify_no_mutants`: Phase F — 0 originals absent. Phases C/E — 8 absent, none a mutant: 3 Phase E anchors
+  rewritten in this phase (the router's packet map gained `strategy`, `design_tools` reads through the
+  shared reader, the Python file-mode line takes `args[0]`), each re-covered by a Phase F spec or unchanged in
+  logic; 5 were already absent at Entry 11.
+
+**Tests**: `tests/strategy` (analysis, checks on two systems, agent assembly, record/board/approval through
+the real app on Postgres — 100), `tests/design_modernization/test_universal.py` (U1–U4 + review fixes — 67);
+roster pins updated in the existing tests that pin the agent list (D12). Frontend:
+`__tests__/app/strategy-page.test.tsx` (16) against backend-produced fixtures (`regen_view_fixtures.py` emits
+`migration_plan` and `migration_plan_payroll` through the record tool's own builder).
+
+**Regression (after the fix wave), `sdlc_product_test` at 0072, one group at a time:** group 1 (with
+`tests/design_modernization tests/strategy`) **1,687 passed** (3 skipped, 7 xfailed, 17 xpassed); group 2
+(orchestrator2) **780 passed**; group 3 (development) **41 passed**. Migration 0072: one head; up/down/up
+clean. Frontend: full suite **1,229/1,229**, `tsc` and eslint clean on touched files. Two files timed out once
+at 5 s while a DB mutation run loaded the machine (`ws-ticket`, `project-artifacts-tab`); both pass on a quiet
+machine and in the full run.
+
+**Minimums follow-up (F5)**: 14 more mutants (eol 6/6, manifests 8/8 killed); a redundant `pinned` parameter
+was removed rather than left as an unkillable mutant. Affected suites re-run: discovery, modernization_common,
+design_modernization, strategy, requirements_modernization **635 passed**; frontend **1,230/1,230**, `tsc`
+clean.
+
+**Live (dev, 0072):** backend restarted clean; `GET /projects/{id}/modernization/strategy` and the strategy
+artifact-version routes answer 401 without a token; `/projects/{id}/strategy` redirects to sign-in (307).
+The Strategy tile is unlocked for the Architect and Project Admin (`BUILT_AGENTS_BY_TRACK`, tests updated).

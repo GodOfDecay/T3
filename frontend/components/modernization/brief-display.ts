@@ -90,12 +90,18 @@ export function sortedMilestones(brief: MigrationIntentBrief): BriefMilestone[] 
   });
 }
 
-export type KeyFact = { key: "deadline" | "budget" | "scope" | "eol" | "target"; label: string; value: string };
+export type KeyFact = {
+  key: "deadline" | "budget" | "window" | "residency" | "scope" | "eol" | "target";
+  label: string;
+  value: string;
+};
 
 export function keyFacts(brief: MigrationIntentBrief): KeyFact[] {
   const facts: KeyFact[] = [];
   if (brief.deadline) facts.push({ key: "deadline", label: "Deadline", value: prettyDate(brief.deadline) });
   if (brief.budget) facts.push({ key: "budget", label: "Budget", value: brief.budget });
+  if (brief.downtime_window) facts.push({ key: "window", label: "Cutover window", value: brief.downtime_window });
+  if (brief.data_residency) facts.push({ key: "residency", label: "Data residency", value: brief.data_residency });
   const scope = brief.in_scope.filter((s) => s.trim()).length;
   if (scope) facts.push({ key: "scope", label: "In scope", value: `${scope} item${scope === 1 ? "" : "s"}` });
   const eol = endOfLifeCount(brief);

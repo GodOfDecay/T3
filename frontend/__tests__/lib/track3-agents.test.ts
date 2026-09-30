@@ -38,7 +38,7 @@ describe("Track 3 roster", () => {
   });
 
   it("builds exactly its first three agents; Portfolio 1's list is unchanged", () => {
-    expect(builtAgentsForTrack("modernization")).toEqual(["requirements_modernization", "discovery", "design_modernization"]);
+    expect(builtAgentsForTrack("modernization")).toEqual(["requirements_modernization", "discovery", "design_modernization", "strategy"]);
     expect(builtAgentsForTrack("greenfield")).toBe(BUILT_AGENTS);
     expect(BUILT_AGENTS).not.toContain("discovery");
   });
@@ -69,7 +69,8 @@ describe("Track 3 tiles", () => {
   });
 
   it("shows the rest of Track 3's roster as Coming soon, even for the Project Admin", () => {
-    for (const phase of ["design", "strategy", "development", "review", "security", "testing", "deployment", "documentation"] as const) {
+    // "strategy" is Track 3's Migration Strategy on this track (built, Phase F): tested below.
+    for (const phase of ["design", "development", "review", "security", "testing", "deployment", "documentation"] as const) {
       expect(tileStateFor("project_admin", phase, "modernization", built)).toBe("coming_soon");
     }
   });
@@ -173,11 +174,18 @@ describe("Track 3 agents 3–10", () => {
     expect(tileStateFor("developer", "design_modernization", "modernization", built)).not.toBe("available");
   });
 
+  it("then Migration Strategy (Phase F), for the Architect and the Project Admin", () => {
+    const built = builtAgentsForTrack("modernization");
+    expect(tileStateFor("architect", "strategy", "modernization", built)).toBe("owner");
+    expect(tileStateFor("project_admin", "strategy", "modernization", built)).toBe("owner");
+    expect(tileStateFor("developer", "strategy", "modernization", built)).not.toBe("available");
+  });
+
   it("stay locked, even for their owner and the Project Admin, until each is built", () => {
     const built = builtAgentsForTrack("modernization");
     for (const [phase, want] of Object.entries(LATER)) {
       const p = phase as keyof typeof AGENT_OWNER_ROLE;
-      if (p === "design_modernization") continue; // built (Phase E): the test above
+      if (p === "design_modernization" || p === "strategy") continue; // built (Phases E, F): the tests above
       expect(built).not.toContain(p);
       expect(tileStateFor(want.owner as never, p, "modernization", built), phase).toBe("coming_soon");
       expect(tileStateFor("project_admin", p, "modernization", built), phase).toBe("coming_soon");

@@ -1,0 +1,62 @@
+{
+ "root": "frontend",
+ "target": "components/modernization/strategy-view.tsx",
+ "cmd": [
+  "node",
+  "node_modules/vitest/vitest.mjs",
+  "run",
+  "__tests__/app/strategy-page.test.tsx"
+ ],
+ "mutants": [
+  [
+   "ledger-claims-rejected",
+   "  if (status === \"rejected\") return",
+   "  if (false) return"
+  ],
+  [
+   "ledger-no-refetch",
+   "    if (approved) void refetch();",
+   "    if (false) void refetch();"
+  ],
+  [
+   "other-wave-hidden",
+   "                  {stateLabel(row.state)}{row.wave && row.wave !== p.wave ? ` in ${row.wave}` : \"\"}",
+   "                  {stateLabel(row.state)}"
+  ],
+  [
+   "late-baseline-unflagged",
+   "                {late.has(b.ec_id) && <Badge",
+   "                {false && <Badge"
+  ],
+  [
+   "open-shown-resolved",
+   "                  {r?.resolution ? \"resolved\" : reported.has(c.ref) ? \"reported — open\" : \"not reported\"}",
+   "                  {\"resolved\"}"
+  ],
+  [
+   "user-raised-hidden",
+   "        {userRaised.map((c) => (",
+   "        {[].map((c: never) => ("
+  ],
+  [
+   "freeze-not-marked",
+   "  if (freeze) out.push({ key: \"freeze\"",
+   "  if (false) out.push({ key: \"freeze\""
+  ],
+  [
+   "cycle-unmarked",
+   "                  {s.cycle && <Badge",
+   "                  {false && <Badge"
+  ],
+  [
+   "criteria-unfiltered",
+   "  const shown = module === \"all-modules\" ? plan.equivalence_criteria : plan.equivalence_criteria.filter((c) => c.module_id === module);",
+   "  const shown = plan.equivalence_criteria;"
+  ],
+  [
+   "exceptions-hidden",
+   "      {plan.order_exceptions.length > 0 && (",
+   "      {false && ("
+  ]
+ ]
+}

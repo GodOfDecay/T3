@@ -30,6 +30,17 @@ from datetime import date, timedelta
 class Runtime:
     name: str
     version: str
+    #: True when the manifest states only the lowest version the code accepts (go.mod's `go` line,
+    #: engines ">=14", requires-python ">=3.8"), not the one it runs on. See `runtime_status`.
+    minimum: bool = False
+
+
+#: Where a declared MINIMUM says nothing about the runtime: Go's compatibility promise means code
+#: declaring `go 1.21` builds unchanged on any later toolchain, so the minimum is reported, not
+#: scored. Elsewhere (Node, Python) a legacy app's minimum is the line it was written and tested
+#: against, and majors break things — for migration risk it is scored, labelled as a minimum, with
+#: the production version to confirm.
+_MINIMUM_NOT_SCORED = {"Go"}
 
 
 @dataclass(frozen=True)
@@ -141,6 +152,45 @@ _TABLE: dict[str, dict[str, _Lifecycle]] = {
         "3.13": _Lifecycle(date(2029, 10, 31)),
         "3.14": _Lifecycle(date(2030, 10, 31)),
     },
+    # ── Phase F (universal): databases and the other common server runtimes ──
+    "MySQL": {
+        "5.6": _Lifecycle(date(2021, 2, 1)), "5.7": _Lifecycle(date(2023, 10, 31)),
+        "8.0": _Lifecycle(date(2026, 4, 30)), "8.4": _Lifecycle(date(2032, 4, 30)),
+    },
+    "PostgreSQL": {
+        "9.6": _Lifecycle(date(2021, 11, 11)), "10": _Lifecycle(date(2022, 11, 10)),
+        "11": _Lifecycle(date(2023, 11, 9)), "12": _Lifecycle(date(2024, 11, 21)),
+        "13": _Lifecycle(date(2025, 11, 13)), "14": _Lifecycle(date(2026, 11, 12)),
+        "15": _Lifecycle(date(2027, 11, 11)), "16": _Lifecycle(date(2028, 11, 9)),
+        "17": _Lifecycle(date(2029, 11, 8)), "18": _Lifecycle(date(2030, 11, 14)),
+    },
+    "SQL Server": {  # extended support end; mainstream end is when it turns legacy
+        "2008": _Lifecycle(date(2019, 7, 9)), "2012": _Lifecycle(date(2022, 7, 12)),
+        "2014": _Lifecycle(date(2024, 7, 9)),
+        "2016": _Lifecycle(date(2026, 7, 14), legacy_after=date(2021, 7, 13)),
+        "2017": _Lifecycle(date(2027, 10, 12), legacy_after=date(2022, 10, 11)),
+        "2019": _Lifecycle(date(2030, 1, 8), legacy_after=date(2025, 2, 28)),
+        "2022": _Lifecycle(date(2033, 1, 11), legacy_after=date(2028, 1, 11)),
+    },
+    "PHP": {
+        "5.6": _Lifecycle(date(2018, 12, 31)), "7.0": _Lifecycle(date(2019, 1, 10)),
+        "7.1": _Lifecycle(date(2019, 12, 1)), "7.2": _Lifecycle(date(2020, 11, 30)),
+        "7.3": _Lifecycle(date(2021, 12, 6)), "7.4": _Lifecycle(date(2022, 11, 28)),
+        "8.0": _Lifecycle(date(2023, 11, 26)), "8.1": _Lifecycle(date(2025, 12, 31)),
+        "8.2": _Lifecycle(date(2026, 12, 31)), "8.3": _Lifecycle(date(2027, 12, 31)),
+        "8.4": _Lifecycle(date(2028, 12, 31)),
+    },
+    "Ruby": {
+        "2.6": _Lifecycle(date(2022, 3, 31)), "2.7": _Lifecycle(date(2023, 3, 31)),
+        "3.0": _Lifecycle(date(2024, 4, 23)), "3.1": _Lifecycle(date(2025, 3, 26)),
+        "3.2": _Lifecycle(date(2026, 3, 31)), "3.3": _Lifecycle(date(2027, 3, 31)),
+        "3.4": _Lifecycle(date(2028, 3, 31)),
+    },
+    "Go": {  # each release is supported until two newer ones exist; newer lines are not listed
+        "1.19": _Lifecycle(date(2023, 9, 6)), "1.20": _Lifecycle(date(2024, 2, 6)),
+        "1.21": _Lifecycle(date(2024, 8, 13)), "1.22": _Lifecycle(date(2025, 2, 11)),
+        "1.23": _Lifecycle(date(2025, 8, 12)),
+    },
 }
 
 _NOTES: dict[str, str] = {
@@ -163,8 +213,13 @@ def _normalise_version(name: str, version: str) -> str:
         return version.split(".")[0]
     if name in {".NET", ".NET Core", ".NET Standard"} and re.fullmatch(r"\d+", version):
         return f"{version}.0"
-    if name == "Python":
+    if name in {"Python", "MySQL", "PHP", "Ruby", "Go"}:
         return ".".join(version.split(".")[:2])
+    if name == "PostgreSQL":  # 10+ is numbered by major alone; 9.x by major.minor
+        parts = version.split(".")
+        return parts[0] if parts[0].isdigit() and int(parts[0]) >= 10 else ".".join(parts[:2])
+    if name == "SQL Server":
+        return version.split()[0]
     return version
 
 
@@ -172,6 +227,20 @@ def runtime_status(runtime: Runtime | None, as_of: date) -> RuntimeStatus:
     """Where `runtime` stands on `as_of`. `unknown` for anything not in the table."""
     if runtime is None:
         return RuntimeStatus("unknown", None, "No runtime or framework version was declared.")
+    if runtime.minimum and runtime.name in _MINIMUM_NOT_SCORED:
+        return RuntimeStatus(
+            "unknown", None, f"{runtime.name} {runtime.version} is only the minimum the code accepts, not the "
+            "version it runs on — not checked against the lifecycle table.")
+    status = _status(runtime, as_of)
+    if runtime.minimum and status.status != "unknown":
+        return RuntimeStatus(status.status, status.eol_date, (
+            f"Declared as a minimum ({runtime.name} {runtime.version} or later): the code was written for this "
+            f"line, but the version it runs on in production is not in the repository — confirm it. "
+            + (status.note or "")).strip())
+    return status
+
+
+def _status(runtime: Runtime, as_of: date) -> RuntimeStatus:
     versions = _TABLE.get(runtime.name)
     version = _normalise_version(runtime.name, runtime.version)
     lifecycle = versions.get(version) if versions else None

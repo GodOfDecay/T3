@@ -1,5 +1,41 @@
 {
   "$defs": {
+    "BriefMilestone": {
+      "additionalProperties": false,
+      "description": "A dated commitment from the brief. Migration Strategy lays its waves against these.",
+      "properties": {
+        "date": {
+          "format": "date",
+          "title": "Date",
+          "type": "string"
+        },
+        "kind": {
+          "default": "other",
+          "enum": [
+            "start",
+            "freeze",
+            "compliance",
+            "deadline",
+            "cutover",
+            "decommission",
+            "other"
+          ],
+          "title": "Kind",
+          "type": "string"
+        },
+        "label": {
+          "minLength": 1,
+          "title": "Label",
+          "type": "string"
+        }
+      },
+      "required": [
+        "date",
+        "label"
+      ],
+      "title": "BriefMilestone",
+      "type": "object"
+    },
     "BriefPayload": {
       "additionalProperties": false,
       "description": "The brief as later agents need it. `must_not_change` holds the user's own words\n(Target Architecture turns each into a CT-xx); a vague entry is a question the Migration\nIntent agent asks before recording, not something this model can judge.",
@@ -90,6 +126,14 @@
           "minLength": 1,
           "title": "Goal",
           "type": "string"
+        },
+        "milestones": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/BriefMilestone"
+          },
+          "title": "Milestones",
+          "type": "array"
         },
         "must_not_change": {
           "default": [],

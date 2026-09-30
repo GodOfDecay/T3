@@ -16,7 +16,7 @@
       {"layer": "Hosting", "today": "Dallas VMs · Tomcat 8", "target": "Azure App Service (Linux) · Container Apps Jobs", "modules": ["M-02", "M-03", "M-05"]},
       {"layer": "Runtime", "today": "Java 7/8 · Node 8 · Python 2.7", "target": "Java 21 · Node 24 · Python 3.12", "modules": ["M-01", "M-02", "M-03", "M-04", "M-05"]},
       {"layer": "Framework", "today": "Spring MVC 4 · AngularJS 1.5", "target": "Spring Boot 3.3 · React 18", "modules": ["M-02", "M-04"]},
-      {"layer": "Database", "today": "MySQL 5.6", "target": "Azure MySQL Flexible Server 8.0", "modules": []},
+      {"layer": "Database", "today": "MySQL 5.6", "target": "Azure MySQL Flexible Server 8.4", "modules": []},
       {"layer": "Routing facade", "today": "none", "target": "Application Gateway (WAF v2)", "modules": ["M-02", "M-04"]},
       {"layer": "Secrets", "today": "properties files", "target": "Azure Key Vault", "modules": []},
       {"layer": "Observability", "today": "log files", "target": "Application Insights", "modules": []},
@@ -60,7 +60,7 @@
        "consumers": ["claimtrack-batch"], "proof": "same file accepted by both sides during the parallel run", "status": "confirmed"}
     ],
     "data_migration": {
-      "source": "MySQL 5.6 (Dallas)", "target": "Azure Database for MySQL Flexible Server 8.0 (US)",
+      "source": "MySQL 5.6 (Dallas)", "target": "Azure Database for MySQL Flexible Server 8.4 (US)",
       "method": "online replication, then a switch inside a Sunday window",
       "behaviour_changes": ["GROUP BY no longer sorts (TR-04)", "default collation utf8mb4_0900_ai_ci (TR-05)"],
       "cutover": "read-only window, final sync, promote, switch connection strings (W2)"
@@ -100,7 +100,7 @@
     "diagrams": [
       {"title": "AS-IS container", "mermaid": "flowchart LR\n  brokers-->web[claimtrack-web]\n  web-->db[(MySQL 5.6)]\n  batch-->db"},
       {"title": "TRANSITION", "mermaid": "flowchart LR\n  brokers-->gw[App Gateway]\n  gw-->web\n  gw-->newweb[web on App Service]"},
-      {"title": "TO-BE container", "mermaid": "flowchart LR\n  brokers-->gw[App Gateway]\n  gw-->api[Spring Boot 3]\n  api-->db[(Azure MySQL 8.0)]"}
+      {"title": "TO-BE container", "mermaid": "flowchart LR\n  brokers-->gw[App Gateway]\n  gw-->api[Spring Boot 3]\n  api-->db[(Azure MySQL 8.4)]"}
     ],
     "departures_from_brief": [
       {"brief_said": "App Service for all workloads (PaaS-first)", "design_says": "Container Apps Jobs for batch and reports", "adr_id": "ADR-08"}

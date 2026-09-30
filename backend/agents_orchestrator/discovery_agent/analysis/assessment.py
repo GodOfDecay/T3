@@ -77,7 +77,9 @@ def cross_language(ecosystem: str, target_stack: str) -> bool:
 
 
 def _runtime_label(runtime) -> str:
-    return f"{runtime.name} {runtime.version}" if runtime else "not declared"
+    if not runtime:
+        return "not declared"
+    return f"{runtime.name} {runtime.version}" + (" (minimum)" if runtime.minimum else "")
 
 
 def _attribute_vulnerabilities(modules, manifests, vulnerabilities):

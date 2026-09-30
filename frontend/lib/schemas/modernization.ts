@@ -52,6 +52,9 @@ export const MigrationIntentBrief = z.object({
   trade_offs: z.array(BriefTradeOff).default([]),
   deadline: text,
   budget: text,
+  /** Phase F: when a cutover may take the system down, and where the data must stay. */
+  downtime_window: text,
+  data_residency: text,
   milestones: z.array(BriefMilestone).default([]),
   success_measures: z.array(BriefMeasure).default([]),
   current_state: z.object({ stack: z.string().default(""), description: z.string().default("") })
@@ -297,6 +300,103 @@ export const TargetDesign = z.object({
   recorded_at: z.string().nullable().default(null),
 });
 export type TargetDesign = z.infer<typeof TargetDesign>;
+
+/* ── Migration Strategy (Phase F) ──────────────────────────────────────────────
+   Mirrors `StrategyArtifact`: the hand-over packet's PlanPayload plus what the record tool
+   computed (placements, the proposed order, the calendar and effort checks). */
+
+const PlanWave = z.object({
+  id: z.string(),
+  name: text,
+  modules: strings,
+  patterns: z.record(z.string(), z.array(z.string())).default({}),
+  starts: text,
+  ends: text,
+  date_status: z.enum(["given", "proposed"]).catch("proposed"),
+  entry_criteria: strings,
+  exit_criteria: strings,
+  parallel_run: z.object({
+    required: z.boolean().default(false), period: z.string().nullable().default(null),
+    system_of_record: z.string().default("legacy"),
+  }).default({ required: false, period: null, system_of_record: "legacy" }),
+  cutover_window: z.string().nullable().default(null),
+  rollback: z.object({ trigger: text, method: text, max_time: z.string().nullable().default(null) })
+    .default({ trigger: "", method: "", max_time: null }),
+  owner: z.string().nullable().default(null),
+  order_reason: text,
+});
+export type PlanWave = z.infer<typeof PlanWave>;
+
+const PlanCriterion = z.object({
+  id: z.string(),
+  module_id: z.string(),
+  protects: strings,
+  protects_measures: strings,
+  observable: text,
+  input_set: text,
+  comparison: z.string().default("exact"),
+  normalization: z.array(z.object({ field: text, rule: text, reason: text })).default([]),
+  threshold: z.string().nullable().default(null),
+});
+export type PlanCriterion = z.infer<typeof PlanCriterion>;
+
+const CalendarItem = z.object({
+  conflict: text, impact: text, options: strings,
+  resolution: z.string().nullable().default(null), ref: z.string().nullable().default(null),
+});
+
+export const MigrationPlan = z.object({
+  schema_version: z.number().default(1),
+  system_name: text,
+  summary: text,
+  waves: z.array(PlanWave).default([]),
+  order_exceptions: z.array(z.object({ module_id: z.string(), depends_on: z.string(), reason: text, adr_id: text }))
+    .default([]),
+  equivalence_criteria: z.array(PlanCriterion).default([]),
+  baseline_plan: z.array(z.object({
+    ec_id: z.string(), inputs: text, environment: text, data_source: text, masking: text, due: text,
+  })).default([]),
+  freeze_policy: z.object({ from: text, allowed: text, carry_forward: text })
+    .default({ from: "", allowed: "", carry_forward: "" }),
+  critical_path: strings,
+  calendar_conflicts: z.array(CalendarItem).default([]),
+  raid: z.object({
+    risks: z.array(z.object({ risk: text, evidence: text, mitigation: text })).default([]),
+    assumptions: strings, issues: strings, dependencies: strings,
+  }).default({ risks: [], assumptions: [], issues: [], dependencies: [] }),
+  effort: z.array(z.object({ wave: z.string(), band: text, basis: text })).default([]),
+  budget_fit: text,
+  sources: z.record(z.string(), z.object({
+    version: z.number().nullable().default(null), status: z.string().default(""),
+  }).partial().passthrough().nullable()).default({}),
+  placements: z.array(z.object({ module_id: z.string(), wave: z.string(), ec_ids: strings })).default([]),
+  proposed_order: z.object({
+    order: z.array(z.object({
+      step: z.number(), level: z.number(), modules: strings, names: strings, max_risk: z.number().default(0),
+      cycle: z.boolean().default(false), depends_on: strings,
+    })).default([]),
+    kept: strings,
+    cycles: z.array(strings).default([]),
+  }).nullable().default(null),
+  calendar_checked: z.array(z.object({ ref: z.string(), conflict: text, impact: text })).default([]),
+  effort_table: z.object({
+    modules: z.array(z.object({ module_id: z.string(), name: z.string().nullable().default(null), band: text,
+      basis: text })).default([]),
+    waves: z.array(z.object({ wave: z.string(), band: text, basis: text })).default([]),
+    total_band: text,
+  }).nullable().default(null),
+  brief_dates: z.object({
+    deadline: z.string().nullable().default(null),
+    freeze_from: z.string().nullable().default(null),
+    downtime_window: z.string().nullable().default(null),
+    budget: z.string().nullable().default(null),
+    milestones: z.array(z.object({ date: z.string(), label: z.string(), kind: z.string().default("other") }))
+      .nullable().transform((m) => m ?? []).default([]),
+  }).partial().default({}),
+  notes: strings,
+  recorded_at: z.string().nullable().default(null),
+});
+export type MigrationPlan = z.infer<typeof MigrationPlan>;
 
 export const LegacyInterface = z.object({
   kind: z.string(),

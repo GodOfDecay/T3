@@ -290,6 +290,27 @@ AGENT_REGISTRY: dict[str, AgentDefinition] = {
         ],
         optional_capabilities=["doc.export.docx", "doc.export.pdf", "legacy.code.read"],
     ),
+    "strategy": AgentDefinition(
+        id="strategy",
+        name="Migration Strategy Agent",
+        pipeline_position=4,
+        # Research §6.4: the brief, the assessment and the target design (their packets).
+        input_artifacts=["migration_intent_payload", "discovery_artifacts", "target_design_artifacts"],
+        output_artifact="strategy_artifacts",
+        route_path="/strategy",
+        # "Accept the migration plan" is a Sign-off; its approval sequences the modules. Writing the
+        # waves to the board is a separate Consequential action.
+        gate_type="approval_required",
+        sla_hours=48,
+        can_parallel_with=[],
+        max_rejections=1,
+        required_capabilities=[
+            "migration.sequence.plan", "migration.wave.define", "migration.equivalence.criteria.define",
+            "migration.baseline.plan", "migration.freeze.policy.define", "migration.rollback.define",
+            "artifact.write",
+        ],
+        optional_capabilities=["board.write", "board.read", "doc.export.docx", "doc.export.pdf"],
+    ),
 }
 
 
@@ -317,9 +338,9 @@ _PORTFOLIO_1: list[str] = [
 TRACK_PORTFOLIOS: dict[str, list[str]] = {
     "greenfield": _PORTFOLIO_1,
     "enhancement": _PORTFOLIO_1,
-    # Built so far: the first three of Portfolio 2's ten (Phase 1, Phase E). Strategy and
-    # the rest are added one at a time as each is built and mounted.
-    "modernization": ["requirements_modernization", "discovery", "design_modernization"],
+    # Built so far: the first four of Portfolio 2's ten (Phase 1, Phase E, Phase F). The rest
+    # are added one at a time as each is built and mounted.
+    "modernization": ["requirements_modernization", "discovery", "design_modernization", "strategy"],
     "rpa_infra": [],
     "data_engineering": [],
 }

@@ -349,7 +349,7 @@ async def test_the_page_download_uses_the_designed_brief(monkeypatch, tmp_path):
     import shared.routers.modernization as router
     from shared.services import artifact_versions as svc
 
-    async def guard(db, request, project_id, stage):
+    async def guard(db, request, project_id, stage, artifact=False):
         return "proj", "tenant", "user"
 
     async def get_version(db, project_id, stage, version):

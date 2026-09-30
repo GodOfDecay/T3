@@ -213,14 +213,32 @@ _RUNTIME_PATTERNS: tuple[tuple[str, re.Pattern], ...] = (
     ("Java", re.compile(r"(?i)\b(?:java|jdk|jre|openjdk)\s*(?:se\s*)?v?(1\.\d+|\d+)\b")),
     ("Node.js", re.compile(r"(?i)\bnode(?:\.js|js)?\s*v?(\d+)\b")),
     ("Python", re.compile(r"(?i)\bpython\s*v?(\d\.\d+)\b")),
+    # Phase F (universal): databases and the other common server runtimes.
+    # Managed services put words between the engine and its version ("MySQL Flexible Server
+    # 8.0", "PostgreSQL Flexible Server 16", "SQL Server Managed Instance 2019"): up to three.
+    ("MySQL", re.compile(r"(?i)\bmysql(?:\s+[a-z][\w-]*){0,3}?\s*v?(\d+\.\d+)")),
+    ("PostgreSQL", re.compile(r"(?i)\b(?:postgres(?:ql)?|pg)(?:\s+[a-z][\w-]*){0,3}?\s*v?(\d+(?:\.\d+)?)\b")),
+    ("SQL Server", re.compile(r"(?i)\bsql\s*server(?:\s+[a-z][\w-]*){0,3}?\s*(\d{4})\b")),
+    ("PHP", re.compile(r"(?i)\bphp\s*v?(\d\.\d+)")),
+    ("Ruby", re.compile(r"(?i)\bruby\s*v?(\d\.\d+)")),
+    ("Go", re.compile(r"(?i)\b(?:go|golang)\s*v?(1\.\d+)")),
 )
+VERSION_CHECKED = tuple(name for name, _ in _RUNTIME_PATTERNS)
 _LATEST = re.compile(r"(?i)\b(latest|newest|most recent)\b")
 
 
+#: Words that make the version after them the one being LEFT ("PostgreSQL 16, replacing MySQL 5.7").
+_REPLACED = re.compile(r"(?i)\b(?:replac\w*|from|instead\s+of|was|formerly|previously|retir\w*)\s+"
+                       r"(?:the\s+)?(?:(?!(?:to|onto|into|with)\b)[\w-]+\s+){0,4}$")
+
+
 def runtimes_in(text: str) -> list[Runtime]:
+    """The versions a target names — not one it says it replaces."""
     found, seen = [], set()
     for name, pattern in _RUNTIME_PATTERNS:
         for m in pattern.finditer(text or ""):
+            if _REPLACED.search(text[max(0, m.start() - 60):m.start()]):
+                continue
             key = (name, m.group(1))
             if key not in seen:
                 seen.add(key)
@@ -230,7 +248,8 @@ def runtimes_in(text: str) -> list[Runtime]:
 
 def check_versions(targets: Iterable[tuple[str, str]], as_of: date) -> CheckResult:
     """`targets` = (label, target text). End of life or within a year of it is refused; a
-    version the lifecycle table calls legacy is noted."""
+    version the lifecycle table calls legacy is noted. Runtimes and databases covered: .NET,
+    Java, Node.js, Python, PHP, Ruby, Go, MySQL, PostgreSQL, SQL Server (`VERSION_CHECKED`)."""
     out = CheckResult()
     for label, text in targets:
         if _LATEST.search(text or ""):

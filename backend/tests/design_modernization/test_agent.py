@@ -45,7 +45,7 @@ def test_the_registry_entry_matches_the_research():
     d = AGENT_REGISTRY["design_modernization"]
     assert (d.pipeline_position, d.output_artifact, d.gate_type) == (3, "target_design_artifacts", "approval_required")
     assert d.input_artifacts == ["migration_intent_payload", "discovery_artifacts"]
-    assert TRACK_PORTFOLIOS["modernization"][-1] == "design_modernization"
+    assert TRACK_PORTFOLIOS["modernization"].index("design_modernization") == 2  # after the brief and the assessment
 
 
 @pytest.mark.usefixtures("purge_created_orgs")

@@ -1,0 +1,24 @@
+{
+ "target": "shared/routers/artifact_versions.py",
+ "tests": [
+  "tests/strategy/test_record_board_approval.py"
+ ],
+ "env_test": true,
+ "mutants": [
+  [
+   "approval-skips-ledger",
+   "    elif stage == \"strategy\":\n        await _strategy_approved",
+   "    elif False:\n        await _strategy_approved"
+  ],
+  [
+   "no-placements-approved",
+   "    if not placements:\n        raise HTTPException(status_code=409",
+   "    if False:\n        raise HTTPException(status_code=409"
+  ],
+  [
+   "refusal-swallowed",
+   "    except ledger.LedgerRefused as exc:\n        raise HTTPException(status_code=409, detail=f\"Not approved: {exc}\") from exc\n\n\nasync def _design_approved",
+   "    except ledger.LedgerRefused as exc:\n        pass\n\n\nasync def _design_approved"
+  ]
+ ]
+}

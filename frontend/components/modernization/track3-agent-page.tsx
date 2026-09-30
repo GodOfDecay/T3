@@ -83,6 +83,7 @@ export function Track3AgentPage({
   renderVersion,
   showTechStack = false,
   headerActions,
+  showLegacyCode = true,
 }: {
   phase: Track3Stage;
   runLabel: string;
@@ -97,6 +98,8 @@ export function Track3AgentPage({
   showTechStack?: boolean;
   /** Page-specific controls beside the model picker (e.g. Target Architecture's interfaces). */
   headerActions?: React.ReactNode;
+  /** Show the project's pulled legacy code and Pull button — off for an agent that does not read code. */
+  showLegacyCode?: boolean;
 }) {
   const params = useParams<{ id: string }>();
   const projectId = params.id as ProjectId;
@@ -109,7 +112,7 @@ export function Track3AgentPage({
   const [selected, setSelected] = React.useState<number | null>(null);
   const linkedSession = useChatDeepLink(setChatOpen);
 
-  const legacyQ = useLegacyCode(projectId, phase);
+  const legacyQ = useLegacyCode(projectId, phase, showLegacyCode);
   useAnnouncePullOutcome(legacyQ.data);
 
   const versionsKey = qk.artifactVersions.forStage(projectId, phase);
@@ -182,7 +185,7 @@ export function Track3AgentPage({
           <div className="max-w-2xl space-y-1">
             <h1 className="text-xl font-semibold tracking-tight">{PHASE_LABEL[phase]}</h1>
             <p className="text-muted-foreground text-xs">{intro}</p>
-            {legacyStatus}
+            {showLegacyCode && legacyStatus}
             <ProgrammeStatusStrip projectId={projectId} />
           </div>
           <div className="flex flex-wrap items-center gap-2">
@@ -194,10 +197,12 @@ export function Track3AgentPage({
               value={agentModel}
               onValueChange={setAgentModel}
             />
-            <Button size="sm" variant="outline" onClick={() => setPullOpen(true)} disabled={pulling}>
-              <FolderGit2 className="size-4" aria-hidden />
-              {legacy?.pull ? "Pull again" : "Pull legacy code"}
-            </Button>
+            {showLegacyCode && (
+              <Button size="sm" variant="outline" onClick={() => setPullOpen(true)} disabled={pulling}>
+                <FolderGit2 className="size-4" aria-hidden />
+                {legacy?.pull ? "Pull again" : "Pull legacy code"}
+              </Button>
+            )}
             <Button size="sm" onClick={() => setChatOpen(true)}>
               <MessageSquare className="size-4" aria-hidden />
               {runLabel}
@@ -254,13 +259,15 @@ export function Track3AgentPage({
         </main>
       </div>
 
-      <PullLegacyCodeDialog
-        projectId={projectId}
-        stage={phase}
-        open={pullOpen}
-        onOpenChange={setPullOpen}
-        current={legacy}
-      />
+      {showLegacyCode && (
+        <PullLegacyCodeDialog
+          projectId={projectId}
+          stage={phase}
+          open={pullOpen}
+          onOpenChange={setPullOpen}
+          current={legacy}
+        />
+      )}
       <AgentChatDrawer
         open={chatOpen}
         onOpenChange={setChatOpen}

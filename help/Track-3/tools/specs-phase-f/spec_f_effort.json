@@ -1,0 +1,28 @@
+{
+ "target": "agents_orchestrator/strategy_agent/analysis/effort.py",
+ "tests": [
+  "tests/strategy/test_analysis.py"
+ ],
+ "mutants": [
+  [
+   "unmeasured-is-zero",
+   "    if loc is None:\n        return None",
+   "    if loc is None:\n        return 0.0"
+  ],
+  [
+   "no-coexistence-cost",
+   "    added = sum(ADDED[p] for p in patterns if p in ADDED)",
+   "    added = 0"
+  ],
+  [
+   "wave-with-unknown-estimated",
+   "        if any(r is None or r[\"days\"] is None for r in rows):",
+   "        if False:"
+  ],
+  [
+   "kept-costed",
+   "    if set(patterns or []) <= {\"keep\"}:\n        return 0.0",
+   "    if False:\n        return 0.0"
+  ]
+ ]
+}

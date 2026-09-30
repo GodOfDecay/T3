@@ -1,0 +1,69 @@
+{
+ "target": "agents_orchestrator/design_modernization_agent/analysis/interfaces.py",
+ "tests": [
+  "tests/design_modernization/test_universal.py",
+  "tests/design_modernization/test_interfaces.py"
+ ],
+ "mutants": [
+  [
+   "go-router-unread",
+   "        elif lang == \"go\":\n            _go(lines, emit)",
+   "        elif lang == \"go\":\n            pass"
+  ],
+  [
+   "vb-unread",
+   "        elif lang == \"vb\":\n            _vb(lines, emit)",
+   "        elif lang == \"vb\":\n            pass"
+  ],
+  [
+   "cobol-sql-unread",
+   "        elif lang == \"cobol\":\n            _cobol_sql(lines, emit)",
+   "        elif lang == \"cobol\":\n            pass"
+  ],
+  [
+   "jcl-statements-skipped",
+   "        return s.startswith(\"//*\")  # every JCL statement starts with //; only //* is a comment",
+   "        return s.startswith(\"//\")"
+  ],
+  [
+   "cobol-comment-read",
+   "        return (len(line) > 6 and line[6] in \"*/\") or s.startswith((\"*>\", \"*\"))",
+   "        return False"
+  ],
+  [
+   "php-attribute-skipped",
+   "        if s.startswith(\"#[\") or (s.startswith(\"*\") and \"@Route\" in s):",
+   "        if False:"
+  ],
+  [
+   "php-docblock-skipped",
+   "(s.startswith(\"*\") and \"@Route\" in s)",
+   "False"
+  ],
+  [
+   "declared-unread",
+   "        if declared:\n            _declared(ext, text, lines, emit)",
+   "        if False:\n            _declared(ext, text, lines, emit)"
+  ],
+  [
+   "openapi-past-paths",
+   "                elif line and not line[0].isspace() and not stripped.startswith((\"}\", \"]\", \"#\")):\n                    in_paths = False",
+   "                elif False:\n                    in_paths = False"
+  ],
+  [
+   "graphql-any-type",
+   "            if line.strip().startswith(\"}\"):\n                root = \"\"",
+   "            if False:\n                root = \"\""
+  ],
+  [
+   "proto-no-service",
+   "                emit(\"rpc\", \"exposes\", f\"gRPC {service + '.' if service else ''}{r.group(1)}\", n, line)",
+   "                emit(\"rpc\", \"exposes\", f\"gRPC {r.group(1)}\", n, line)"
+  ],
+  [
+   "cronjob-any-yaml",
+   "    if ext in (\".yaml\", \".yml\") and _K8S_CRONJOB.search(text):",
+   "    if ext in (\".yaml\", \".yml\"):"
+  ]
+ ]
+}

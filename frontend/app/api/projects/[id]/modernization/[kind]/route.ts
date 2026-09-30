@@ -10,7 +10,7 @@ import { bffProxy } from "@/lib/bff/proxy";
  * the caller's reach to that agent), so this route only forwards — and refuses a kind
  * it does not know rather than proxying an arbitrary path segment.
  */
-const KINDS = new Set(["migration-intent", "discovery", "target-architecture"]);
+const KINDS = new Set(["migration-intent", "discovery", "target-architecture", "strategy"]);
 
 export async function GET(
   _req: NextRequest,

@@ -43,7 +43,7 @@ modernization_router = APIRouter()
 
 #: Page kind (URL segment) -> backend stage.
 _KINDS = {"migration-intent": "requirements_modernization", "discovery": "discovery",
-          "target-architecture": "design_modernization"}
+          "target-architecture": "design_modernization", "strategy": "strategy"}
 _MEDIA = {
     "docx": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
     "pdf": "application/pdf",
@@ -103,6 +103,14 @@ async def latest_target_design(
     return await _latest(db, request, project_id, "design_modernization", "target_design_artifacts")
 
 
+@modernization_router.get("/projects/{project_id}/modernization/strategy")
+async def latest_migration_plan(
+    project_id: str, request: Request, db: AsyncSession = Depends(get_db_session),
+) -> dict:
+    """The project's current migration plan, or `payload: null`."""
+    return await _latest(db, request, project_id, "strategy", "strategy_artifacts")
+
+
 # ── legacy code ──────────────────────────────────────────────────────────────
 
 
@@ -114,11 +122,14 @@ class PullBody(BaseModel):
     stage: str = "requirements_modernization"
 
 
-async def _guard(db: AsyncSession, request: Request, project_id: str, stage: str) -> tuple[str, str, str]:
-    """(project_id, tenant_id, user_id) once the caller may use `stage` on this project."""
+async def _guard(db: AsyncSession, request: Request, project_id: str, stage: str,
+                 *, artifact: bool = False) -> tuple[str, str, str]:
+    """(project_id, tenant_id, user_id) once the caller may use `stage` on this project.
+    Legacy-code routes accept the stages that show legacy code; artifact routes (`artifact=True`)
+    any stage with a page kind."""
     from agents_orchestrator.modernization_common.legacy_code import TRACK3_STAGES  # noqa: PLC0415
 
-    if stage not in TRACK3_STAGES:
+    if stage not in (set(_KINDS.values()) if artifact else TRACK3_STAGES):
         raise HTTPException(status_code=404, detail=f"Unknown Code Modernization stage {stage!r}.")
     tenant_id = str(getattr(request.state, "tenant_id", "") or "")
     user_id = str(getattr(request.state, "user_id", "") or "")
@@ -232,6 +243,10 @@ def _version_markdown(stage: str, payload: dict) -> tuple[str, str]:
         from agents_orchestrator.design_modernization_agent.design_document import design_markdown  # noqa: PLC0415
 
         return design_markdown(payload), "target-architecture"
+    if stage == "strategy":
+        from agents_orchestrator.strategy_agent.strategy_document import strategy_markdown  # noqa: PLC0415
+
+        return strategy_markdown(payload), "migration-strategy"
     from agents_orchestrator.discovery_agent.analysis.assessment import assessment_markdown  # noqa: PLC0415
 
     return assessment_markdown(payload), "discovery-assessment"
@@ -244,19 +259,19 @@ async def version_packet(project_id: str, kind: str, version: int, request: Requ
     built from the frozen version and validated by the hand-over models — or, when it cannot
     be handed over, the reasons in words. `{ok, problems, packet}`."""
     from agents_orchestrator.modernization_common.handover.emit import (  # noqa: PLC0415
-        assessment_packet, brief_packet, design_packet, envelope_of,
+        assessment_packet, brief_packet, design_packet, envelope_of, plan_packet,
     )
     from shared.services import artifact_versions as svc  # noqa: PLC0415
 
     stage = _KINDS.get(kind)
     if stage is None:
         raise HTTPException(status_code=404, detail=f"Unknown kind {kind!r}.")
-    resolved, _tenant, _user = await _guard(db, request, project_id, stage)
+    resolved, _tenant, _user = await _guard(db, request, project_id, stage, artifact=True)
     row = await svc.get_version(db, resolved, stage, version)
     if row is None or row.payload is None:
         raise HTTPException(status_code=404, detail=f"v{version} not found")
     build = {"requirements_modernization": brief_packet, "discovery": assessment_packet,
-             "design_modernization": design_packet}[stage]
+             "design_modernization": design_packet, "strategy": plan_packet}[stage]
     return {"stage": stage, "version": version, **build(row.payload, envelope_of(row)).as_dict()}
 
 
@@ -276,7 +291,7 @@ async def export_version(
     fmt = (format or "").lower().lstrip(".")
     if fmt not in _MEDIA:
         raise HTTPException(status_code=400, detail="format must be docx or pdf")
-    resolved, _tenant, _user = await _guard(db, request, project_id, stage)
+    resolved, _tenant, _user = await _guard(db, request, project_id, stage, artifact=True)
     row = await svc.get_version(db, resolved, stage, version)
     if row is None or row.payload is None:
         raise HTTPException(status_code=404, detail=f"v{version} not found")

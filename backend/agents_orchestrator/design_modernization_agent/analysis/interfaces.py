@@ -18,7 +18,15 @@ WHAT IS FOUND, by kind:
          Python schedulers.
   db     tables: CREATE TABLE in .sql, JPA @Table, EF [Table] / DbSet, and table names in SQL
          string literals and .sql files (FROM / INTO / UPDATE / JOIN).
-  queue  consumes / produces: JMS, Kafka, RabbitMQ listeners and templates.
+  queue  consumes / produces: JMS, Kafka, RabbitMQ listeners and templates; IBM MQ in COBOL.
+  rpc    exposes: operations DECLARED in contract files — WSDL, gRPC `.proto`, GraphQL schemas
+         (OpenAPI/Swagger paths are declared `http`); consumes: CICS LINK/XCTL.
+  ui     exposes: mainframe screens (CICS SEND MAP).
+
+Phase F made it universal: also Go (net/http, gin/echo/chi), PHP (Laravel, Symfony), Ruby (Rails,
+Sinatra), VB.NET, COBOL and JCL (files assigned, datasets, programs run, embedded SQL), and
+Kubernetes CronJobs. A DECLARED contract file is the strongest evidence of all: it is what the
+system promises its consumers, whatever the code behind it does.
 
 WHAT IT IS NOT. A pattern scan, not a compiler: it can miss an interface built dynamically,
 and it may list a match that is not one. It is evidence for the design, cited by location, and
@@ -41,12 +49,12 @@ _MAX_FILES = 20_000
 #: reported (`truncated`), never silent.
 MAX_ITEMS = 2_000
 
-KINDS = ("http", "file", "job", "db", "queue")
+KINDS = ("http", "rpc", "file", "job", "db", "queue", "ui")
 
 
 @dataclass(frozen=True)
 class Interface:
-    kind: str          # http | file | job | db | queue
+    kind: str          # http | rpc | file | job | db | queue | ui
     direction: str     # exposes | consumes | writes | reads | runs | defines | uses | produces
     name: str          # the path, file, table, topic or schedule
     location: str      # path:line in the legacy checkout
@@ -120,7 +128,59 @@ _RULES: dict[str, list[tuple[str, str, re.Pattern]]] = {
         ("file", "reads", re.compile(r"fs\.(?:readFile\w*|createReadStream)\s*\(\s*([^,)]*)")),
         ("job", "runs", re.compile(r"\b(cron\.schedule|new\s+CronJob|node-schedule)")),
     ],
+    "go": [
+        ("http", "exposes", re.compile(r"\b(?:http\.)?HandleFunc\s*\(\s*\"([^\"]+)\"")),
+        ("http", "consumes", re.compile(r"\b(http\.(?:Get|Post|PostForm|Head|NewRequest(?:WithContext)?))\s*\(")),
+        ("file", "writes", re.compile(r"\bos\.(?:Create|WriteFile|OpenFile)\s*\(\s*([^,)]*)")),
+        ("file", "reads", re.compile(r"\bos\.(?:Open|ReadFile)\s*\(\s*([^,)]*)")),
+        ("job", "runs", re.compile(r"\b(?:\w+\.)?AddFunc\s*\(\s*\"([^\"]+)\"")),
+    ],
+    "php": [
+        ("http", "exposes", re.compile(r"Route::(?:get|post|put|patch|delete|any|match)\s*\(\s*" + _S)),
+        ("http", "exposes", re.compile(r"(?:#\[Route|@Route)\s*\(\s*" + _S)),
+        ("http", "consumes", re.compile(r"\b(curl_init|Http::\w+|GuzzleHttp|file_get_contents\s*\(\s*[\"']https?://)")),
+        ("file", "writes", re.compile(r"\bfile_put_contents\s*\(\s*([^,)]*)")),
+        ("file", "writes", re.compile(r"\bfopen\s*\(\s*([^,)]*)\s*,\s*[\"'][wax]")),
+        ("file", "reads", re.compile(r"\bfopen\s*\(\s*([^,)]*)\s*,\s*[\"']r")),
+        ("job", "runs", re.compile(r"->(cron\s*\(\s*[\"'][^\"']+[\"']|everyMinute|hourly|daily\w*|weekly\w*|monthly\w*)\s*\(")),
+    ],
+    "ruby": [
+        ("http", "exposes", re.compile(r"^\s*(?:get|post|put|patch|delete)\s+" + _S)),
+        ("http", "exposes", re.compile(r"^\s*resources?\s+:(\w+)")),
+        ("http", "consumes", re.compile(r"\b(Net::HTTP|HTTParty|Faraday|RestClient)\b")),
+        ("file", "writes", re.compile(r"\bFile\.(?:write|open\s*\(\s*[^,)]+,\s*[\"'][wa])\s*\(?\s*([^,)]*)")),
+        ("file", "reads", re.compile(r"\bFile\.(?:read|readlines|foreach)\s*\(\s*([^,)]*)")),
+        ("job", "runs", re.compile(r"^\s*every\s+([^,]+?)\s*(?:,|do\b)")),
+        ("db", "defines", re.compile(r"self\.table_name\s*=\s*" + _S)),
+    ],
+    "cobol": [
+        ("file", "uses", re.compile(r"(?i)\bSELECT\s+[\w-]+\s+ASSIGN\s+TO\s+([\w.'\"-]+)")),
+        ("rpc", "consumes", re.compile(r"(?i)\bEXEC\s+CICS\s+(?:LINK|XCTL)\s+PROGRAM\s*\(\s*'?([\w-]+)")),
+        ("ui", "exposes", re.compile(r"(?i)\bEXEC\s+CICS\s+SEND\s+MAP\s*\(\s*'?([\w-]+)")),
+        ("queue", "produces", re.compile(r"(?i)\bCALL\s+'(MQPUT1?)'")),
+        ("queue", "consumes", re.compile(r"(?i)\bCALL\s+'(MQGET)'")),
+    ],
+    "jcl": [
+        ("file", "uses", re.compile(r"(?i)^//[\w#@$]*\s+DD\s+.*\bDSN=([\w.#@$()+-]+)")),
+        ("job", "runs", re.compile(r"(?i)^//[\w#@$]*\s+EXEC\s+PGM=([\w#@$]+)")),
+    ],
 }
+_RULES["vb"] = [r for r in _RULES["csharp"] if r[0] != "http" or r[1] != "exposes"]
+_VB_ROUTE = re.compile(r"(?i)<Route\s*\(\s*" + _S)
+_VB_VERB = re.compile(r"(?i)<Http(Get|Post|Put|Delete|Patch)(?:\s*\(\s*" + _S + r")?")
+_GO_ROUTER = re.compile(r"\b\w+\.(GET|POST|PUT|DELETE|PATCH|Get|Post|Put|Delete|Patch)\s*\(\s*\"(/[^\"]*)\"")
+_COBOL_SQL = re.compile(r"(?i)\bEXEC\s+SQL\b")
+
+# ── declared contracts (the strongest evidence: what the system promises) ─────
+_OPENAPI_MARKER = re.compile(r"(?m)^\s*[\"']?(openapi|swagger)[\"']?\s*:")
+_OPENAPI_PATH = re.compile(r"^\s{1,6}[\"']?(/[^\"'\s:]*)[\"']?\s*:\s*\{?\s*$")
+_WSDL_OPERATION = re.compile(r"<(?:wsdl:)?operation\s+name=\"([^\"]+)\"")
+_PROTO_SERVICE = re.compile(r"^\s*service\s+(\w+)")
+_PROTO_RPC = re.compile(r"^\s*rpc\s+(\w+)\s*\(")
+_GRAPHQL_ROOT = re.compile(r"^\s*(?:extend\s+)?type\s+(Query|Mutation|Subscription)\b")
+_GRAPHQL_FIELD = re.compile(r"^\s+(\w+)\s*[(:]")
+_K8S_CRONJOB = re.compile(r"(?m)^\s*kind:\s*CronJob\s*$")
+_K8S_SCHEDULE = re.compile(r"^\s*schedule:\s*[\"']?([^\"'\n#]+)")
 
 _CS_ROUTE = re.compile(r"\[Route\s*\(\s*" + _S)
 _CS_VERB = re.compile(r"\[Http(Get|Post|Put|Delete|Patch)(?:\s*\(\s*" + _S + r")?")
@@ -149,10 +209,13 @@ _CRON_EXPRESSION = re.compile(r"<cron-expression>\s*([^<]+?)\s*</cron-expression
 
 #: Languages whose code is scanned. Anything else (VB.NET, Go, COBOL, …) is NOT scanned — the
 #: inventory lists nothing for it, which is "not scanned", never "no interfaces".
-_LANG_BY_EXT = {".java": "java", ".kt": "java", ".groovy": "java", ".py": "python", ".cs": "csharp",
-                ".js": "js", ".mjs": "js", ".cjs": "js", ".ts": "js"}
-SCANNED = ("Java/Kotlin/Groovy", "C#", "Python", "JavaScript/TypeScript", "SQL", "web.xml", "JSP/ASPX/ASMX/SVC pages",
-           "cron and Quartz configuration")
+_LANG_BY_EXT = {".java": "java", ".kt": "java", ".groovy": "java", ".scala": "java", ".py": "python",
+                ".cs": "csharp", ".vb": "vb", ".js": "js", ".mjs": "js", ".cjs": "js", ".ts": "js",
+                ".go": "go", ".php": "php", ".rb": "ruby", ".cbl": "cobol", ".cob": "cobol", ".cobol": "cobol",
+                ".cpy": "cobol", ".jcl": "jcl"}
+SCANNED = ("Java/Kotlin/Groovy/Scala", "C#", "VB.NET", "Python", "JavaScript/TypeScript", "Go", "PHP", "Ruby",
+           "COBOL", "JCL", "SQL", "web.xml", "JSP/ASPX/ASMX/SVC pages", "OpenAPI/Swagger", "WSDL", "gRPC .proto",
+           "GraphQL schemas", "cron, Quartz and Kubernetes CronJob schedules")
 _PAGE_EXT = {".jsp": "JSP page", ".jspx": "JSP page", ".aspx": "ASP.NET page", ".asmx": "ASMX web service",
              ".svc": "WCF service"}
 
@@ -348,6 +411,115 @@ def _sql_file(lines: list[str], emit) -> None:
                 emit("db", "uses", t.group(2), n, line)
 
 
+def _is_comment(lang: str, line: str) -> bool:
+    s = line.lstrip()
+    if lang == "jcl":
+        return s.startswith("//*")  # every JCL statement starts with //; only //* is a comment
+    if lang == "cobol":  # fixed format: an asterisk in column 7; free format: *>
+        return (len(line) > 6 and line[6] in "*/") or s.startswith(("*>", "*"))
+    if lang == "vb":
+        return s.startswith("'")
+    if lang == "php":  # `#[Route]` is a PHP 8 attribute; Symfony's `* @Route` lives in docblocks — both are code
+        if s.startswith("#[") or (s.startswith("*") and "@Route" in s):
+            return False
+    return s.startswith(("//", "#", "*"))
+
+
+def _vb(lines: list[str], emit) -> None:
+    """VB.NET attribute routes: `<Route("api/x")>` on the class is the prefix; method routes join it."""
+    prefix, class_seen = "", False
+    for n, line in enumerate(lines, 1):
+        route, verb = _VB_ROUTE.search(line), _VB_VERB.search(line)
+        if not class_seen:
+            if route and not verb:
+                prefix = route.group(1)
+                continue
+            if re.search(r"(?i)\bClass\s+\w+", line):
+                class_seen = True
+        if verb:
+            emit("http", "exposes", f"{verb.group(1).upper()} {_join(prefix, verb.group(2) or '')}", n, line)
+
+
+def _go(lines: list[str], emit) -> None:
+    """Router registrations (gin, echo, chi, gorilla): `r.GET("/x", h)`."""
+    for n, line in enumerate(lines, 1):
+        if line.lstrip().startswith("//"):
+            continue
+        for m in _GO_ROUTER.finditer(line):
+            emit("http", "exposes", f"{m.group(1).upper()} {m.group(2)}", n, line)
+
+
+def _cobol_sql(lines: list[str], emit) -> None:
+    """Embedded SQL: `EXEC SQL … END-EXEC` spans lines, so the statement is joined first and
+    its tables reported at the line where it starts."""
+    i = 0
+    while i < len(lines):
+        if _COBOL_SQL.search(lines[i]) and not _is_comment("cobol", lines[i]):
+            start, parts = i, []
+            while i < len(lines):
+                parts.append(lines[i])
+                if "END-EXEC" in lines[i].upper():
+                    break
+                i += 1
+            statement = " ".join(parts)
+            for t in _SQL_TABLE.finditer(statement):
+                if t.group(2).lower() not in _SQL_NOT_TABLES and _SQL_SHAPE[t.group(1).lower()].search(statement):
+                    emit("db", "uses", t.group(2), start + 1, lines[start])
+        i += 1
+
+
+_DECLARED_EXT = {".yaml", ".yml", ".json", ".wsdl", ".proto", ".graphql", ".graphqls", ".gql"}
+
+
+def _declared(ext: str, text: str, lines: list[str], emit) -> None:
+    """What a DECLARED contract file promises its consumers: OpenAPI/Swagger paths, WSDL
+    operations, gRPC services, GraphQL root fields, and Kubernetes CronJob schedules."""
+    if ext in (".yaml", ".yml", ".json") and _OPENAPI_MARKER.search(text):
+        in_paths = False
+        for n, line in enumerate(lines, 1):
+            stripped = line.strip()
+            if re.match(r"^[\"']?paths[\"']?\s*:", stripped):
+                in_paths = True
+                continue
+            if in_paths:
+                m = _OPENAPI_PATH.match(line)
+                if m:
+                    emit("http", "exposes", f"{m.group(1)} (declared)", n, line)
+                elif line and not line[0].isspace() and not stripped.startswith(("}", "]", "#")):
+                    in_paths = False  # the next top-level key
+    if ext in (".yaml", ".yml") and _K8S_CRONJOB.search(text):
+        for n, line in enumerate(lines, 1):
+            m = _K8S_SCHEDULE.match(line)
+            if m:
+                emit("job", "runs", m.group(1).strip(), n, line)
+    if ext == ".wsdl":
+        for n, line in enumerate(lines, 1):
+            for m in _WSDL_OPERATION.finditer(line):
+                emit("rpc", "exposes", f"SOAP {m.group(1)}", n, line)
+    if ext == ".proto":
+        service = ""
+        for n, line in enumerate(lines, 1):
+            s = _PROTO_SERVICE.match(line)
+            if s:
+                service = s.group(1)
+            r = _PROTO_RPC.match(line)
+            if r:
+                emit("rpc", "exposes", f"gRPC {service + '.' if service else ''}{r.group(1)}", n, line)
+    if ext in (".graphql", ".graphqls", ".gql"):
+        root = ""
+        for n, line in enumerate(lines, 1):
+            t = _GRAPHQL_ROOT.match(line)
+            if t:
+                root = t.group(1)
+                continue
+            if line.strip().startswith("}"):
+                root = ""
+                continue
+            f = _GRAPHQL_FIELD.match(line)
+            if root and f:
+                emit("rpc", "exposes", f"GraphQL {root}.{f.group(1)}", n, line)
+
+
 def _module_for(rel: str, modules: list[dict]) -> str:
     """The module whose path is the longest prefix of `rel` — its id when it has one."""
     best, best_len = "", -1
@@ -398,13 +570,17 @@ def capture_interfaces(root: str | os.PathLike, modules: Optional[list[dict]] = 
         is_web_xml = name == "web.xml"
         is_cron = name in ("crontab", "cron.txt") or ext == ".cron" or name.startswith("quartz") \
             or ext in (".properties", ".yml", ".yaml") and "cron" in name
-        if not (lang or is_sql or is_web_xml or is_cron or ext in (".properties", ".yml", ".yaml", ".xml")):
+        declared = ext in _DECLARED_EXT
+        if not (lang or is_sql or is_web_xml or is_cron or declared
+                or ext in (".properties", ".yml", ".yaml", ".xml")):
             continue
         text = _read(path)
         if text is None:
             continue
         lines = text.splitlines()
         emit = add(rel)
+        if declared:
+            _declared(ext, text, lines, emit)
         if is_web_xml:
             for n, line in enumerate(lines, 1):
                 for m in _WEB_XML_PATTERN.finditer(line):
@@ -427,11 +603,17 @@ def capture_interfaces(root: str | os.PathLike, modules: Optional[list[dict]] = 
             _java(lines, rel, emit)
         elif lang == "csharp":
             _csharp(lines, rel, emit)
+        elif lang == "vb":
+            _vb(lines, emit)
         elif lang == "python":
             _python(lines, rel, emit)
+        elif lang == "go":
+            _go(lines, emit)
+        elif lang == "cobol":
+            _cobol_sql(lines, emit)
         for kind, direction, pattern in _RULES[lang]:
             for n, line in enumerate(lines, 1):
-                if line.lstrip().startswith(("//", "#", "*")):
+                if _is_comment(lang, line):
                     continue
                 m = pattern.search(line)
                 if not m:
@@ -469,8 +651,9 @@ def lines_by_file(inventory: dict) -> dict[str, list[int]]:
     return out
 
 
-_KIND_TITLE = {"http": "HTTP endpoints and calls", "file": "Files written and read", "job": "Scheduled jobs",
-               "db": "Database tables", "queue": "Queues and topics"}
+_KIND_TITLE = {"http": "HTTP endpoints and calls", "rpc": "RPC operations (SOAP, gRPC, GraphQL, CICS)",
+               "file": "Files and datasets written and read", "job": "Scheduled jobs", "db": "Database tables",
+               "queue": "Queues and topics", "ui": "Screens"}
 
 
 def interfaces_markdown(inventory: dict, max_per_kind: int = 40) -> str:

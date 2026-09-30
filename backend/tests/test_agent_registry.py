@@ -17,7 +17,7 @@ def test_all_agents_present():
         "plan", "design", "development", "testing", "deployment",
         "code_review", "security", "documentation",
         # Track 3 (Code Modernization) — its own portfolio, scoped by TRACK_PORTFOLIOS.
-        "requirements_modernization", "discovery", "design_modernization",
+        "requirements_modernization", "discovery", "design_modernization", "strategy",
     }
 
 

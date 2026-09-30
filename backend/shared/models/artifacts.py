@@ -349,6 +349,11 @@ class MigrationIntentArtifact(BaseModel):
     must_not_change_verified: Optional[bool] = None
     deadline: str = ""
     budget: str = ""
+    # Phase F (universal planning inputs): when a cutover may take the system down and for how
+    # long ("Sunday nights, at most 2 hours"), and where the data must stay ("EU regions only").
+    # In the user's words; empty when they gave none. The change freeze is a `freeze` milestone.
+    downtime_window: str = ""
+    data_residency: str = ""
     milestones: List[Milestone] = []
     success_criteria: List[str] = []
     success_measures: List[SuccessMeasure] = []
@@ -423,6 +428,42 @@ class TargetDesignArtifact(BaseModel):
     module_paths: Dict[str, str] = {}
     interfaces: Optional[Dict[str, Any]] = None
     tech_stack: Optional[Dict[str, Any]] = None
+    notes: List[str] = []
+    recorded_at: Optional[str] = None
+    agent_session_id: Optional[str] = None
+
+
+class StrategyArtifact(BaseModel):
+    """-> runs.strategy_artifacts (0072), and each frozen `strategy` version.
+
+    The PLAN is the hand-over packet's payload (`handover/packets.PlanPayload`, validated by
+    `record_migration_strategy` first), stored field by field (`freeze_policy.from` under its
+    alias) so `emit.plan_payload` reads it back. Around it, what the page needs and the model
+    never writes: the versions it was built from, the dependency-safe order and the calendar and
+    effort checks as COMPUTED at record time, and each planned module's wave and criteria (the
+    ledger placement approval applies). Every field declared: pydantic drops unknown keys."""
+
+    schema_version: int = 1
+    system_name: str = ""
+    # ── the plan (PlanPayload) ──
+    summary: str
+    waves: List[Dict[str, Any]]
+    order_exceptions: List[Dict[str, Any]] = []
+    equivalence_criteria: List[Dict[str, Any]] = []
+    baseline_plan: List[Dict[str, Any]] = []
+    freeze_policy: Dict[str, Any]
+    critical_path: List[str] = []
+    calendar_conflicts: List[Dict[str, Any]] = []
+    raid: Dict[str, Any] = {}
+    effort: List[Dict[str, Any]] = []
+    budget_fit: str = ""
+    # ── set by the record tool, never by the model ──
+    sources: Dict[str, Any] = {}
+    placements: List[Dict[str, Any]] = []
+    proposed_order: Optional[Dict[str, Any]] = None
+    calendar_checked: List[Dict[str, Any]] = []
+    effort_table: Optional[Dict[str, Any]] = None
+    brief_dates: Dict[str, Any] = {}
     notes: List[str] = []
     recorded_at: Optional[str] = None
     agent_session_id: Optional[str] = None

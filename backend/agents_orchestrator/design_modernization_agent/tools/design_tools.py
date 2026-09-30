@@ -23,7 +23,6 @@ import asyncio
 import json
 import logging
 import os
-from dataclasses import dataclass, field
 from datetime import date, datetime, timezone
 from pathlib import Path
 from typing import Any, Optional
@@ -52,94 +51,15 @@ def _session_key() -> str:
 
 
 # ── the inputs ───────────────────────────────────────────────────────────────
+# The shared reader (modernization_common.inputs) — one implementation for every Track 3 agent.
 
-
-@dataclass
-class Input:
-    """One upstream artifact as this turn read it."""
-
-    stage: str
-    stored: Optional[dict] = None      # the stored brief / assessment
-    version: Optional[int] = None      # None in an Orchestrator conversation
-    status: str = "draft"              # the version store's vocabulary; "granted" = by exception
-    packet: Optional[dict] = None      # the validated hand-over payload
-    problems: list[str] = field(default_factory=list)
-
-    @property
-    def label(self) -> str:
-        noun = "brief" if self.stage == BRIEF_STAGE else "assessment"
-        if self.version is None:
-            return f"the {noun} recorded in this conversation"
-        state = {"published": "approved", "granted": "approved by exception"}.get(self.status, "not yet approved")
-        return f"{noun} v{self.version} ({state})"
+from agents_orchestrator.modernization_common.inputs import Input, missing_line as _missing  # noqa: E402
 
 
 async def _read_inputs() -> dict[str, Input]:
-    from agents_orchestrator.modernization_common.handover.emit import (  # noqa: PLC0415
-        assessment_packet, brief_packet, envelope_of,
-    )
-    from config.ws_helper import get_orchestrator_run, get_project_id, get_run_id, get_tenant_id  # noqa: PLC0415
+    from agents_orchestrator.modernization_common.inputs import read_inputs  # noqa: PLC0415
 
-    out = {BRIEF_STAGE: Input(BRIEF_STAGE), ASSESSMENT_STAGE: Input(ASSESSMENT_STAGE)}
-    builders = {BRIEF_STAGE: brief_packet, ASSESSMENT_STAGE: assessment_packet}
-    tenant_id, project_id = get_tenant_id(), get_project_id()
-    if not (tenant_id and project_id):
-        return out
-    from shared.db import get_db_session_for_tenant  # noqa: PLC0415
-
-    try:
-        async with get_db_session_for_tenant(str(tenant_id)) as db:
-            if get_orchestrator_run():
-                run_id = get_run_id()
-                if run_id:
-                    from sqlalchemy import select  # noqa: PLC0415
-
-                    from shared.models.orm import Run  # noqa: PLC0415
-
-                    row = (await db.execute(select(Run.migration_intent_payload, Run.discovery_artifacts)
-                                            .where(Run.id == str(run_id)))).first()
-                    if row is not None:
-                        for stage, stored in ((BRIEF_STAGE, row[0]), (ASSESSMENT_STAGE, row[1])):
-                            if stored:
-                                out[stage].stored = stored
-                                built = builders[stage](stored, {"version": 1, "status": "draft"})
-                                out[stage].packet = built.packet.payload.model_dump(mode="json", by_alias=True) if built.ok else None
-                                out[stage].problems = built.problems
-                return out
-            from agents_orchestrator.modernization_common.versions import turn_built_from  # noqa: PLC0415
-            from shared.services import artifact_versions as svc  # noqa: PLC0415
-
-            for pin in turn_built_from() or []:
-                stage = pin.get("stage")
-                if stage not in out or not pin.get("version"):
-                    continue
-                row = await svc.get_version(db, str(project_id), stage, int(pin["version"]))
-                if row is None or not row.payload:
-                    continue
-                item = out[stage]
-                item.stored, item.version = row.payload, row.version
-                item.status = "granted" if pin.get("status") == "granted" else row.status
-                built = builders[stage](row.payload, envelope_of(row))
-                item.packet = built.packet.payload.model_dump(mode="json", by_alias=True) if built.ok else None
-                item.problems = built.problems
-    except Exception:  # noqa: BLE001 — said to the agent, never taken as "nothing recorded"
-        logger.exception("target architecture: reading the brief and assessment failed (project %s)", project_id)
-        for item in out.values():
-            item.problems = ["It could not be read just now (a database error). Try again."]
-    return out
-
-
-def _missing(item: Input) -> str:
-    noun = "migration-intent brief" if item.stage == BRIEF_STAGE else "Dependency and Risk assessment"
-    page = "Migration Intent" if item.stage == BRIEF_STAGE else "Dependency and Risk"
-    if item.problems and item.stored:
-        return (f"The {item.label} cannot be designed from: " + " ".join(item.problems[:5])
-                + f" It is fixed on the {page} page.")
-    if item.problems:
-        return f"The {noun} could not be read: {item.problems[0]}"
-    return (f"There is no {noun} to design from yet (or the project only builds on approved work and none is "
-            f"approved). It is made on the {page} page, and approved there.")
-
+    return await read_inputs([BRIEF_STAGE, ASSESSMENT_STAGE])
 
 # ── reading ──────────────────────────────────────────────────────────────────
 
@@ -387,7 +307,7 @@ async def record_target_design(design: dict) -> str:
                    "adr_ids": ["ADR-03"], "contract_ids": ["CT-01"]}],       EVERY assessed module
       "interop": {"routing": "", "data": "", "shared_libraries": "", "jobs": "", "identity": ""},
       "ordering_constraints": ["what restricts the order of the move, and why (ADR-02)"],
-      "frozen_contracts": [{"id": "CT-01", "name": "", "kind": "http|file|report|db|queue|event",
+      "frozen_contracts": [{"id": "CT-01", "name": "", "kind": "http|rpc|file|report|db|queue|event|ui|job|library",
                             "legacy_location": "path[:line] from the interface inventory",
                             "consumers": [""], "proof": "how it is proven unchanged",
                             "status": "confirmed|proposed",
@@ -410,8 +330,9 @@ async def record_target_design(design: dict) -> str:
     It refuses — naming each problem — a module missing or cited under the wrong id, name, tier or
     score; a must-not-change item with no contract; a contract whose location is not in the code, or
     confirmed without naming one file the inventory (or the brief) backs; a trap that names no place
-    in the code; code pulled at another commit than the assessment's; a .NET, Java, Node.js or Python
-    target past (or within a year of) end of support, or "latest"; a changing database with
+    in the code; code pulled at another commit than the assessment's; a .NET, Java, Node.js, Python,
+    PHP, Ruby, Go, MySQL, PostgreSQL or SQL Server target past (or within a year of) end of support,
+    or "latest"; a changing database with
     no data migration; a missing AS-IS / TRANSITION / TO-BE diagram; an unanswered question from the
     assessment; an ADR with fewer than two options; an id cited but not defined.
     """

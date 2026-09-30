@@ -1,0 +1,19 @@
+{
+ "target": "shared/routers/modernization.py",
+ "tests": [
+  "tests/strategy/test_record_board_approval.py"
+ ],
+ "env_test": true,
+ "mutants": [
+  [
+   "strategy-packet-is-design",
+   "\"design_modernization\": design_packet, \"strategy\": plan_packet}[stage]",
+   "\"design_modernization\": design_packet, \"strategy\": design_packet}[stage]"
+  ],
+  [
+   "artifact-routes-legacy-only",
+   "    if stage not in (set(_KINDS.values()) if artifact else TRACK3_STAGES):",
+   "    if stage not in TRACK3_STAGES:"
+  ]
+ ]
+}

@@ -122,6 +122,19 @@
           "title": "Options",
           "type": "array"
         },
+        "ref": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "The `check_calendar` reference this reports (e.g. deadline:W4); None for a conflict the user raised that no check computes.",
+          "title": "Ref"
+        },
         "resolution": {
           "anyOf": [
             {
@@ -330,6 +343,40 @@
       "title": "NormalizationRule",
       "type": "object"
     },
+    "OrderException": {
+      "additionalProperties": false,
+      "description": "A module that moves in an EARLIER wave than something it depends on. Only allowed when the\ntarget design says how both sides coexist meanwhile \u2014 an ADR (dual build, a facade, an\nabstraction), cited by id.",
+      "properties": {
+        "adr_id": {
+          "pattern": "^ADR-\\d{2,}$",
+          "title": "Adr Id",
+          "type": "string"
+        },
+        "depends_on": {
+          "pattern": "^M-\\d{2,}$",
+          "title": "Depends On",
+          "type": "string"
+        },
+        "module_id": {
+          "pattern": "^M-\\d{2,}$",
+          "title": "Module Id",
+          "type": "string"
+        },
+        "reason": {
+          "minLength": 1,
+          "title": "Reason",
+          "type": "string"
+        }
+      },
+      "required": [
+        "module_id",
+        "depends_on",
+        "reason",
+        "adr_id"
+      ],
+      "title": "OrderException",
+      "type": "object"
+    },
     "ParallelRun": {
       "additionalProperties": false,
       "properties": {
@@ -367,7 +414,7 @@
     },
     "PlanPayload": {
       "additionalProperties": false,
-      "description": "Refusals checked here: a module in two waves; no W0; a criterion without an observable,\nan input set or a comparison; a normalization rule without a reason; a wave without a\nrollback; a baseline-plan item for a criterion the plan does not define.\n\nChecked by `record_migration_strategy`: every in-scope module is in a wave (needs the\ndesign); the order respects the dependency graph (`propose_wave_order`).",
+      "description": "Refusals checked here: a module in two waves; no W0; a criterion without an observable,\nan input set or a comparison; a normalization rule without a reason; a wave without a\nrollback; a baseline-plan item for a criterion the plan does not define.\n\nChecked by `record_migration_strategy` (`strategy_agent/analysis/checks.py`): every module\nthe design moves is in a wave, with the design's patterns; the order respects the dependency\ngraph unless an `order_exceptions` entry cites a design ADR; every contract, trap and\nequivalence/performance/security success measure is protected; every calendar conflict the\ncheck computes is reported; the brief's freeze date is kept.",
       "properties": {
         "baseline_plan": {
           "default": [],
@@ -416,6 +463,14 @@
         },
         "freeze_policy": {
           "$ref": "#/$defs/FreezePolicy"
+        },
+        "order_exceptions": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/OrderException"
+          },
+          "title": "Order Exceptions",
+          "type": "array"
         },
         "raid": {
           "$ref": "#/$defs/Raid",

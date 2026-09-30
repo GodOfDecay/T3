@@ -323,6 +323,18 @@ def _load_prompt_design_modernization() -> str:
     return DESIGN_MODERNIZATION_SYS_MESSAGE
 
 
+def _load_graph_strategy() -> Any:
+    from agents_orchestrator.strategy_agent.agents.planner import app
+
+    return app
+
+
+def _load_prompt_strategy() -> str:
+    from agents_orchestrator.strategy_agent.agents.planner import STRATEGY_SYS_MESSAGE
+
+    return STRATEGY_SYS_MESSAGE
+
+
 REGISTRY: dict[str, AgentCapability] = {
     "requirements": AgentCapability(
         agent_id="requirements",
@@ -396,6 +408,12 @@ REGISTRY: dict[str, AgentCapability] = {
         agent_id="design_modernization",
         load_graph=_load_graph_design_modernization,
         load_prompt=_load_prompt_design_modernization,
+        mode="stream",
+    ),
+    "strategy": AgentCapability(
+        agent_id="strategy",
+        load_graph=_load_graph_strategy,
+        load_prompt=_load_prompt_strategy,
         mode="stream",
     ),
 }

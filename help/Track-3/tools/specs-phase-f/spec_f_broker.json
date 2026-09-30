@@ -1,0 +1,13 @@
+{
+ "target": "config/context_broker.py",
+ "tests": [
+  "tests/strategy/test_agent.py"
+ ],
+ "mutants": [
+  [
+   "cut-silently",
+   "    if len(modules) > 60:",
+   "    if False:"
+  ]
+ ]
+}
