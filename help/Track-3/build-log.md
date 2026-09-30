@@ -755,7 +755,7 @@ clean. Frontend: full suite **1,229/1,229**, `tsc` and eslint clean on touched f
 at 5 s while a DB mutation run loaded the machine (`ws-ticket`, `project-artifacts-tab`); both pass on a quiet
 machine and in the full run.
 
-**Minimums follow-up (F5)**: 14 more mutants (eol 6/6, manifests 8/8 killed); a redundant `pinned` parameter
+**Minimums follow-up (F5)**: 8 more mutants — 128 in all, every one killed (eol 6/6, manifests 8/8); a redundant `pinned` parameter
 was removed rather than left as an unkillable mutant. Affected suites re-run: discovery, modernization_common,
 design_modernization, strategy, requirements_modernization **635 passed**; frontend **1,230/1,230**, `tsc`
 clean.
