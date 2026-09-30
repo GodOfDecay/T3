@@ -1,8 +1,47 @@
 # Running the stack locally
 
-Frontend (Next.js, port 3000) + FastAPI (port 8001) + PostgreSQL + Redis.
+Frontend (Next.js, port 3000) + FastAPI (port 8004) + PostgreSQL + Redis.
 
 Verified end to end on 2026-08-17 by rebuilding the database from nothing.
+
+## Starting it, once it is set up
+
+The sections below build a machine that has never run this. **If yours is already built,
+this is the whole of a working day.** Start Docker Desktop first, and check PostgreSQL is
+running.
+
+```powershell
+# 1. Redis — finishes and gives the terminal back
+cd backend
+docker compose up -d redis
+
+# 2. Backend — leave it running
+uv run uvicorn process_api:app --host 127.0.0.1 --port 8004 --reload `
+    --reload-exclude "C:/full/path/to/aisdlc-ui/backend/files"
+
+# 3. Frontend — leave it running, in its own terminal
+cd frontend
+npm run dev
+```
+
+Then `curl http://127.0.0.1:8004/health` — `postgres`, `redis` and `blob` all `ok` — and
+open http://localhost:3000.
+
+`--reload-exclude` takes an **absolute path with forward slashes**; the relative form is
+accepted and silently does nothing, and then every repository an agent clones into
+`backend/files` restarts the server in the middle of a conversation.
+
+Langfuse is optional and is not in this repository — it is the separate `langfuse-deploy`
+kit, whose README covers both a developer machine and the VM. Without it the platform runs
+and the Cost and Traces pages are empty. Start it **before** the backend: the backend reads
+its address once, at startup.
+
+If port 8004 is still held after you stop the backend, Windows has orphaned a worker:
+
+```powershell
+Get-CimInstance Win32_Process | Where-Object { $_.CommandLine -match 'spawn_main' } |
+  ForEach-Object { taskkill /PID $_.ProcessId /F /T }
+```
 
 Most of this is ordinary. **Step 3 is not**, and it is the reason a rebuilt database
 fails to boot: there is no GRANT migration in the repo, so the app role gets no
