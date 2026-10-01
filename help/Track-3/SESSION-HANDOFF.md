@@ -1,6 +1,6 @@
 # Track 3 (Code Modernization) — Handoff for whoever builds the next agents
 
-**Updated:** 2026-10-01, end of Phase G (built, fix wave, mutation-proven; migration 0073 on the test DB; the user's own dev DB is still at 0072 and needs 0073 with their OK; tile NOT flipped, R42). Phase G's build and fix wave are on `claude/intelligent-pasteur-m7ea75` (based on `akshat_track3`), to merge back. **Branch:** `akshat_track3` on `origin` (the team's shared branch; never push Track 3
+**Updated:** 2026-10-01, end of Phase G (built, fix wave, mutation-proven; migration 0073 on the test DB; the user's own dev DB is still at 0072 and needs 0073 with their OK; tile flipped at the user's request on 2026-10-01, as Phase F's was). Phase G's build and fix wave are on `claude/intelligent-pasteur-m7ea75` (based on `akshat_track3`), to merge back. **Branch:** `akshat_track3` on `origin` (the team's shared branch; never push Track 3
 work to `track-3`). Last commit: `12418303` (handoff) on `999b1b3e` (Phase E), `0c814fad` (Phase D),
 `9f2e81f6` (Phase C closed) and `8c90522c` (A, B and most of C).
 
@@ -27,7 +27,7 @@ Track 3 has ten agents in hand-off order. The four built ones are live on their 
 | 2 | `discovery` | Dependency and Risk | BA | **Built** (Phases A, B, D) |
 | 3 | `design_modernization` | Target Architecture | Architect | **Built** (Phase E; tile unlocked, user-tested) |
 | 4 | `strategy` | Migration Strategy | Architect | **Built** (Phase F; tile unlocked at the user's request) |
-| 5 | `testing_modernization` | Equivalence Testing | QA | **Built: Baseline mode** (Phase G; tile not flipped, open by URL). Verify mode is Phase J |
+| 5 | `testing_modernization` | Equivalence Testing | QA | **Built: Baseline mode** (Phase G; tile unlocked at the user's request). Verify mode is Phase J |
 | 6 | `development_modernization` | Migration Development | Developer (D10) | Phase H |
 | 7 | `code_review_modernization` | Migration Review | Architect | Phase I |
 | 8 | `security_modernization` | Security (Modernization) | Security Engineer | Phase I |
@@ -324,5 +324,5 @@ Also decided:
   - Phase G's deployment decisions (build-log Entry 13 "Open"): the organisation registry for the sandbox images,
     deterministic tokenisation of real data, Azure blob storage for the baseline store, and where Docker runs
     in production (a dedicated sandbox host, not the API pod);
-  - run `click-through-phase-G.md`, then flip the Equivalence Testing tile (R42);
+  - run `click-through-phase-G.md` (the tile is already unlocked at the user's request);
   - the Cutover policy decision R13 (K).

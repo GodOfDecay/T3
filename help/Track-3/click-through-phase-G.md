@@ -18,8 +18,7 @@ and note anything that differs.
   Approving the plan puts the modules on the ledger as **sequenced**.
 - QA is `tester@gmail.com`. Acceptance needs a **second QA** or `projadmin@gmail.com` (nobody accepts
   their own baseline).
-- The tile still says **Coming soon** (R42: it flips after this click-through). Open the page by URL:
-  `/projects/<id>/equivalence-testing`.
+- The **Equivalence Testing** tile is unlocked (at your request) for QA and the Project Admin.
 
 ## A. The page
 

@@ -850,3 +850,9 @@ real login and BFF: the page, baseline v1 with every tile, the ledger panel, **A
 to Migration Development", ledger M-01/M-02 **baselined** (confirmed in the database), the Captures dialog showing the
 capture "recorded as a baseline". This found G-10. No chat was held with the model: the container has no model key.
 
+**Tile (2026-10-01, the user's request):** Equivalence Testing added to `BUILT_AGENTS_BY_TRACK.modernization`, as
+Phase F's tile was, before the click-through. `track3-agents.test.ts` pins it (QA and the Project Admin get the tile,
+a Developer does not). Frontend after the flip: 1,244/1,246 (the same two `document-preview` failures), `tsc` and
+eslint clean. Migration 0073 is applied to this container's dev and test databases; the user's own dev database is
+on their machine and gets it with `uv run python -m alembic upgrade head` then `uv run python -m scripts.grant_app_role`.
+
