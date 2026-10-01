@@ -1,6 +1,6 @@
 # Track 3 (Code Modernization) — Handoff for whoever builds the next agents
 
-**Updated:** 2026-09-30, end of Phase F (built, verified, dev DB at 0072, tile unlocked, committed). **Branch:** `akshat_track3` on `origin` (the team's shared branch; never push Track 3
+**Updated:** 2026-10-01, end of Phase G (built, fix wave, mutation-proven; migration 0073 on the test DB; the user's own dev DB is still at 0072 and needs 0073 with their OK; tile NOT flipped, R42). Phase G's build and fix wave are on `claude/intelligent-pasteur-m7ea75` (based on `akshat_track3`), to merge back. **Branch:** `akshat_track3` on `origin` (the team's shared branch; never push Track 3
 work to `track-3`). Last commit: `12418303` (handoff) on `999b1b3e` (Phase E), `0c814fad` (Phase D),
 `9f2e81f6` (Phase C closed) and `8c90522c` (A, B and most of C).
 
@@ -27,7 +27,7 @@ Track 3 has ten agents in hand-off order. The four built ones are live on their 
 | 2 | `discovery` | Dependency and Risk | BA | **Built** (Phases A, B, D) |
 | 3 | `design_modernization` | Target Architecture | Architect | **Built** (Phase E; tile unlocked, user-tested) |
 | 4 | `strategy` | Migration Strategy | Architect | **Built** (Phase F; tile unlocked at the user's request) |
-| 5 | `testing_modernization` | Equivalence Testing | QA | Phase G (baseline), J (verify) |
+| 5 | `testing_modernization` | Equivalence Testing | QA | **Built: Baseline mode** (Phase G; tile not flipped, open by URL). Verify mode is Phase J |
 | 6 | `development_modernization` | Migration Development | Developer (D10) | Phase H |
 | 7 | `code_review_modernization` | Migration Review | Architect | Phase I |
 | 8 | `security_modernization` | Security (Modernization) | Security Engineer | Phase I |
@@ -178,7 +178,7 @@ Owner rows and permissions for agents 3–10 already exist (migration `0066`, ev
 |---|---|---|
 | E ✔ | Target Architecture | **Done** (build-log Entry 11, `click-through-phase-E.md`). What F reads: `emit.design_packet` of the APPROVED `design_modernization` version (packet route kind `target-architecture`); ledger rows are `designed` with patterns/contract_ids/adr_ids; `ordering_constraints` restrict wave order; `traps` and `frozen_contracts` become ECs. `upstream_from_pages` needs a `target_design_artifacts` row in `_UPSTREAM_STAGE` and a context formatter for agent 4 |
 | F ✔ | Migration Strategy | **Done** (build-log Entry 12, `click-through-phase-F.md`), with a universal pass over A–E (brief dates/window/residency, more EOL runtimes and databases, a polyglot + declared-contract scanner, a shared input reader `modernization_common/inputs.py`). What G reads: `emit.plan_packet` of the APPROVED `strategy` version (packet route kind `strategy`); `equivalence_criteria` (id, module_id or "all", protects, protects_measures, observable, normalization rules) and `baseline_plan` (ec_id, environment, data source, masking, due); ledger rows are `sequenced` with `wave` and `ec_ids`. `baseline_accepted` moves them to `baselined`. Add `strategy_artifacts` to `_UPSTREAM_STAGE` consumers for agent 5 |
-| G | Legacy sandbox + Equivalence Testing (baseline) | **User decisions:** sandbox image source, data masking. Needs **real legacy code** for live runs; ClaimTrack is simulated and there is none yet. `golden_master` becomes `{status: captured, baselines: [BL-xx]}` |
+| G ✔ | Legacy sandbox + Equivalence Testing (baseline) | **Done** (build-log Entry 13, `click-through-phase-G.md`). What H reads: the APPROVED `testing_modernization` version (packet route kind `equivalence-testing`, `emit.baseline_packet`): BL-xx per module with ec_ids, counts, sha256, region; the noise report; open rule proposals (`read_baseline_proposals` on Strategy); `stubs`. Ledger rows are `baselined` with `baseline_ids`. Recordings stay in `LocalBaselineStore` (`files/equivalence/<project>/captures/<id>/run1`), never in the DB or the model. J replays run 1's inputs through the SAME harness (`sandbox/runner.py`, `analysis/noise.py`) on the target image |
 | H | Migration Development | A real target repo and write credential. Pushes through `assert_target_write` plus the Consequential gate. Reverts are new commits, never rewrites |
 | I | Migration Review + Security | Read legacy and target. Run on H's PR. Security prompt byte-identity test (master plan §5) |
 | J | Equivalence Testing (verify) | Replays baselines on the target |
@@ -201,7 +201,7 @@ them.
 | Storage | `STORAGE_BACKEND=local`. Windows long paths must be enabled for uploads (admin PowerShell; in the A/B click-through) |
 | Ports | Backend **8001** (docs saying 8004 are stale) |
 | Commands | `uv run python -m alembic …`, `python -m uvicorn process_api:app --port 8001` (`uv run alembic/uvicorn` fail: "uv trampoline"). Tests: `cd backend && set -a && . ./.env.test && set +a && uv run python -m pytest <files> -q -p no:cacheprovider`. Frontend: `node node_modules/typescript/bin/tsc --noEmit`, `node node_modules/vitest/vitest.mjs run`, `node node_modules/eslint/bin/eslint.js` (**never npx**) |
-| Migrations | Code head **`0072_strategy`**. **Test DB 0072; dev DB 0072** (0068–0071 applied to dev with the user's OK on 2026-09-29, grants re-applied; 0072 on 2026-09-30 at the user's request — a column only, no grants needed). A new migration goes on dev only with the user's OK. 0067 reached dev without explicit approval earlier (verified identical; the user was told) |
+| Migrations | Code head **`0073_equivalence`** (Phase G: `runs.equivalence_artifacts`, deliverables CHECK; apply to dev with the user's OK, then `grant_app_role`, then restart). Before it: **Test DB 0072; dev DB 0072** (0068–0071 applied to dev with the user's OK on 2026-09-29, grants re-applied; 0072 on 2026-09-30 at the user's request — a column only, no grants needed). A new migration goes on dev only with the user's OK. 0067 reached dev without explicit approval earlier (verified identical; the user was told) |
 | Personas (dev DB) | `ba@gmail.com`, `projadmin@gmail.com`, `architect@gmail.com`, `dev@gmail.com`, `tester@gmail.com`, `buadmin@gmail.com`, `admin@pwc.dev`. `DEV_LOGINS.txt` personas are NOT in this DB. Projects: "Migration test" (Track 3, ADO wired), "Test" (Greenfield) |
 | Seed | `backend/scripts/seed_track3_fixture.py`: the ClaimTrack project, roster, placeholder repositories and six ledger modules. Idempotent, guarded to localhost. **Not yet run on dev; ask first** |
 | Git | Commit messages end `Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>`. PRs get reviewer `UjjwalTyagi5` and end with the Claude Code line. `git push` may be blocked for Claude in auto mode; ask the user to run `! git push origin akshat_track3` |
@@ -313,13 +313,16 @@ Also decided:
 
 - Optionally run the seed script on dev (`scripts/seed_track3_fixture.py`; ask first).
 - The remaining click-through steps in `click-through-phase-E.md`, if not all were run.
-- `help/Track-3/tools/mutate.py` and `verify_no_mutants.py` do not import on Python 3.12 as checked in (a cp1252 `§` and an unescaped `C:\Users` in the docstring); Phase E ran UTF-8 raw-docstring copies (build-log Entry 11). A one-line fix each, not yet applied.
+- `help/Track-3/tools/mutate.py` is now UTF-8 and finds the repository itself (`SDLC_REPO_ROOT`, else its own checkout) instead of a hard-coded `C:\Users\...` path (Phase G). It runs with the backend venv's Python: `.venv/bin/python ../help/Track-3/tools/mutate.py <spec>` from `backend/`.
 - Run the click-throughs: `click-through-phase-A-B.md`, `-C.md`, `-D.md`. None has been run yet.
 - **Track 1 issue, reported and not fixed:** `workers/run_sweeper.py` queries `runs` through the
   superuser session, which isn't BYPASSRLS, so it very likely never expires anything. Fix it the way
   the SLA sweeper works (tenant by tenant) when Track 1's owners agree.
 - Deferred until the user provides them:
   - a private-repo clone with a project credential;
-  - real legacy code (needed from Phase G);
-  - the sandbox image and masking decisions (G);
+  - real legacy code for a live Phase G capture beyond the ClaimTrack Lite sample (`samples/legacy-claimtrack`);
+  - Phase G's deployment decisions (build-log Entry 13 "Open"): the organisation registry for the sandbox images,
+    deterministic tokenisation of real data, Azure blob storage for the baseline store, and where Docker runs
+    in production (a dedicated sandbox host, not the API pod);
+  - run `click-through-phase-G.md`, then flip the Equivalence Testing tile (R42);
   - the Cutover policy decision R13 (K).

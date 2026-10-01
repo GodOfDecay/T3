@@ -56,6 +56,9 @@ class BaselineStore(Protocol):
     def list_captures(self, project_id: str) -> list[dict]: ...
     def baseline_hash(self, project_id: str, capture_id: str, scenario_ids: list[str]) -> str: ...
     def purge_expired(self, project_id: str, now: Optional[datetime] = None) -> list[str]: ...
+    def acquire_lock(self, project_id: str, capture_id: str, now: Optional[datetime] = None) -> bool: ...
+    def release_lock(self, project_id: str, capture_id: str) -> None: ...
+    def reap_interrupted(self, project_id: str, now: Optional[datetime] = None) -> list[str]: ...
 
 
 class LocalBaselineStore:
@@ -126,6 +129,91 @@ class LocalBaselineStore:
             shutil.rmtree(self.capture_dir(project_id, m["id"]), ignore_errors=True)
             gone.append(m["id"])
         return gone
+
+
+    # ── one capture per project at a time, across every server process ─────────
+    def acquire_lock(self, project_id: str, capture_id: str, now: Optional[datetime] = None) -> bool:
+        """Take the project's capture lock (an O_EXCL file, so two processes cannot both win).
+        A lock older than `max_capture_seconds()` belongs to a capture whose process died; it is
+        taken over. False while another capture holds it."""
+        self.capture_dir(project_id, capture_id)  # validates both ids
+        path = self.project_dir(project_id) / "captures" / ".lock"
+        path.parent.mkdir(parents=True, exist_ok=True)
+        now = now or _now()
+        for _attempt in range(2):
+            try:
+                fd = os.open(path, os.O_CREAT | os.O_EXCL | os.O_WRONLY, 0o600)
+            except FileExistsError:
+                held = self._lock_holder(path)
+                if held and datetime.fromisoformat(held["at"]) + timedelta(seconds=max_capture_seconds()) > now:
+                    return False
+                path.unlink(missing_ok=True)  # stale: its process is gone
+                continue
+            with os.fdopen(fd, "w", encoding="utf-8") as f:
+                json.dump({"capture": capture_id, "at": now.isoformat()}, f)
+            return True
+        return False
+
+    def release_lock(self, project_id: str, capture_id: str) -> None:
+        """Release the lock if THIS capture holds it (never another's)."""
+        path = self.project_dir(project_id) / "captures" / ".lock"
+        held = self._lock_holder(path)
+        if held is not None and held.get("capture") == capture_id:
+            path.unlink(missing_ok=True)
+
+    @staticmethod
+    def _lock_holder(path: pathlib.Path) -> Optional[dict]:
+        try:
+            held = json.loads(path.read_text(encoding="utf-8"))
+            datetime.fromisoformat(held["at"])
+            return held
+        except (OSError, ValueError, KeyError, TypeError):
+            return None
+
+    # ── a capture whose process died ──────────────────────────────────────────
+    def reap_interrupted(self, project_id: str, now: Optional[datetime] = None) -> list[str]:
+        """Captures still `running` past the longest a capture may take: the server stopped during
+        them. Each becomes `failed` (interrupted) with its partial recordings removed, so the page
+        never shows a capture running forever. Returns their ids (the caller removes their Docker
+        objects by label)."""
+        now = now or _now()
+        reaped = []
+        for m in self.list_captures(project_id):
+            if m.get("status") != "running":
+                continue
+            try:
+                started = datetime.fromisoformat(m["startedAt"])
+            except (KeyError, TypeError, ValueError):
+                started = now - timedelta(seconds=max_capture_seconds() + 1)
+            if started + timedelta(seconds=max_capture_seconds()) > now:
+                continue
+            for sub in ("run1", "run2"):
+                shutil.rmtree(self.capture_dir(project_id, m["id"]) / sub, ignore_errors=True)
+            m.update({"status": "failed", "finishedAt": now.isoformat(), "retainUntil": retain_until(now),
+                      "error": "interrupted: the server stopped during the capture. Nothing was recorded."})
+            self.write_manifest(project_id, m["id"], m)
+            reaped.append(m["id"])
+        return reaped
+
+
+def max_capture_seconds() -> int:
+    """The longest a capture may run before it counts as interrupted (SDLC_SANDBOX_MAX_CAPTURE_SECONDS)."""
+    try:
+        return max(300, int(os.environ.get("SDLC_SANDBOX_MAX_CAPTURE_SECONDS", "7200")))
+    except ValueError:
+        return 7200
+
+
+def project_ids(root: pathlib.Path) -> list[str]:
+    """Every project the store holds captures for (the retention sweep walks these)."""
+    out = []
+    if root.is_dir():
+        for d in root.iterdir():
+            try:
+                out.append(str(uuid.UUID(d.name)))
+            except ValueError:
+                continue
+    return sorted(out)
 
 
 def retain_until(finished: datetime) -> str:

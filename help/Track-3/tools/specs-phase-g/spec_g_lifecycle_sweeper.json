@@ -1,0 +1,23 @@
+{
+ "target": "workers/baseline_retention_sweeper.py",
+ "tests": [
+  "tests/testing_modernization/test_lifecycle.py"
+ ],
+ "mutants": [
+  [
+   "no-docker-cleanup",
+   "                for capture_id in gone:\n                    runner.cleanup(capture_id)",
+   "                for capture_id in []:\n                    runner.cleanup(capture_id)"
+  ],
+  [
+   "one-failure-stops-all",
+   "                logger.exception(\"baseline retention: sweeping project %s failed\", project_id)",
+   "                raise"
+  ],
+  [
+   "no-purge",
+   "                purged += store.purge_expired(project_id, now)",
+   "                pass"
+  ]
+ ]
+}

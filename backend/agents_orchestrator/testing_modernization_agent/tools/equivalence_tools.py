@@ -19,10 +19,13 @@ The ledger is NOT written here: approving the version moves each baselined modul
 from __future__ import annotations
 
 import asyncio
+import hashlib
 import json
+import os
 import logging
 import pathlib
 import shutil
+import threading
 from datetime import datetime, timezone
 from typing import Optional
 
@@ -36,7 +39,8 @@ PLAN, DESIGN = "strategy", "design_modernization"
 INPUTS = [PLAN, DESIGN]
 CAPTURE_ROLES = {"qa", "project_admin"}
 _SHOWN_PROBLEMS = 14
-_LOCKS: dict[str, asyncio.Lock] = {}
+#: Follow-ups of stopped captures, held until they finish (see `_after_cancel`).
+_BACKGROUND: set[asyncio.Future] = set()
 
 
 def _session_key() -> str:
@@ -214,10 +218,20 @@ async def save_capture_profile(profile: dict) -> str:
     checked, problems = P.validate(profile, checkout)
     if problems:
         return _problems_text("NOT SAVED — the capture profile cannot be used as it is:", problems)
+    # The profile decides which commands the sandbox runs, so it is saved by whoever may capture.
+    if not await _has_capture_role():
+        return ("NOT SAVED — only QA or a Project Admin of this project saves the capture profile (it decides what "
+                "the sandbox runs). Show it to one of them.")
     path = _store().profile_path(project_id)
     path.parent.mkdir(parents=True, exist_ok=True)
-    clean = {k: v for k, v in profile.items()}
-    path.write_text(json.dumps(clean, indent=1, sort_keys=True), encoding="utf-8")
+    text = json.dumps(profile, indent=1, sort_keys=True)
+    tmp = path.with_suffix(".tmp")
+    tmp.write_text(text, encoding="utf-8")
+    os.replace(tmp, path)
+    await _audit("modernization.capture_profile_saved", "", {
+        "sha256": hashlib.sha256(text.encode("utf-8")).hexdigest(),
+        "scenarios": [s["id"] for s in checked.get("scenarios") or []],
+        "stubs": [s["name"] for s in checked.get("stubs") or []]})
     return "Saved for this project.\n\n" + P.profile_markdown(checked, "saved for this project")
 
 
@@ -297,11 +311,9 @@ async def plan_capture(mapping: dict, not_captured: Optional[list] = None) -> st
     return _plan_markdown(ready, mapping, not_captured or [])
 
 
-async def _may_capture() -> tuple[bool, str]:
-    """QA or a Project Admin OF THIS PROJECT (permissions are a tenant-wide union), and their yes on
-    this turn (the Consequential gate)."""
+async def _has_capture_role() -> bool:
+    """QA or a Project Admin OF THIS PROJECT (permissions in a token are a tenant-wide union)."""
     from config.ws_helper import get_project_id, get_tenant_id, get_user_id  # noqa: PLC0415
-    from shared.authz.consequential import authorize_consequential  # noqa: PLC0415
     from shared.db import get_db_session_for_tenant  # noqa: PLC0415
     from shared.services.fallback_approval import project_roles  # noqa: PLC0415
 
@@ -311,7 +323,14 @@ async def _may_capture() -> tuple[bool, str]:
                                         user_id=str(get_user_id()))
     except Exception:  # noqa: BLE001 — cannot prove the role ⇒ refuse
         roles = set()
-    if not roles & CAPTURE_ROLES:
+    return bool(roles & CAPTURE_ROLES)
+
+
+async def _may_capture() -> tuple[bool, str]:
+    """The capture role on this project, and their yes on this turn (the Consequential gate)."""
+    from shared.authz.consequential import authorize_consequential  # noqa: PLC0415
+
+    if not await _has_capture_role():
         return False, "Only QA or a Project Admin of this project captures a baseline. Ask one of them to run it."
     return await authorize_consequential(
         STAGE, action="Running the legacy system to capture a baseline",
@@ -340,7 +359,6 @@ async def capture_baseline(mapping: dict, not_captured: Optional[list] = None) -
     plan_capture was shown and the user said yes on THIS turn. Same arguments as plan_capture.
     Returns counts, the fields that differed between the runs (masked) and the capture id."""
     from agents_orchestrator.testing_modernization_agent.analysis.baseline import uncovered  # noqa: PLC0415
-    from agents_orchestrator.testing_modernization_agent.analysis.noise import compare  # noqa: PLC0415
     from agents_orchestrator.testing_modernization_agent.sandbox import runner  # noqa: PLC0415
     from agents_orchestrator.testing_modernization_agent.store import new_capture_id, retain_until  # noqa: PLC0415
     from config.ws_helper import get_project_id, get_user_id  # noqa: PLC0415
@@ -352,12 +370,13 @@ async def capture_baseline(mapping: dict, not_captured: Optional[list] = None) -
     if not ok:
         return why
     project_id = str(get_project_id())
-    lock = _LOCKS.setdefault(project_id, asyncio.Lock())
-    if lock.locked():
+    store = _store()
+    await _tidy(store, project_id)
+    capture_id = new_capture_id()
+    if not store.acquire_lock(project_id, capture_id):
         return "A capture is already running for this project — wait for it to finish."
-    async with lock:
-        store = _store()
-        capture_id = new_capture_id()
+    released = False
+    try:
         _checkout_path, pull, _pid = _checkout()
         started = datetime.now(timezone.utc)
         manifest = {"id": capture_id, "status": "running", "startedAt": started.isoformat(),
@@ -368,27 +387,100 @@ async def capture_baseline(mapping: dict, not_captured: Optional[list] = None) -
                     "scenarios": [{"id": s["id"], "kind": s["kind"], "cases": s.get("cases"),
                                    "describes": s.get("describes", "")} for s in ready["profile"]["scenarios"]]}
         store.write_manifest(project_id, capture_id, manifest)
+        await _audit("modernization.baseline_capture_started", capture_id,
+                     {"planVersion": manifest["planVersion"], "commit": manifest["commit"],
+                      "profileSource": manifest["profileSource"], "criteria": sorted(mapping)})
         out = store.capture_dir(project_id, capture_id)
+        stop = threading.Event()
+        work = asyncio.ensure_future(asyncio.to_thread(_capture_and_compare, ready, out, capture_id, stop))
         try:
-            result = await asyncio.to_thread(runner.capture, ready["checkout"], ready["profile"], out, capture_id)
-            noise = await asyncio.to_thread(compare, out / "run1", out / "run2", ready["profile"]["scenarios"])
+            result, noise = await asyncio.shield(work)
+        except asyncio.CancelledError:
+            # The user stopped the turn. The thread stops at its next step and removes the sandbox;
+            # the lock is held until it has (`_after_cancel`), so no second capture overlaps it.
+            stop.set()
+            _fail(store, project_id, manifest, "cancelled: the capture was stopped before it finished.")
+            released = True
+            follow_up = asyncio.ensure_future(_after_cancel(work, store, project_id, capture_id))
+            _BACKGROUND.add(follow_up)  # the loop keeps only a weak reference to a task
+            follow_up.add_done_callback(_BACKGROUND.discard)
+            raise
         except Exception as exc:  # noqa: BLE001 — a failed capture accepts nothing and keeps no partial recording
             reason = str(exc) if isinstance(exc, runner.CaptureFailed) else f"an unexpected error ({type(exc).__name__})"
             if not isinstance(exc, runner.CaptureFailed):
                 logger.exception("equivalence testing: capture %s failed", capture_id)
-            for sub in ("run1", "run2"):
-                shutil.rmtree(out / sub, ignore_errors=True)
-            finished = datetime.now(timezone.utc)
-            manifest.update({"status": "failed", "error": reason[:500], "finishedAt": finished.isoformat(),
-                             "retainUntil": retain_until(finished)})
-            store.write_manifest(project_id, capture_id, manifest)
+            _fail(store, project_id, manifest, reason)
+            await _audit("modernization.baseline_capture_failed", capture_id, {"error": reason[:500]})
             return (f"Capture {capture_id} FAILED: {reason}\nNothing was recorded and no baseline was accepted; the "
                     "sandbox was removed. Tell the user what failed; fix the cause (often the profile) before trying again.")
         finished = datetime.now(timezone.utc)
         manifest.update({"status": "complete", "finishedAt": finished.isoformat(), "imageId": result["image_id"],
                          "runs": result["runs"], "noise": noise, "retainUntil": retain_until(finished)})
         store.write_manifest(project_id, capture_id, manifest)
+        await _audit("modernization.baseline_capture_completed", capture_id,
+                     {"imageId": result["image_id"], "scenarios": {k: v["cases"] for k, v in noise.items()}})
         return _capture_summary(manifest, uncovered(ready["plan"].packet, mapping, noise))
+    finally:
+        if not released:
+            store.release_lock(project_id, capture_id)
+
+
+def _capture_and_compare(ready: dict, out: pathlib.Path, capture_id: str, stop: threading.Event) -> tuple[dict, dict]:
+    from agents_orchestrator.testing_modernization_agent.analysis.noise import compare  # noqa: PLC0415
+    from agents_orchestrator.testing_modernization_agent.sandbox import runner  # noqa: PLC0415
+
+    result = runner.capture(ready["checkout"], ready["profile"], out, capture_id, cancelled=stop)
+    return result, compare(out / "run1", out / "run2", ready["profile"]["scenarios"])
+
+
+def _fail(store, project_id: str, manifest: dict, reason: str) -> None:
+    """Mark the capture failed and drop its partial recordings (nothing half-recorded is kept)."""
+    from agents_orchestrator.testing_modernization_agent.store import retain_until  # noqa: PLC0415
+
+    out = store.capture_dir(project_id, manifest["id"])
+    for sub in ("run1", "run2"):
+        shutil.rmtree(out / sub, ignore_errors=True)
+    finished = datetime.now(timezone.utc)
+    manifest.update({"status": "failed", "error": reason[:500], "finishedAt": finished.isoformat(),
+                     "retainUntil": retain_until(finished)})
+    store.write_manifest(project_id, manifest["id"], manifest)
+
+
+async def _after_cancel(work: asyncio.Future, store, project_id: str, capture_id: str) -> None:
+    """After a cancelled capture's thread has removed its sandbox: drop what it wrote meanwhile, free the lock."""
+    try:
+        await work
+    except BaseException:  # noqa: BLE001 — CaptureCancelled is the expected end
+        pass
+    out = store.capture_dir(project_id, capture_id)
+    for sub in ("run1", "run2"):
+        shutil.rmtree(out / sub, ignore_errors=True)
+    store.release_lock(project_id, capture_id)
+
+
+async def _tidy(store, project_id: str) -> None:
+    """Before a capture: captures the server was stopped during become failed (and their Docker
+    objects are removed by label), and captures past retention that no baseline keeps are deleted."""
+    from agents_orchestrator.testing_modernization_agent.sandbox import runner  # noqa: PLC0415
+
+    for gone in store.reap_interrupted(project_id):
+        await asyncio.to_thread(runner.cleanup, gone)
+    store.purge_expired(project_id)
+
+
+async def _audit(event_type: str, capture_id: str, payload: dict) -> None:
+    """Running somebody's legacy code is security-relevant: who, which project, which capture (never data)."""
+    from config.ws_helper import get_project_id, get_tenant_id, get_user_id  # noqa: PLC0415
+    from shared.audit.models import AuditEventPayload  # noqa: PLC0415
+    from shared.audit.service import audit_service  # noqa: PLC0415
+
+    tenant = get_tenant_id()
+    if not tenant:
+        return
+    await audit_service.emit(AuditEventPayload(
+        tenant_id=str(tenant), event_type=event_type, agent_type=STAGE, actor_id=str(get_user_id() or "") or None,
+        resource_type="project", resource_id=str(get_project_id() or "") or None,
+        payload={**({"captureId": capture_id} if capture_id else {}), **payload}))
 
 
 # ── recording ────────────────────────────────────────────────────────────────

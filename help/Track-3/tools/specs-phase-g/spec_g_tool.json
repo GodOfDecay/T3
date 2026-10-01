@@ -27,8 +27,8 @@
   ],
   [
    "any-role-captures",
-   "    if not roles & CAPTURE_ROLES:",
-   "    if False:"
+   "    return bool(roles & CAPTURE_ROLES)",
+   "    return True"
   ],
   [
    "no-consent",
@@ -37,8 +37,58 @@
   ],
   [
    "partial-kept",
-   "            for sub in (\"run1\", \"run2\"):\n                shutil.rmtree(out / sub, ignore_errors=True)",
-   "            for sub in ():\n                shutil.rmtree(out / sub, ignore_errors=True)"
+   "    out = store.capture_dir(project_id, manifest[\"id\"])\n    for sub in (\"run1\", \"run2\"):",
+   "    out = store.capture_dir(project_id, manifest[\"id\"])\n    for sub in ():"
+  ],
+  [
+   "lock-ignored",
+   "    if not store.acquire_lock(project_id, capture_id):\n        return \"A capture is already running",
+   "    if False:\n        return \"A capture is already running"
+  ],
+  [
+   "lock-never-released",
+   "        if not released:\n            store.release_lock(project_id, capture_id)",
+   "        if False:\n            store.release_lock(project_id, capture_id)"
+  ],
+  [
+   "cancel-releases-early",
+   "            released = True\n",
+   "            released = False\n"
+  ],
+  [
+   "cancel-not-marked",
+   "            _fail(store, project_id, manifest, \"cancelled: the capture was stopped before it finished.\")",
+   "            pass"
+  ],
+  [
+   "cancel-lock-kept",
+   "        pass\n    out = store.capture_dir(project_id, capture_id)\n    for sub in (\"run1\", \"run2\"):\n        shutil.rmtree(out / sub, ignore_errors=True)\n    store.release_lock(project_id, capture_id)",
+   "        pass\n    out = store.capture_dir(project_id, capture_id)\n    for sub in (\"run1\", \"run2\"):\n        shutil.rmtree(out / sub, ignore_errors=True)"
+  ],
+  [
+   "no-reap",
+   "    for gone in store.reap_interrupted(project_id):",
+   "    for gone in []:"
+  ],
+  [
+   "no-purge",
+   "    store.purge_expired(project_id)\n",
+   "    pass\n"
+  ],
+  [
+   "profile-any-role",
+   "    if not await _has_capture_role():\n        return (\"NOT SAVED",
+   "    if False:\n        return (\"NOT SAVED"
+  ],
+  [
+   "no-start-audit",
+   "        await _audit(\"modernization.baseline_capture_started\", capture_id,",
+   "        (lambda *a: None)(\"modernization.baseline_capture_started\", capture_id,"
+  ],
+  [
+   "no-profile-audit",
+   "    await _audit(\"modernization.capture_profile_saved\", \"\", {",
+   "    (lambda *a: None)(\"modernization.capture_profile_saved\", \"\", {"
   ],
   [
    "failed-recorded",

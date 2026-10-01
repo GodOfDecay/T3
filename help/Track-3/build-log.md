@@ -763,3 +763,56 @@ clean.
 **Live (dev, 0072):** backend restarted clean; `GET /projects/{id}/modernization/strategy` and the strategy
 artifact-version routes answer 401 without a token; `/projects/{id}/strategy` redirects to sign-in (307).
 The Strategy tile is unlocked for the Architect and Project Admin (`BUILT_AGENTS_BY_TRACK`, tests updated).
+
+## Entry 13 — 2026-10-01 — Phase G: Equivalence Testing (agent 5), Baseline mode, and its fix wave
+
+Implements research §6.5 (Baseline mode; Verify mode is Phase J) and §4.2, master plan row G. Plan:
+`docs/superpowers/plans/2026-09-30-track3-phase-g-equivalence-baseline.md`. Click-through:
+`click-through-phase-G.md`. Migration 0073 on the test database. **Not on the user's dev database** (ask
+first). **Tile not flipped** (R42).
+
+**History note.** The Phase G build was committed as `b398ac1` with the message "Phase F". Phase F itself is
+`439b704`. History was left as it is (the branch is shared); this entry is the record.
+
+**What was built (b398ac1, plan steps 1–4)**
+- `samples/legacy-claimtrack/`: ClaimTrack Lite, a Python 2.7 stdlib claims API + settlement batch + SQLite,
+  synthetic data, a digest-pinned Dockerfile, an `sdlc-sandbox.json` profile, a fraud-score stub; installed per
+  project with `scripts/install_legacy_sample.py` (localhost only).
+- `testing_modernization_agent/`: prompt, graph, page socket `/sdlc/agent/testing-modernization/ws`; tools
+  `read_migration_plan`, `read_target_design`, `get_ledger`, `get_capture_profile`, `save_capture_profile`,
+  `plan_capture`, `capture_baseline` (Consequential), `record_baseline`, `export_baseline_document` + legacy-code
+  read tools, documents/approval, compare/restore.
+- Sandbox (G2): per run an `--internal` Docker network (no egress), the app built from the checkout's own
+  Dockerfile, read-only root, tmpfs for the profile's writable dirs, one stub per external service, a request
+  driver; two runs on fresh seeded containers; everything labelled `sdlc.capture=<id>` and removed in `finally`.
+- Noise (G3), baseline (G4), store (`LocalBaselineStore`, paths built from validated ids), ledger on approval
+  (G6, `baselines_approved`), wiring (registry position 5, portfolio, orchestrator2, 0073, context formatter for
+  the plan, page routes latest/captures/packet/export), frontend `/equivalence-testing` (`EquivalenceView`,
+  captures dialog, ledger panel).
+
+**Gaps found when the build was reviewed as a whole (this session)**
+| # | Gap | Why it matters | Fix |
+|---|---|---|---|
+| G-1 | Stopping a chat turn during a capture left its manifest `running` forever | `except Exception` does not catch `CancelledError`; the page showed a capture that never ends | The capture thread is shielded; on a stop it is told to stop (`threading.Event`, checked between runs and scenarios, `CaptureCancelled`), the manifest becomes `failed: cancelled`, and the project stays locked until the sandbox is gone |
+| G-2 | One capture per project was an in-memory `asyncio.Lock` | Two server processes (any real deployment) could run two captures of one project at once | An O_EXCL lock file in the store (`acquire_lock` / `release_lock`), shared by every process; a lock older than the longest capture (`SDLC_SANDBOX_MAX_CAPTURE_SECONDS`, 2 h) is taken over |
+| G-3 | A server stopped mid-capture left a `running` manifest and its containers | Same as G-1, plus Docker objects never removed | `reap_interrupted`: past the time limit the capture becomes `failed: interrupted`, partial recordings removed, its containers/networks removed by label |
+| G-4 | `purge_expired` (90-day retention) was never called | Recordings accumulate without limit | Called before every capture for the project, and by `workers/baseline_retention_sweeper.py` (hourly, every project in the store; wired into the app lifespan) |
+| G-5 | Sandbox containers ran with Docker's default capabilities and no resource limits | The legacy code is somebody else's program, run as it is | `runner.limits()` on the app, stubs and driver: `--cap-drop ALL`, `no-new-privileges`, `--memory 1g`, `--cpus 1`, `--pids-limit 256` (env-configurable). Proven in Docker: the sample runs under them |
+| G-6 | Anyone with chat reach could save the capture profile | The profile decides which commands the sandbox runs | Saving needs QA or Project Admin OF THIS PROJECT (the capture's own rule); the write is atomic |
+| G-7 | Nothing was audited | Running legacy code and changing what runs are security-relevant | `audit_events`: `modernization.capture_profile_saved` (sha256 + scenario/stub ids, never commands), `baseline_capture_started`, `_completed`, `_failed` |
+| G-8 | Rule proposals went "to Migration Strategy" but Strategy could not read them | The feedback loop of research §6.5 was broken: a proposal was a dead end on a page | Strategy gains `read_baseline_proposals` (the newest baseline's proposals, each marked open or covered by the newest plan using the capture's own matching) and a prompt paragraph: agree with the user, add the rule in a revised plan, never adopt silently |
+| G-9 | `mutate.py` had a hard-coded `C:\Users\…` root and cp1252 bytes | It ran on one laptop only | UTF-8; the root is `SDLC_REPO_ROOT` or its own checkout |
+
+**Decisions (G10–G13, this session)**
+- G10. The capture lock lives in the baseline store, not Redis: the store is already the shared state a capture
+  writes, and it moves to blob storage with it (a blob lease there).
+- G11. A stopped capture keeps the project locked until its sandbox is removed, so a new capture never shares
+  the machine with a dying one.
+- G12. Container limits are defaults, not profile fields: a legacy repository does not choose its own sandbox.
+- G13. Strategy reads proposals from the newest baseline version whatever its status: a draft's proposals are
+  what QA is about to hand over, and the Architect needs them before acceptance.
+
+**Open (deployment decisions, not code):** the organisation registry for the harness and legacy base images;
+deterministic tokenisation for non-synthetic data (`DATA_KINDS` is "synthetic" only); Azure blob storage behind
+`BaselineStore`; Docker on a dedicated sandbox host rather than the API pod (the build step has network access
+to fetch base images; the RUNS have none).

@@ -297,6 +297,8 @@ async def test_a_failed_capture_records_nothing_and_says_so(chat, monkeypatch):
     assert manifest["status"] == "failed" and "did not answer on /health" in manifest["error"]
     d = LocalBaselineStore().capture_dir(chat["modern"], capture_id)
     assert not (d / "run1").exists() and not (d / "run2").exists()
+    assert LocalBaselineStore().acquire_lock(chat["modern"], "cap-20261001120000-ffffff"), "a failed capture frees the project"
+    LocalBaselineStore().release_lock(chat["modern"], "cap-20261001120000-ffffff")
     again = await tools.record_baseline.ainvoke({"capture_id": capture_id, "rule_proposals": lite.PROPOSALS})
     assert "only a complete capture becomes a baseline" in again
     assert await _versions(chat) == []
@@ -362,3 +364,129 @@ async def test_a_designed_or_blocked_module_is_not_baselined(chat):
     v = await _stored_version(chat, [{"module_id": "M-02", "baseline_ids": ["BL-01"]}])
     r = _publish(chat, v, "u-qa2")
     assert r.status_code == 409 and "M-02 is blocked (sandbox image missing)" in r.json()["detail"]
+
+
+# ── fix wave: who saves the profile, audit, the shared lock, a stopped capture ──
+
+@pytest.fixture
+def audited(monkeypatch):
+    from shared.audit.service import audit_service
+    events = []
+
+    async def emit(payload):
+        events.append(payload)
+
+    monkeypatch.setattr(audit_service, "emit", emit)
+    return events
+
+
+async def test_only_qa_or_a_project_admin_saves_the_profile_and_it_is_audited(chat, audited):
+    await _approved_inputs(chat)
+    await _turn(chat)
+    profile = json.loads((legacy_code.checkout_dir(chat["modern"]) / "sdlc-sandbox.json").read_text(encoding="utf-8"))
+    for user in ("u-dev", "u-arch"):
+        set_user_id(user)
+        out = await tools.save_capture_profile.ainvoke({"profile": profile})
+        assert out.startswith("NOT SAVED — only QA or a Project Admin"), out
+    assert not LocalBaselineStore().profile_path(chat["modern"]).exists()
+    assert audited == []
+    set_user_id("u-pa")
+    assert (await tools.save_capture_profile.ainvoke({"profile": profile})).startswith("Saved for this project")
+    [event] = audited
+    assert event.event_type == "modernization.capture_profile_saved" and event.actor_id == "u-pa"
+    assert event.resource_id == chat["modern"] and len(event.payload["sha256"]) == 64
+    assert event.payload["scenarios"] == [s["id"] for s in profile["scenarios"]]
+    assert "command" not in json.dumps(event.payload), "the audit names what changed, not the commands"
+
+
+async def test_a_capture_is_refused_while_another_process_holds_the_project_lock(chat):
+    await _approved_inputs(chat)
+    await _turn(chat)
+    set_consequential_approved(True)
+    other = LocalBaselineStore()  # as another server process would
+    assert other.acquire_lock(chat["modern"], "cap-20261001120000-aaaaaa")
+    try:
+        assert (await _capture()) == "A capture is already running for this project — wait for it to finish."
+    finally:
+        other.release_lock(chat["modern"], "cap-20261001120000-aaaaaa")
+    assert LocalBaselineStore().list_captures(chat["modern"]) == []
+
+
+@needs_docker
+async def test_a_stopped_capture_is_marked_and_frees_the_project_once_its_sandbox_is_gone(chat, audited):
+    import asyncio
+    from datetime import datetime, timedelta, timezone
+
+    from agents_orchestrator.testing_modernization_agent.sandbox import runner
+    from agents_orchestrator.testing_modernization_agent.store import max_capture_seconds
+
+    await _approved_inputs(chat)
+    await _turn(chat)
+    store = LocalBaselineStore()
+    # A capture whose server died long ago: still "running", still holding the lock.
+    dead = "cap-20260101000000-dddddd"
+    long_ago = datetime.now(timezone.utc) - timedelta(seconds=max_capture_seconds() + 60)
+    store.write_manifest(chat["modern"], dead, {"id": dead, "status": "running", "startedAt": long_ago.isoformat()})
+    assert store.acquire_lock(chat["modern"], dead, long_ago)
+    # And one past retention that no baseline keeps: tidied away before the capture starts.
+    expired = "cap-20260101000000-eeeeee"
+    store.write_manifest(chat["modern"], expired, {"id": expired, "status": "failed", "startedAt": long_ago.isoformat(),
+                                                   "retainUntil": long_ago.isoformat()})
+
+    set_consequential_approved(True)
+    task = asyncio.ensure_future(_capture())
+    for _ in range(600):
+        await asyncio.sleep(0.1)
+        live = [m for m in store.list_captures(chat["modern"]) if m["id"] not in (dead, expired)]
+        if live:
+            break
+    [m] = live
+    assert m["status"] == "running"
+    assert store.read_manifest(chat["modern"], dead)["status"] == "failed", "the dead capture is reaped first"
+    assert "interrupted" in store.read_manifest(chat["modern"], dead)["error"]
+    assert store.read_manifest(chat["modern"], expired) is None, "expired captures are purged first"
+    task.cancel()
+    with pytest.raises(asyncio.CancelledError):
+        await task
+    stopped = store.read_manifest(chat["modern"], m["id"])
+    assert stopped["status"] == "failed" and stopped["error"].startswith("cancelled")
+    # The project stays locked until the sandbox thread has removed its containers ...
+    for _ in range(1200):
+        if store.acquire_lock(chat["modern"], "cap-20261001120000-eeeeee"):
+            break
+        await asyncio.sleep(0.1)
+    else:
+        pytest.fail("the lock was never released after the stop")
+    store.release_lock(chat["modern"], "cap-20261001120000-eeeeee")
+    # ... and then nothing of it is left.
+    assert runner.leftovers(m["id"]) == []
+    d = store.capture_dir(chat["modern"], m["id"])
+    assert not (d / "run1").exists() and not (d / "run2").exists()
+    assert [e.event_type for e in audited] == ["modernization.baseline_capture_started"]
+    assert audited[0].payload["captureId"] == m["id"] and audited[0].actor_id == "u-qa"
+
+
+async def test_migration_strategy_reads_the_proposals_and_which_its_plan_covers(chat):
+    from agents_orchestrator.strategy_agent.tools.strategy_tools import read_baseline_proposals
+
+    await _approved_inputs(chat)
+    set_user_id("u-arch")
+    assert "has not recorded a baseline yet" in await read_baseline_proposals.ainvoke({})
+    proposals = [{"ec_id": "EC-01", "field": "requestId", "rule": "ignore the value, require it present",
+                  "evidence": "differs between two runs of the unchanged legacy system in 5 of 5 case(s)"}]
+    async with get_db_session_for_tenant(chat["org"]) as s:
+        await snapshot_stage_payload(s, tenant_id=chat["org"], project_id=chat["modern"], stage=STAGE,
+                                     payload={"mode": "baseline", "baselines": [], "rule_proposals": proposals},
+                                     produced_by="u-qa")
+    out = await read_baseline_proposals.ainvoke({})
+    assert "Proposed by baseline v1" in out and "plan v1" in out
+    assert "| EC-01 | requestId | ignore the value, require it present |" in out and "**open**" in out
+    assert "1 proposal(s) open" in out
+    revised = lite.stored_plan()
+    revised["equivalence_criteria"][0]["normalization"].append(
+        {"field": "requestId", "rule": "ignore the value, require it present", "reason": "generated per request"})
+    async with get_db_session_for_tenant(chat["org"]) as s:
+        await snapshot_stage_payload(s, tenant_id=chat["org"], project_id=chat["modern"], stage="strategy",
+                                     payload=revised, produced_by="u-arch")
+    out = await read_baseline_proposals.ainvoke({})
+    assert "plan v2" in out and "yes (ignore the value, require it present)" in out and "open" not in out

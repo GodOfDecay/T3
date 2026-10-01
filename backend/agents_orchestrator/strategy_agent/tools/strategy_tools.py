@@ -18,7 +18,6 @@ publish route's transaction.
 """
 from __future__ import annotations
 
-import json
 import logging
 import os
 from datetime import datetime, timezone
@@ -586,10 +585,63 @@ async def create_wave_work_items(project: str, version: int = 0, feature_type: s
     return "\n".join(lines)
 
 
+def proposal_status(proposals: list[dict], plan: Optional[dict]) -> list[dict]:
+    """Each rule Equivalence Testing proposed, and whether `plan` (the newest recorded plan) now has
+    a normalization rule on that criterion covering the field — the same matching the capture uses."""
+    from agents_orchestrator.testing_modernization_agent.analysis.noise import covers  # noqa: PLC0415
+
+    ecs = {c.get("id"): c for c in (plan or {}).get("equivalence_criteria") or []}
+    out = []
+    for p in proposals or []:
+        rules = (ecs.get(p.get("ec_id")) or {}).get("normalization") or []
+        rule = next((r for r in rules if covers(str(r.get("field") or ""), str(p.get("field") or ""))), None)
+        out.append({**p, "in_plan": rule is not None, "plan_rule": (rule or {}).get("rule")})
+    return out
+
+
+@tool
+async def read_baseline_proposals() -> str:
+    """The normalization rules Equivalence Testing PROPOSED to this plan from the newest recorded
+    baseline: fields that differed between two runs of the unchanged legacy system, per criterion,
+    with the evidence — and whether the newest plan already covers each. Adopting one is a plan
+    revision you record (and the Architect approves); the baseline is then captured again."""
+    from config.ws_helper import get_project_id, get_tenant_id  # noqa: PLC0415
+    from shared.db import get_db_session_for_tenant  # noqa: PLC0415
+    from shared.services import artifact_versions as svc  # noqa: PLC0415
+
+    if not (get_project_id() and get_tenant_id()):
+        return "No project is bound to this conversation."
+    try:
+        async with get_db_session_for_tenant(str(get_tenant_id())) as db:
+            baseline = await svc.latest_version(db, str(get_project_id()), "testing_modernization")
+            plan = await svc.latest_version(db, str(get_project_id()), "strategy")
+    except Exception:  # noqa: BLE001
+        logger.exception("strategy: reading the baseline proposals failed")
+        return "The baseline could not be read just now (a database error). Try again."
+    if baseline is None or not baseline.payload:
+        return "Equivalence Testing has not recorded a baseline yet, so nothing has been proposed."
+    rows = proposal_status((baseline.payload or {}).get("rule_proposals") or [], plan.payload if plan else None)
+    if not rows:
+        return (f"Baseline v{baseline.version} proposes no rule: every field that varied between the two legacy "
+                "runs is already covered by the plan's normalization.")
+    lines = [f"_Proposed by baseline v{baseline.version} ({baseline.status}); checked against "
+             f"{'plan v' + str(plan.version) if plan else 'no recorded plan'}._", "",
+             "| Criterion | Field | Proposed rule | Evidence | In the plan |", "|---|---|---|---|---|"]
+    for r in rows:
+        state = f"yes ({r['plan_rule']})" if r["in_plan"] else "**open**"
+        lines.append(f"| {r.get('ec_id')} | {r.get('field')} | {r.get('rule')} | {r.get('evidence') or '—'} | {state} |")
+    open_ = sum(1 for r in rows if not r["in_plan"])
+    if open_:
+        lines += ["", f"{open_} proposal(s) open: the criteria they belong to cannot pass until the plan has a rule. "
+                  "Agree each with the user, add it to the criterion's normalization, and record the revised plan."]
+    return "\n".join(lines)
+
+
 TOOLS = [
     read_migration_brief,
     read_assessment,
     read_target_design,
+    read_baseline_proposals,
     propose_wave_order,
     check_calendar,
     estimate_effort,

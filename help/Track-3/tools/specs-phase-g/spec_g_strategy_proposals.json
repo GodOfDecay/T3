@@ -1,0 +1,23 @@
+{
+ "target": "agents_orchestrator/strategy_agent/tools/strategy_tools.py",
+ "tests": [
+  "tests/testing_modernization/test_lifecycle.py"
+ ],
+ "mutants": [
+  [
+   "always-open",
+   "\"in_plan\": rule is not None",
+   "\"in_plan\": False"
+  ],
+  [
+   "always-covered",
+   "\"in_plan\": rule is not None",
+   "\"in_plan\": True"
+  ],
+  [
+   "any-criterion-covers",
+   "        rules = (ecs.get(p.get(\"ec_id\")) or {}).get(\"normalization\") or []",
+   "        rules = [r for c in ecs.values() for r in c.get(\"normalization\") or []]"
+  ]
+ ]
+}

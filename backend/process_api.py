@@ -695,6 +695,10 @@ async def lifespan(app: FastAPI):
     # draft has waited past its stage's SLA (they are the fallback approver).
     from workers.approval_sla_sweeper import ApprovalSlaSweeper
     approval_sla_task = asyncio.create_task(ApprovalSlaSweeper().run())
+    # BaselineRetentionSweeper — deletes Equivalence Testing captures past retention that no baseline
+    # keeps, and marks captures the server was stopped during as failed (Track 3, Phase G).
+    from workers.baseline_retention_sweeper import BaselineRetentionSweeper
+    baseline_retention_task = asyncio.create_task(BaselineRetentionSweeper().run())
     # Start artifact event listener (routes pipeline stage transitions via Redis pub/sub)
     artifact_listener_task = asyncio.create_task(_artifact_event_listener())
     # Start connector health probe (re-probes connector health every 30s).
@@ -771,6 +775,11 @@ async def lifespan(app: FastAPI):
     approval_sla_task.cancel()
     try:
         await approval_sla_task
+    except asyncio.CancelledError:
+        pass
+    baseline_retention_task.cancel()
+    try:
+        await baseline_retention_task
     except asyncio.CancelledError:
         pass
     artifact_listener_task.cancel()

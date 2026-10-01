@@ -1,0 +1,43 @@
+{
+ "target": "agents_orchestrator/testing_modernization_agent/store.py",
+ "tests": [
+  "tests/testing_modernization/test_lifecycle.py"
+ ],
+ "mutants": [
+  [
+   "lock-not-exclusive",
+   "os.O_CREAT | os.O_EXCL | os.O_WRONLY",
+   "os.O_CREAT | os.O_WRONLY"
+  ],
+  [
+   "stale-lock-held-forever",
+   "                if held and datetime.fromisoformat(held[\"at\"]) + timedelta(seconds=max_capture_seconds()) > now:",
+   "                if held:"
+  ],
+  [
+   "release-anyones-lock",
+   "        if held is not None and held.get(\"capture\") == capture_id:",
+   "        if held is not None:"
+  ],
+  [
+   "reap-fresh",
+   "            if started + timedelta(seconds=max_capture_seconds()) > now:\n                continue",
+   "            if False:\n                continue"
+  ],
+  [
+   "reap-complete",
+   "            if m.get(\"status\") != \"running\":",
+   "            if False:"
+  ],
+  [
+   "reap-keeps-partial",
+   "            for sub in (\"run1\", \"run2\"):\n                shutil.rmtree(self.capture_dir(project_id, m[\"id\"]) / sub",
+   "            for sub in ():\n                shutil.rmtree(self.capture_dir(project_id, m[\"id\"]) / sub"
+  ],
+  [
+   "not-a-project-swept",
+   "            except ValueError:\n                continue\n    return sorted(out)",
+   "            except ValueError:\n                out.append(d.name)\n    return sorted(out)"
+  ]
+ ]
+}

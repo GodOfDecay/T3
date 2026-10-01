@@ -1,0 +1,28 @@
+{
+ "target": "agents_orchestrator/testing_modernization_agent/sandbox/runner.py",
+ "tests": [
+  "tests/testing_modernization/test_lifecycle.py"
+ ],
+ "mutants": [
+  [
+   "caps-kept",
+   "    return [\"--cap-drop\", \"ALL\", \"--security-opt\", \"no-new-privileges\", \"--memory\", memory,",
+   "    return [\"--memory\", memory,"
+  ],
+  [
+   "app-unlimited",
+   "               *self._labels(), *limits(), \"--read-only\", \"--tmpfs\", \"/tmp:rw\",",
+   "               *self._labels(), \"--read-only\", \"--tmpfs\", \"/tmp:rw\","
+  ],
+  [
+   "cancel-ignored",
+   "        if cancelled is not None and cancelled.is_set():",
+   "        if False:"
+  ],
+  [
+   "no-check-between-scenarios",
+   "                    _check()\n                    recorded.append",
+   "                    recorded.append"
+  ]
+ ]
+}

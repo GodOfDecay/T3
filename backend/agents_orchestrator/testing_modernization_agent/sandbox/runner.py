@@ -2,7 +2,8 @@
 
 ISOLATION. Each run gets its own Docker network created `--internal`: the containers on it reach
 each other and NOTHING else (no internet, no host). On it: the legacy app (built from the checkout's
-own Dockerfile, root filesystem read-only, only the profile's `writable` directories as tmpfs), one
+own Dockerfile, root filesystem read-only, only the profile's `writable` directories as tmpfs, no
+Linux capabilities, bounded memory/CPU/processes: `limits()`), one
 stub server per external service, and a short-lived request driver. Everything carries the label
 `sdlc.capture=<id>` and is removed in `finally`, whether the capture worked or not.
 
@@ -26,6 +27,7 @@ import pathlib
 import shlex
 import subprocess
 import tarfile
+import threading
 from dataclasses import dataclass, field
 from typing import Optional
 
@@ -48,8 +50,23 @@ BATCH_SECONDS = 300
 BUILD_SECONDS = 900
 
 
+def limits() -> list[str]:
+    """What every sandbox container runs under. The legacy code is somebody else's program, run
+    as it is: no Linux capabilities, no privilege escalation, and bounded memory, CPU and process
+    count, so a runaway legacy job cannot starve the server (SDLC_SANDBOX_MEMORY, _CPUS, _PIDS)."""
+    memory = os.environ.get("SDLC_SANDBOX_MEMORY", "").strip() or "1g"
+    cpus = os.environ.get("SDLC_SANDBOX_CPUS", "").strip() or "1"
+    pids = os.environ.get("SDLC_SANDBOX_PIDS", "").strip() or "256"
+    return ["--cap-drop", "ALL", "--security-opt", "no-new-privileges", "--memory", memory,
+            "--cpus", cpus, "--pids-limit", pids]
+
+
 class CaptureFailed(Exception):
     """A capture that could not complete. The message is for people: no recorded data in it."""
+
+
+class CaptureCancelled(CaptureFailed):
+    """The user stopped the turn: the capture stops at the next step and removes its sandbox."""
 
 
 def _docker_bin() -> str:
@@ -129,7 +146,7 @@ class Run:
         return ["--label", f"sdlc.capture={self.capture_id}"]
 
     def _driver(self, *args: str, extra: Optional[list[str]] = None, timeout: int = 120) -> subprocess.CompletedProcess:
-        return docker("run", "--rm", "--network", self.net, *self._labels(), "--read-only",
+        return docker("run", "--rm", "--network", self.net, *self._labels(), *limits(), "--read-only",
                       *_mount(HARNESS_DIR, "/harness"), *(extra or []), harness_image(),
                       "python", "/harness/driver.py", *args, check=False, timeout=timeout)
 
@@ -138,7 +155,7 @@ class Run:
         env = []
         for s in self.profile.get("stubs") or []:
             docker("run", "-d", "--name", f"{self.net}-{s['name']}", "--network", self.net,
-                   "--network-alias", s["name"], *self._labels(), "--read-only",
+                   "--network-alias", s["name"], *self._labels(), *limits(), "--read-only",
                    *_mount(HARNESS_DIR, "/harness"),
                    *_mount((self.checkout / s["responses"]).resolve(), "/stub/responses.json"),
                    harness_image(), "python", "/harness/stub_server.py", "/stub/responses.json", str(s["port"]))
@@ -149,7 +166,7 @@ class Run:
         script = f"set -e\n{seed}\n{main}" if seed else main
         tmpfs = [x for w in self.profile.get("writable") or [] for x in ("--tmpfs", f"{w}:rw")]
         docker("run", "-d", "--name", self.app, "--network", self.net, "--network-alias", "app",
-               *self._labels(), "--read-only", "--tmpfs", "/tmp:rw", *tmpfs, *env, self.image, "sh", "-c", script)
+               *self._labels(), *limits(), "--read-only", "--tmpfs", "/tmp:rw", *tmpfs, *env, self.image, "sh", "-c", script)
         for s in self.profile.get("stubs") or []:
             if self._driver("wait", f"http://{s['name']}:{s['port']}/", str(health_seconds())).returncode != 0:
                 raise CaptureFailed(f"The stub for {s['name']} did not start.")
@@ -198,17 +215,29 @@ class Run:
         docker("network", "rm", self.net, check=False)
 
 
-def capture(checkout: pathlib.Path, profile: dict, out_dir: pathlib.Path, capture_id: str, runs: int = 2) -> dict:
-    """Build, run the whole profile `runs` times, record. Raises CaptureFailed; leaves nothing behind."""
+def capture(checkout: pathlib.Path, profile: dict, out_dir: pathlib.Path, capture_id: str, runs: int = 2,
+            cancelled: Optional[threading.Event] = None) -> dict:
+    """Build, run the whole profile `runs` times, record. Raises CaptureFailed (CaptureCancelled once
+    `cancelled` is set, checked between steps); leaves nothing behind either way."""
     tag = f"sdlc-legacy:{capture_id.lower()}"
+
+    def _check() -> None:
+        if cancelled is not None and cancelled.is_set():
+            raise CaptureCancelled("The capture was stopped before it finished.")
+
     try:
         tag, image_id = build_image(checkout, profile, capture_id)
         results = []
         for n in range(1, runs + 1):
+            _check()
             run = Run(checkout, profile, tag, capture_id, n)
             try:
                 run.start()
-                results.append([run.scenario(sc, out_dir / f"run{n}" / sc["id"]) for sc in profile["scenarios"]])
+                recorded = []
+                for sc in profile["scenarios"]:
+                    _check()
+                    recorded.append(run.scenario(sc, out_dir / f"run{n}" / sc["id"]))
+                results.append(recorded)
             finally:
                 run.stop()
         return {"image_id": image_id, "runs": runs, "scenarios": results[0]}

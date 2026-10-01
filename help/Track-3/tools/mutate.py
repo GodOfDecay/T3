@@ -1,9 +1,9 @@
-"""R46 mutation runner (saved from the 2026-09-28 session; see ../SESSION-HANDOFF.md �6).
+"""R46 mutation runner (saved from the 2026-09-28 session; see ../SESSION-HANDOFF.md §6).
 
-WINDOWS LESSONS BAKED IN � each one produced a false result before it was fixed:
+WINDOWS LESSONS BAKED IN — each one produced a false result before it was fixed:
   * patterns are written with LF and adapted to CRLF files (else every mutant is "BAD(0)");
   * changed lines are counted with difflib (`git diff --no-index` stdin reported whole files);
-  * a shell command must call Git Bash BY FULL PATH (C:\Program Files\Git\usr\bin\bash.exe):
+  * a shell command must call Git Bash BY FULL PATH (C:/Program Files/Git/usr/bin/bash.exe):
     `bash` from a Python subprocess resolves to WSL's bash (CreateProcess searches System32
     first), the script never runs, and a non-zero exit reads as a KILL;
   * for command specs set "require_pytest_exit": the script must print PYTEST_EXIT=<code>,
@@ -24,7 +24,9 @@ import difflib, hashlib, json, os, pathlib, re, subprocess, sys
 
 CRLF, LF = "\r\n", "\n"
 spec = json.loads(pathlib.Path(sys.argv[1]).read_text(encoding="utf-8"))
-ROOT = pathlib.Path(r"C:\Users\Aksha\OneDrive\Desktop\PWC\SDLC") / spec.get("root", "backend")
+#: The repository: SDLC_REPO_ROOT, else the checkout this file sits in (help/Track-3/tools/ -> repo).
+REPO = pathlib.Path(os.environ.get("SDLC_REPO_ROOT") or pathlib.Path(__file__).resolve().parents[3])
+ROOT = REPO / spec.get("root", "backend")
 target = ROOT / spec["target"]
 env = dict(os.environ)
 if spec.get("env_test"):
@@ -51,7 +53,7 @@ try:
         numstat = f"+{sum(l.startswith('+') for l in d)}/-{sum(l.startswith('-') for l in d)}"
         r = subprocess.run(cmd, capture_output=True, cwd=ROOT, env=env)
         out = [ansi.sub("", l) for l in r.stdout.decode("utf-8", "replace").splitlines()]
-        failed = [l.strip() for l in out if l.startswith("FAILED") or l.strip().startswith(("×", "FAIL "))]
+        failed = [l.strip() for l in out if l.startswith("FAILED") or l.strip().startswith(("Ã—", "FAIL "))]
         rc = r.returncode
         m = [l for l in out if l.startswith("PYTEST_EXIT=")]
         if m: rc = int(m[-1].split("=")[1])

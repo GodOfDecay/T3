@@ -141,10 +141,27 @@ SPECS = {
             ["mapping-unchecked", "    if found:\n        return None, _problems_text(\"The capture plan does not hold:\"",
              "    if False:\n        return None, _problems_text(\"The capture plan does not hold:\""],
             ["unsequenced-ok", '             if m not in rows or rows[m]["state"] not in ("sequenced", "baselined")]', "             if False]"],
-            ["any-role-captures", "    if not roles & CAPTURE_ROLES:", "    if False:"],
+            ["any-role-captures", "    return bool(roles & CAPTURE_ROLES)", "    return True"],
             ["no-consent", "    ok, why = await _may_capture()\n    if not ok:\n        return why", "    ok, why = await _may_capture()"],
-            ["partial-kept", '            for sub in ("run1", "run2"):\n                shutil.rmtree(out / sub, ignore_errors=True)',
-             '            for sub in ():\n                shutil.rmtree(out / sub, ignore_errors=True)'],
+            ["partial-kept", '    out = store.capture_dir(project_id, manifest["id"])\n    for sub in ("run1", "run2"):',
+             '    out = store.capture_dir(project_id, manifest["id"])\n    for sub in ():'],
+            # ── fix wave: the shared lock, a stopped capture, tidying, who saves the profile, audit ──
+            ["lock-ignored", '    if not store.acquire_lock(project_id, capture_id):\n        return "A capture is already running',
+             '    if False:\n        return "A capture is already running'],
+            ["lock-never-released", "        if not released:\n            store.release_lock(project_id, capture_id)",
+             "        if False:\n            store.release_lock(project_id, capture_id)"],
+            ["cancel-releases-early", "            released = True\n", "            released = False\n"],
+            ["cancel-not-marked", '            _fail(store, project_id, manifest, "cancelled: the capture was stopped before it finished.")',
+             "            pass"],
+            ["cancel-lock-kept", "        pass\n    out = store.capture_dir(project_id, capture_id)\n    for sub in (\"run1\", \"run2\"):\n        shutil.rmtree(out / sub, ignore_errors=True)\n    store.release_lock(project_id, capture_id)",
+             "        pass\n    out = store.capture_dir(project_id, capture_id)\n    for sub in (\"run1\", \"run2\"):\n        shutil.rmtree(out / sub, ignore_errors=True)"],
+            ["no-reap", "    for gone in store.reap_interrupted(project_id):", "    for gone in []:"],
+            ["no-purge", "    store.purge_expired(project_id)\n", "    pass\n"],
+            ["profile-any-role", '    if not await _has_capture_role():\n        return ("NOT SAVED', '    if False:\n        return ("NOT SAVED'],
+            ["no-start-audit", '        await _audit("modernization.baseline_capture_started", capture_id,',
+             '        (lambda *a: None)("modernization.baseline_capture_started", capture_id,'],
+            ["no-profile-audit", '    await _audit("modernization.capture_profile_saved", "", {',
+             '    (lambda *a: None)("modernization.capture_profile_saved", "", {'],
             ["failed-recorded", '    if manifest.get("status") != "complete":', "    if False:"],
             ["old-plan-ok", '    if plan.version != manifest.get("planVersion"):', "    if False:"],
             ["proposals-unchecked", "    if problems:\n        return _problems_text(\"NOT RECORDED YET — the baseline",
@@ -191,6 +208,58 @@ SPECS = {
             ["examples-hidden", "{s.examples[f] && <span className=\"text-muted-foreground\"> — {s.examples[f][0]} vs {s.examples[f][1]}</span>}", ""],
         ],
     },
+}
+
+LC = f"{T}/test_lifecycle.py"
+SPECS["spec_g_lifecycle_store.json"] = {
+    "target": "agents_orchestrator/testing_modernization_agent/store.py",
+    "tests": [LC],
+    "mutants": [
+        ["lock-not-exclusive", "os.O_CREAT | os.O_EXCL | os.O_WRONLY", "os.O_CREAT | os.O_WRONLY"],
+        ["stale-lock-held-forever", '                if held and datetime.fromisoformat(held["at"]) + timedelta(seconds=max_capture_seconds()) > now:',
+         "                if held:"],
+        ["release-anyones-lock", '        if held is not None and held.get("capture") == capture_id:', "        if held is not None:"],
+        ["reap-fresh", "            if started + timedelta(seconds=max_capture_seconds()) > now:\n                continue",
+         "            if False:\n                continue"],
+        ["reap-complete", '            if m.get("status") != "running":', "            if False:"],
+        ["reap-keeps-partial", '            for sub in ("run1", "run2"):\n                shutil.rmtree(self.capture_dir(project_id, m["id"]) / sub',
+         '            for sub in ():\n                shutil.rmtree(self.capture_dir(project_id, m["id"]) / sub'],
+        ["not-a-project-swept", "            except ValueError:\n                continue\n    return sorted(out)",
+         "            except ValueError:\n                out.append(d.name)\n    return sorted(out)"],
+    ],
+}
+SPECS["spec_g_lifecycle_runner.json"] = {
+    "target": "agents_orchestrator/testing_modernization_agent/sandbox/runner.py",
+    "tests": [LC],
+    "mutants": [
+        ["caps-kept", '    return ["--cap-drop", "ALL", "--security-opt", "no-new-privileges", "--memory", memory,',
+         '    return ["--memory", memory,'],
+        ["app-unlimited", '               *self._labels(), *limits(), "--read-only", "--tmpfs", "/tmp:rw",',
+         '               *self._labels(), "--read-only", "--tmpfs", "/tmp:rw",'],
+        ["cancel-ignored", "        if cancelled is not None and cancelled.is_set():", "        if False:"],
+        ["no-check-between-scenarios", "                    _check()\n                    recorded.append", "                    recorded.append"],
+    ],
+}
+SPECS["spec_g_lifecycle_sweeper.json"] = {
+    "target": "workers/baseline_retention_sweeper.py",
+    "tests": [LC],
+    "mutants": [
+        ["no-docker-cleanup", "                for capture_id in gone:\n                    runner.cleanup(capture_id)",
+         "                for capture_id in []:\n                    runner.cleanup(capture_id)"],
+        ["one-failure-stops-all", '                logger.exception("baseline retention: sweeping project %s failed", project_id)',
+         "                raise"],
+        ["no-purge", "                purged += store.purge_expired(project_id, now)", "                pass"],
+    ],
+}
+SPECS["spec_g_strategy_proposals.json"] = {
+    "target": "agents_orchestrator/strategy_agent/tools/strategy_tools.py",
+    "tests": [LC],
+    "mutants": [
+        ["always-open", '"in_plan": rule is not None', '"in_plan": False'],
+        ["always-covered", '"in_plan": rule is not None', '"in_plan": True'],
+        ["any-criterion-covers", '        rules = (ecs.get(p.get("ec_id")) or {}).get("normalization") or []',
+         '        rules = [r for c in ecs.values() for r in c.get("normalization") or []]'],
+    ],
 }
 
 for name, spec in SPECS.items():
