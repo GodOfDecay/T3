@@ -1,0 +1,58 @@
+{
+ "target": "agents_orchestrator/testing_modernization_agent/analysis/noise.py",
+ "tests": [
+  "tests/testing_modernization/test_units.py"
+ ],
+ "mutants": [
+  [
+   "timestamp-shown",
+   "    if _TS.match(text):\n        return \"<timestamp>\"",
+   "    if False:\n        return \"<timestamp>\""
+  ],
+  [
+   "uuid-shown",
+   "    if _UUID.match(text):\n        return \"<uuid>\"",
+   "    if False:\n        return \"<uuid>\""
+  ],
+  [
+   "letters-shown",
+   "shape = re.sub(r\"[A-Za-z\\u00c0-\\u024f]\", \"A\", re.sub(r\"\\d\", \"9\", text))",
+   "shape = re.sub(r\"\\d\", \"9\", text)"
+  ],
+  [
+   "digits-shown",
+   "shape = re.sub(r\"[A-Za-z\\u00c0-\\u024f]\", \"A\", re.sub(r\"\\d\", \"9\", text))",
+   "shape = re.sub(r\"[A-Za-z\\u00c0-\\u024f]\", \"A\", text)"
+  ],
+  [
+   "status-ignored",
+   "        fx = {k: v for k, v in x.items() if k != \"request\" and k != \"body\"} | {",
+   "        fx = {} | {"
+  ],
+  [
+   "missing-file-ok",
+   "        if name not in fa or name not in fb:\n            varying[name]",
+   "        if name not in fa or name not in fb:\n            continue\n            varying[name]"
+  ],
+  [
+   "extra-line-ok",
+   "        for n in range(max(len(la), len(lb))):",
+   "        for n in range(min(len(la), len(lb))):"
+  ],
+  [
+   "exit-ignored",
+   "    if ea.get(\"exit\") != eb.get(\"exit\"):",
+   "    if False:"
+  ],
+  [
+   "suffix-too-broad",
+   "    return field == rule or field.endswith(\".\" + rule) or fnmatch.fnmatchcase(field, rule)",
+   "    return field == rule or field.endswith(rule) or fnmatch.fnmatchcase(field, rule)"
+  ],
+  [
+   "empty-rule-covers",
+   "    if not rule:\n        return False",
+   "    if not rule:\n        return True"
+  ]
+ ]
+}

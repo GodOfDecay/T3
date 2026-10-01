@@ -1,0 +1,6 @@
+{"method": "POST", "path": "/api/claims/CLM-0001/settle"}
+{"method": "POST", "path": "/api/claims/CLM-0002/settle"}
+{"method": "POST", "path": "/api/claims/CLM-0003/settle"}
+{"method": "POST", "path": "/api/claims/CLM-0004/settle"}
+{"method": "POST", "path": "/api/claims/CLM-0007/settle"}
+{"method": "POST", "path": "/api/claims/CLM-0005/settle"}

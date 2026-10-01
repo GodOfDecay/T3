@@ -188,6 +188,7 @@ class Run(Base):
     target_design_artifacts: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
     # Migration Strategy's plan (migration 0072).
     strategy_artifacts: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
+    equivalence_artifacts: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
     # Orchestrator state â€” tracks which SDLC stage is active and whether a human gate is pending
     current_stage: Mapped[str | None] = mapped_column(String(50), nullable=True)
     gate_pending: Mapped[bool] = mapped_column(Boolean(), nullable=False, default=False, server_default="false")

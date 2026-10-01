@@ -39,7 +39,7 @@ def test_registry_and_portfolio():
     d = AGENT_REGISTRY["strategy"]
     assert d.input_artifacts == ["migration_intent_payload", "discovery_artifacts", "target_design_artifacts"]
     assert (d.pipeline_position, d.output_artifact) == (4, "strategy_artifacts")
-    assert agent_ids_for_track("modernization")[-1] == "strategy"
+    assert agent_ids_for_track("modernization").index("strategy") == 3  # after the brief, assessment and design
 
 
 @pytest.mark.parametrize("text", ["run the migration strategy agent", "open the strategy agent",

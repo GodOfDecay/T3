@@ -1,0 +1,13 @@
+{
+ "target": "agents_orchestrator/testing_modernization_agent/sandbox/images.py",
+ "tests": [
+  "tests/testing_modernization/test_units.py"
+ ],
+ "mutants": [
+  [
+   "unpinned-harness-ok",
+   "    if not DIGEST_RE.search(image):",
+   "    if False:"
+  ]
+ ]
+}

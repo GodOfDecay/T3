@@ -1,0 +1,69 @@
+{
+ "target": "agents_orchestrator/testing_modernization_agent/tools/equivalence_tools.py",
+ "tests": [
+  "tests/testing_modernization/test_record_approval.py"
+ ],
+ "env_test": true,
+ "mutants": [
+  [
+   "orchestrator-captures",
+   "    if get_orchestrator_run():\n        return None, (\"A baseline is captured",
+   "    if False:\n        return None, (\"A baseline is captured"
+  ],
+  [
+   "draft-plan-ok",
+   "    if not _approved(plan):",
+   "    if False:"
+  ],
+  [
+   "mapping-unchecked",
+   "    if found:\n        return None, _problems_text(\"The capture plan does not hold:\"",
+   "    if False:\n        return None, _problems_text(\"The capture plan does not hold:\""
+  ],
+  [
+   "unsequenced-ok",
+   "             if m not in rows or rows[m][\"state\"] not in (\"sequenced\", \"baselined\")]",
+   "             if False]"
+  ],
+  [
+   "any-role-captures",
+   "    if not roles & CAPTURE_ROLES:",
+   "    if False:"
+  ],
+  [
+   "no-consent",
+   "    ok, why = await _may_capture()\n    if not ok:\n        return why",
+   "    ok, why = await _may_capture()"
+  ],
+  [
+   "partial-kept",
+   "            for sub in (\"run1\", \"run2\"):\n                shutil.rmtree(out / sub, ignore_errors=True)",
+   "            for sub in ():\n                shutil.rmtree(out / sub, ignore_errors=True)"
+  ],
+  [
+   "failed-recorded",
+   "    if manifest.get(\"status\") != \"complete\":",
+   "    if False:"
+  ],
+  [
+   "old-plan-ok",
+   "    if plan.version != manifest.get(\"planVersion\"):",
+   "    if False:"
+  ],
+  [
+   "proposals-unchecked",
+   "    if problems:\n        return _problems_text(\"NOT RECORDED YET — the baseline",
+   "    if False:\n        return _problems_text(\"NOT RECORDED YET — the baseline"
+  ],
+  [
+   "not-kept",
+   "    manifest[\"keep\"] = True",
+   "    manifest[\"keep\"] = False"
+  ],
+  [
+   "no-freeze",
+   "    version = await freeze_version(STAGE, artifact)",
+   "    version = None"
+  ]
+ ]
+}

@@ -70,10 +70,10 @@ async def test_the_permissions_are_actually_distinct(recorded):
 
 @pytest.mark.parametrize("stage", [
     "migration_mapping", "validation", "data_engineering",
-    # Track 3 agents 4–10: they HAVE approve permissions (migration 0066) but are not
+    # Track 3 agents 6–10: they HAVE approve permissions (migration 0066) but are not
     # built, so the registered-stage rule must still refuse them. (Target Architecture,
-    # agent 3, left this list when Phase E built it — like Discovery in Phase 1.)
-    "testing_modernization",
+    # Migration Strategy and Equivalence Testing left this list as Phases E, F and G built
+    # them — like Discovery in Phase 1.)
     "development_modernization",
     "code_review_modernization",
     "security_modernization",

@@ -267,6 +267,20 @@ def plan_packet(plan: dict, envelope: dict) -> Emitted:
     return _build(PlanPacket, {**envelope, "payload": plan_payload(plan)})
 
 
+def baseline_payload(artifact: dict) -> dict:
+    """The packet's payload from a stored baseline (`EquivalenceArtifact` as a dict): the baseline
+    fields only — the capture record, scenarios and placements are the page's and the ledger's."""
+    from .packets import BaselinePayload  # noqa: PLC0415
+
+    return {name: artifact[name] for name in BaselinePayload.model_fields if name in artifact}
+
+
+def baseline_packet(artifact: dict, envelope: dict) -> Emitted:
+    from .packets import BaselinePacket  # noqa: PLC0415
+
+    return _build(BaselinePacket, {**envelope, "payload": baseline_payload(artifact)})
+
+
 def assessment_packet(assessment: dict, envelope: dict) -> Emitted:
     if any(not (m or {}).get("id") for m in assessment.get("modules") or []):
         # Schema 1 (or a restored copy of one): no module ids, so nothing downstream can cite a

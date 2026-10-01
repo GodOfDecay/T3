@@ -1,0 +1,83 @@
+{
+ "target": "agents_orchestrator/testing_modernization_agent/analysis/baseline.py",
+ "tests": [
+  "tests/testing_modernization/test_units.py"
+ ],
+ "mutants": [
+  [
+   "foreign-ec-ok",
+   "        if ec not in ecs:\n            problems.append(f\"{ec} is not a criterion of the approved plan.\")\n            continue",
+   "        if False:\n            problems.append(f\"{ec} is not a criterion of the approved plan.\")\n            continue"
+  ],
+  [
+   "empty-mapping-ok",
+   "        if not isinstance(scs, list) or not scs:",
+   "        if not isinstance(scs, list):"
+  ],
+  [
+   "unknown-scenario-ok",
+   "        if unknown:\n            problems.append(f\"{ec} is mapped to",
+   "        if False:\n            problems.append(f\"{ec} is mapped to"
+  ],
+  [
+   "partial-module-ok",
+   "        if (c[\"module_id\"] in touched or c[\"module_id\"] == \"all\") and ec not in mapping and ec not in skipped:",
+   "        if False:"
+  ],
+  [
+   "all-optional",
+   "        if (c[\"module_id\"] in touched or c[\"module_id\"] == \"all\") and ec not in mapping and ec not in skipped:",
+   "        if c[\"module_id\"] in touched and ec not in mapping and ec not in skipped:"
+  ],
+  [
+   "reasonless-ok",
+   "        elif len(reason) < 3:",
+   "        elif False:"
+  ],
+  [
+   "both-ok",
+   "        elif ec in mapping:\n            problems.append(f\"{ec} is both mapped",
+   "        elif False:\n            problems.append(f\"{ec} is both mapped"
+  ],
+  [
+   "invented-proposal-ok",
+   "        if ec not in need or fld not in need[ec]:",
+   "        if False:"
+  ],
+  [
+   "ruleless-ok",
+   "        elif not rule:\n            problems.append(",
+   "        elif False:\n            problems.append("
+  ],
+  [
+   "missing-proposal-ok",
+   "            if (ec, fld) not in given:",
+   "            if False:"
+  ],
+  [
+   "rules-ignored",
+   "        rest = sorted(set(fields) - set(covered(fields, ecs[ec].get(\"normalization\") or [])))",
+   "        rest = sorted(set(fields))"
+  ],
+  [
+   "one-baseline-per-ec",
+   "        groups.setdefault((ecs[ec][\"module_id\"], tuple(sorted(mapping[ec]))), []).append(ec)",
+   "        groups.setdefault((ecs[ec][\"module_id\"], tuple(sorted(mapping[ec])), ec), []).append(ec)"
+  ],
+  [
+   "unit-always-cases",
+   "            \"unit\": \"cases\" if \"http\" in kinds else \"runs\",",
+   "            \"unit\": \"cases\","
+  ],
+  [
+   "shared-not-shared",
+   "    return [{\"module_id\": m, \"baseline_ids\": [b[\"id\"] for b in payload[\"baselines\"] if b[\"module_id\"] == m] + shared}",
+   "    return [{\"module_id\": m, \"baseline_ids\": [b[\"id\"] for b in payload[\"baselines\"] if b[\"module_id\"] == m]}"
+  ],
+  [
+   "model-evidence",
+   "\"evidence\": evidence(p[\"ec_id\"], p[\"field\"], mapping, noise)}",
+   "\"evidence\": str(p.get(\"evidence\") or \"given\")}"
+  ]
+ ]
+}

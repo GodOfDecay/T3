@@ -469,6 +469,36 @@ class StrategyArtifact(BaseModel):
     agent_session_id: Optional[str] = None
 
 
+class EquivalenceArtifact(BaseModel):
+    """-> runs.equivalence_artifacts (0073), and each frozen `testing_modernization` version.
+
+    Baseline mode (Phase G). The BASELINE is the hand-over packet's payload
+    (`handover/packets.BaselinePayload`: BL-xx, noise reports, rule proposals, stubs, criteria not
+    captured), which `emit.baseline_payload` reads back. Around it, what the page and the ledger need
+    and the model never writes: the inputs it was built from, the capture (id, image, times — never a
+    recording), the criterion → scenario mapping, each scenario's counts and masked noise, and the
+    placements approval applies (module → BL ids). Every field declared: pydantic drops unknown keys."""
+
+    schema_version: int = 1
+    system_name: str = ""
+    # ── the baseline (BaselinePayload) ──
+    mode: str = "baseline"
+    baselines: List[Dict[str, Any]]
+    noise: List[Dict[str, Any]] = []
+    rule_proposals: List[Dict[str, Any]] = []
+    stubs: List[str] = []
+    not_captured: List[Dict[str, Any]] = []
+    # ── set by the record tool, never by the model ──
+    sources: Dict[str, Any] = {}
+    capture: Dict[str, Any] = {}
+    mapping: Dict[str, List[str]] = {}
+    scenarios: List[Dict[str, Any]] = []
+    placements: List[Dict[str, Any]] = []
+    notes: List[str] = []
+    recorded_at: Optional[str] = None
+    agent_session_id: Optional[str] = None
+
+
 # ---------------------------------------------------------------------------
 # Traceability and handoff helpers
 # ---------------------------------------------------------------------------

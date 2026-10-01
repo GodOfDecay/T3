@@ -3114,5 +3114,353 @@
     "notes": [],
     "recorded_at": "2026-10-07T10:00:00+00:00",
     "agent_session_id": null
+  },
+  "baseline": {
+    "schema_version": 1,
+    "system_name": "ClaimTrack Lite",
+    "mode": "baseline",
+    "baselines": [
+      {
+        "id": "BL-01",
+        "ec_ids": [
+          "EC-01"
+        ],
+        "module_id": "M-01",
+        "count": 5,
+        "unit": "cases",
+        "sha256": "f3f5e7dcc7d73fd3f11678d528dc3f175c1074cee37d873436bc588fd2ef5f6e",
+        "region": "local-dev",
+        "noise_fields": [
+          "generatedAt",
+          "requestId"
+        ],
+        "captured_at": "2026-12-01T09:00:12+00:00"
+      },
+      {
+        "id": "BL-02",
+        "ec_ids": [
+          "EC-02"
+        ],
+        "module_id": "M-01",
+        "count": 6,
+        "unit": "cases",
+        "sha256": "6868e83de35c465d84d347493ccc23d12b3bfacb9809d30292d21fc4701224d1",
+        "region": "local-dev",
+        "noise_fields": [
+          "requestId",
+          "settledAt"
+        ],
+        "captured_at": "2026-12-01T09:00:12+00:00"
+      },
+      {
+        "id": "BL-03",
+        "ec_ids": [
+          "EC-03"
+        ],
+        "module_id": "M-02",
+        "count": 1,
+        "unit": "runs",
+        "sha256": "f833d06303c23bef5f545bc0aa72a8dee97f361c5176d89eb6f219bbdb62871c",
+        "region": "local-dev",
+        "noise_fields": [
+          "BANKPAY_20270131.txt#L1"
+        ],
+        "captured_at": "2026-12-01T09:00:12+00:00"
+      }
+    ],
+    "noise": [
+      {
+        "ec_id": "EC-01",
+        "runs_compared": 2,
+        "varying_fields": [
+          "generatedAt",
+          "requestId"
+        ],
+        "covered_by_rule": [
+          "generatedAt"
+        ]
+      },
+      {
+        "ec_id": "EC-02",
+        "runs_compared": 2,
+        "varying_fields": [
+          "requestId",
+          "settledAt"
+        ],
+        "covered_by_rule": [
+          "settledAt"
+        ]
+      },
+      {
+        "ec_id": "EC-03",
+        "runs_compared": 2,
+        "varying_fields": [
+          "BANKPAY_20270131.txt#L1"
+        ],
+        "covered_by_rule": [
+          "BANKPAY_20270131.txt#L1"
+        ]
+      }
+    ],
+    "rule_proposals": [
+      {
+        "ec_id": "EC-01",
+        "field": "requestId",
+        "rule": "ignore the value, require it present",
+        "evidence": "differs between two runs of the unchanged legacy system on identical input in 5 of 5 case(s) (claims-read); run 1 <uuid> vs run 2 <uuid>"
+      },
+      {
+        "ec_id": "EC-02",
+        "field": "requestId",
+        "rule": "ignore the value, require it present",
+        "evidence": "differs between two runs of the unchanged legacy system on identical input in 6 of 6 case(s) (settle); run 1 <uuid> vs run 2 <uuid>"
+      }
+    ],
+    "stubs": [
+      "fraudscore"
+    ],
+    "not_captured": [
+      {
+        "ec_id": "EC-04",
+        "reason": "a load test — measured in Verify mode"
+      }
+    ],
+    "sources": {
+      "plan": {
+        "version": 1,
+        "status": "published"
+      },
+      "design": {
+        "version": 1,
+        "status": "published"
+      }
+    },
+    "capture": {
+      "id": "cap-20261201090000-a1b2c3",
+      "startedAt": "2026-12-01T09:00:00+00:00",
+      "finishedAt": "2026-12-01T09:00:12+00:00",
+      "imageId": "sha256:c9c9c9c9c9c9c9c9c9c9c9c9c9c9c9c9c9c9c9c9c9c9c9c9c9c9c9c9c9c9c9c9",
+      "commit": "4f1c2e9a7b4f1c2e9a7b4f1c2e9a7b4f1c2e9a7b",
+      "profileSource": "sdlc-sandbox.json in the legacy code",
+      "requestedBy": "u-qa",
+      "runs": 2
+    },
+    "mapping": {
+      "EC-01": [
+        "claims-read"
+      ],
+      "EC-02": [
+        "settle"
+      ],
+      "EC-03": [
+        "bank-file"
+      ]
+    },
+    "scenarios": [
+      {
+        "id": "claims-read",
+        "kind": "http",
+        "cases": 5,
+        "describes": "Read five claims",
+        "varying": {
+          "generatedAt": 4,
+          "requestId": 5
+        },
+        "examples": {
+          "generatedAt": [
+            "<timestamp>",
+            "<timestamp>"
+          ],
+          "requestId": [
+            "<uuid>",
+            "<uuid>"
+          ]
+        }
+      },
+      {
+        "id": "settle",
+        "kind": "http",
+        "cases": 6,
+        "describes": "Settle six claims",
+        "varying": {
+          "requestId": 6,
+          "settledAt": 4
+        },
+        "examples": {
+          "requestId": [
+            "<uuid>",
+            "<uuid>"
+          ],
+          "settledAt": [
+            "<timestamp>",
+            "<timestamp>"
+          ]
+        }
+      },
+      {
+        "id": "bank-file",
+        "kind": "batch",
+        "cases": 1,
+        "describes": "The nightly bank file",
+        "varying": {
+          "BANKPAY_20270131.txt#L1": 1
+        },
+        "examples": {
+          "BANKPAY_20270131.txt#L1": [
+            "A99999999999999999999",
+            "A99999999999999999999"
+          ]
+        }
+      }
+    ],
+    "placements": [
+      {
+        "module_id": "M-01",
+        "baseline_ids": [
+          "BL-01",
+          "BL-02"
+        ]
+      },
+      {
+        "module_id": "M-02",
+        "baseline_ids": [
+          "BL-03"
+        ]
+      }
+    ],
+    "notes": [
+      "Captured from commit 4f1c2e9a7b with sdlc-sandbox.json in the legacy code; data: synthetic.",
+      "2 normalization rule(s) proposed to Migration Strategy — the criteria they belong to stay open until the plan is revised."
+    ],
+    "recorded_at": "2026-12-01T09:05:00+00:00",
+    "agent_session_id": null
+  },
+  "captures": {
+    "projectId": "p-claimtrack",
+    "captures": [
+      {
+        "id": "cap-20261201100000-d4e5f6",
+        "status": "running",
+        "startedAt": "2026-12-01T10:00:00+00:00",
+        "finishedAt": null,
+        "error": null,
+        "planVersion": 1,
+        "commit": "4f1c2e9a7b4f1c2e9a7b4f1c2e9a7b4f1c2e9a7b",
+        "mapping": {
+          "EC-01": [
+            "claims-read"
+          ],
+          "EC-02": [
+            "settle"
+          ],
+          "EC-03": [
+            "bank-file"
+          ]
+        },
+        "scenarios": [
+          {
+            "id": "claims-read",
+            "kind": "http",
+            "cases": 5,
+            "describes": "Read five claims"
+          },
+          {
+            "id": "settle",
+            "kind": "http",
+            "cases": 6,
+            "describes": "Settle six claims"
+          },
+          {
+            "id": "bank-file",
+            "kind": "batch",
+            "cases": 1,
+            "describes": "The nightly bank file"
+          }
+        ],
+        "keep": false
+      },
+      {
+        "id": "cap-20261201093000-0a0b0c",
+        "status": "failed",
+        "startedAt": "2026-12-01T09:30:00+00:00",
+        "finishedAt": "2026-12-01T09:31:02+00:00",
+        "error": "The legacy service did not answer on /health within 60 seconds; its container is exited (exit 3).",
+        "planVersion": 1,
+        "commit": "4f1c2e9a7b4f1c2e9a7b4f1c2e9a7b4f1c2e9a7b",
+        "mapping": {
+          "EC-01": [
+            "claims-read"
+          ],
+          "EC-02": [
+            "settle"
+          ],
+          "EC-03": [
+            "bank-file"
+          ]
+        },
+        "scenarios": [
+          {
+            "id": "claims-read",
+            "kind": "http",
+            "cases": 5,
+            "describes": "Read five claims"
+          },
+          {
+            "id": "settle",
+            "kind": "http",
+            "cases": 6,
+            "describes": "Settle six claims"
+          },
+          {
+            "id": "bank-file",
+            "kind": "batch",
+            "cases": 1,
+            "describes": "The nightly bank file"
+          }
+        ],
+        "keep": false
+      },
+      {
+        "id": "cap-20261201090000-a1b2c3",
+        "status": "complete",
+        "startedAt": "2026-12-01T09:00:00+00:00",
+        "finishedAt": "2026-12-01T09:00:12+00:00",
+        "error": null,
+        "planVersion": 1,
+        "commit": "4f1c2e9a7b4f1c2e9a7b4f1c2e9a7b4f1c2e9a7b",
+        "mapping": {
+          "EC-01": [
+            "claims-read"
+          ],
+          "EC-02": [
+            "settle"
+          ],
+          "EC-03": [
+            "bank-file"
+          ]
+        },
+        "scenarios": [
+          {
+            "id": "claims-read",
+            "kind": "http",
+            "cases": 5,
+            "describes": "Read five claims"
+          },
+          {
+            "id": "settle",
+            "kind": "http",
+            "cases": 6,
+            "describes": "Settle six claims"
+          },
+          {
+            "id": "bank-file",
+            "kind": "batch",
+            "cases": 1,
+            "describes": "The nightly bank file"
+          }
+        ],
+        "keep": true
+      }
+    ]
   }
 }

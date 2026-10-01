@@ -2,6 +2,7 @@ import { z } from "zod";
 
 import type { ProjectId } from "@/lib/schemas";
 import {
+  CaptureList,
   DiscoveryResponse,
   LegacyCodeRecord,
   LegacyInterfaces,
@@ -25,15 +26,24 @@ export const getDiscoveryAssessment = (id: ProjectId) =>
 
 /* ── Pulled legacy code, and version downloads ──────────────────────────────── */
 
-export type Track3Stage = "requirements_modernization" | "discovery" | "design_modernization" | "strategy";
+export type Track3Stage =
+  | "requirements_modernization" | "discovery" | "design_modernization" | "strategy" | "testing_modernization";
 
 /** URL segment of each stage's page data on the backend. */
-export const KIND_FOR_STAGE: Record<Track3Stage, "migration-intent" | "discovery" | "target-architecture" | "strategy"> = {
+export const KIND_FOR_STAGE: Record<
+  Track3Stage, "migration-intent" | "discovery" | "target-architecture" | "strategy" | "equivalence-testing"
+> = {
   requirements_modernization: "migration-intent",
   discovery: "discovery",
   design_modernization: "target-architecture",
   strategy: "strategy",
+  testing_modernization: "equivalence-testing",
 };
+
+/** The project's baseline captures, newest first — status, times, counts and masked shapes; never
+ *  a recording. A running capture shows here while the chat is busy with it. */
+export const getCaptures = (id: ProjectId) =>
+  api(`/projects/${encodeURIComponent(id)}/modernization/equivalence-testing/captures`, { schema: CaptureList });
 
 /** What the pulled legacy code exposes and consumes — the inventory Target Architecture freezes
  *  its contracts from. `status: none` until code is pulled. */

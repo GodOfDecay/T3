@@ -1,0 +1,29 @@
+{
+ "target": "shared/services/modernization_ledger.py",
+ "tests": [
+  "tests/testing_modernization/test_record_approval.py"
+ ],
+ "env_test": true,
+ "mutants": [
+  [
+   "unknown-module-ok",
+   "            raise LedgerRefused(f\"{p['module_id']} is not on the ledger — approve its design and plan first\")",
+   "            continue"
+  ],
+  [
+   "blocked-ok",
+   "        if row.state == \"blocked\":\n            raise LedgerRefused(f\"{p['module_id']} is blocked ({row.blocked_reason}); unblock it before baselining it\")",
+   "        if False:\n            raise LedgerRefused(f\"{p['module_id']} is blocked ({row.blocked_reason}); unblock it before baselining it\")"
+  ],
+  [
+   "migrating-rebaselined",
+   "        if row.state not in (\"sequenced\", \"baselined\") and sorted(row.baseline_ids or []) != sorted(p[\"baseline_ids\"]):",
+   "        if False:"
+  ],
+  [
+   "revision-unrecorded",
+   "actor=actor, artifact=artifact, note=\"baseline revised\")]",
+   "actor=actor, artifact=artifact)]"
+  ]
+ ]
+}

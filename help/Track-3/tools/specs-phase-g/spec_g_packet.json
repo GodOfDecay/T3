@@ -1,0 +1,18 @@
+{
+ "target": "agents_orchestrator/modernization_common/handover/packets.py",
+ "tests": [
+  "tests/testing_modernization/test_units.py"
+ ],
+ "mutants": [
+  [
+   "both-captured-ok",
+   "        if both:\n            raise ValueError(f\"{', '.join(both)} are both baselined",
+   "        if False:\n            raise ValueError(f\"{', '.join(both)} are both baselined"
+  ],
+  [
+   "duplicate-not-captured-ok",
+   "        _require_unique([n.ec_id for n in self.not_captured], \"criteria not captured\")",
+   "        pass"
+  ]
+ ]
+}

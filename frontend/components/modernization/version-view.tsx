@@ -482,6 +482,7 @@ export const HANDED_TO: Record<Track3Stage, string> = {
   discovery: "Target Architecture",
   design_modernization: "Migration Strategy",
   strategy: "Equivalence Testing",
+  testing_modernization: "Migration Development",
 };
 
 /** Only a draft or an approved version is ever handed over: a rejected or superseded one says

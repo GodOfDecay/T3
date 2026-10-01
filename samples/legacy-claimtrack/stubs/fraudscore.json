@@ -1,0 +1,6 @@
+{
+  "responses": [
+    {"method": "GET", "path": "/score", "query": "claim=CLM-0003", "status": 200, "body": {"score": 91}},
+    {"method": "GET", "path": "/score", "status": 200, "body": {"score": 12}}
+  ]
+}

@@ -1,0 +1,19 @@
+{
+ "target": "shared/routers/artifact_versions.py",
+ "tests": [
+  "tests/testing_modernization/test_record_approval.py"
+ ],
+ "env_test": true,
+ "mutants": [
+  [
+   "acceptance-skips-ledger",
+   "    elif stage == \"testing_modernization\":\n        await _baseline_approved",
+   "    elif False:\n        await _baseline_approved"
+  ],
+  [
+   "no-placements-accepted",
+   "    if not placements:\n        raise HTTPException(status_code=409, detail=(\n            \"Not accepted",
+   "    if False:\n        raise HTTPException(status_code=409, detail=(\n            \"Not accepted"
+  ]
+ ]
+}

@@ -87,6 +87,40 @@ for key, scenario in (("migration_plan", claimtrack), ("migration_plan_payroll",
         sources={"brief": {"version": 1, "status": "published"}, "assessment": {"version": 1, "status": "published"},
                  "design": {"version": 1, "status": "published"}},
         notes=[], recorded_at="2026-10-07T10:00:00+00:00")
+# Phase G: ClaimTrack Lite's baseline as `record_baseline` stores it — the noise is the MEASURED one
+# (tests/testing_modernization/test_sandbox.py asserts a real capture reproduces `lite.NOISE`), built by
+# the record tool's own builder; and the captures listing the page polls, in each of its three states.
+from agents_orchestrator.testing_modernization_agent.tools.equivalence_tools import build_artifact as build_baseline  # noqa: E402
+from tests.testing_modernization import lite  # noqa: E402
+
+_manifest = {"id": "cap-20261201090000-a1b2c3", "startedAt": "2026-12-01T09:00:00+00:00",
+             "finishedAt": "2026-12-01T09:00:12+00:00", "imageId": "sha256:" + "c9" * 32, "commit": "4f1c2e9a7b" * 4,
+             "profileSource": "sdlc-sandbox.json in the legacy code", "requestedBy": "u-qa", "runs": 2,
+             "mapping": lite.MAPPING, "notCaptured": lite.NOT_CAPTURED, "noise": lite.NOISE, "stubs": ["fraudscore"],
+             "scenarios": [{"id": "claims-read", "kind": "http", "cases": 5, "describes": "Read five claims"},
+                           {"id": "settle", "kind": "http", "cases": 6, "describes": "Settle six claims"},
+                           {"id": "bank-file", "kind": "batch", "cases": 1, "describes": "The nightly bank file"}]}
+data["baseline"] = build_baseline(
+    lite.plan(), _manifest, lite.PROPOSALS,
+    hash_of=lambda scs: __import__("hashlib").sha256("|".join(sorted(scs)).encode()).hexdigest(), region="local-dev",
+    sources={"plan": {"version": 1, "status": "published"}, "design": {"version": 1, "status": "published"}},
+    system_name="ClaimTrack Lite",
+    notes=["Captured from commit 4f1c2e9a7b with sdlc-sandbox.json in the legacy code; data: synthetic.",
+           "2 normalization rule(s) proposed to Migration Strategy — the criteria they belong to stay open until the "
+           "plan is revised."],
+    recorded_at="2026-12-01T09:05:00+00:00")
+_keys = ("id", "status", "startedAt", "finishedAt", "error", "planVersion", "commit", "mapping", "scenarios", "keep")
+data["captures"] = {"projectId": "p-claimtrack", "captures": [
+    {"id": "cap-20261201100000-d4e5f6", "status": "running", "startedAt": "2026-12-01T10:00:00+00:00",
+     "finishedAt": None, "error": None, "planVersion": 1, "commit": _manifest["commit"], "mapping": lite.MAPPING,
+     "scenarios": _manifest["scenarios"], "keep": False},
+    {"id": "cap-20261201093000-0a0b0c", "status": "failed", "startedAt": "2026-12-01T09:30:00+00:00",
+     "finishedAt": "2026-12-01T09:31:02+00:00",
+     "error": "The legacy service did not answer on /health within 60 seconds; its container is exited (exit 3).",
+     "planVersion": 1, "commit": _manifest["commit"], "mapping": lite.MAPPING, "scenarios": _manifest["scenarios"],
+     "keep": False},
+    {**{k: _manifest.get(k) for k in _keys}, "status": "complete", "planVersion": 1, "error": None, "keep": True},
+]}
 FIXTURES.write_text(json.dumps(data, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
 print(f"assessment: schema {new['schema_version']}, {len(new['modules'])} modules, "
       f"{len(new['not_assessable_statically'])} not-assessable questions")

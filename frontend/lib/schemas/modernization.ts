@@ -398,6 +398,71 @@ export const MigrationPlan = z.object({
 });
 export type MigrationPlan = z.infer<typeof MigrationPlan>;
 
+/* ── Equivalence Testing, Baseline mode (Phase G) ──────────────────────────────
+   Mirrors `EquivalenceArtifact`: the hand-over packet's BaselinePayload plus what the record tool
+   set (sources, the capture, the mapping, per-scenario counts and MASKED noise, placements). No
+   recording is ever in it — field names, counts and shapes like "<timestamp>" only. */
+
+const Shapes = z.record(z.string(), z.array(z.string())).default({});
+
+export const BaselineScenario = z.object({
+  id: z.string(),
+  kind: z.string().default("http"),
+  cases: z.number().nullable().default(null),
+  describes: text,
+  varying: z.record(z.string(), z.number()).nullable().transform((v) => v ?? {}).default({}),
+  examples: Shapes.nullable().transform((v) => v ?? {}),
+});
+export type BaselineScenario = z.infer<typeof BaselineScenario>;
+
+export const Baseline = z.object({
+  schema_version: z.number().default(1),
+  system_name: text,
+  mode: z.string().default("baseline"),
+  baselines: z.array(z.object({
+    id: z.string(), ec_ids: strings, module_id: z.string(), count: z.number(), unit: z.string(),
+    sha256: z.string(), region: text, noise_fields: strings, captured_at: z.string().nullable().default(null),
+  })).default([]),
+  noise: z.array(z.object({
+    ec_id: z.string(), runs_compared: z.number().default(2), varying_fields: strings, covered_by_rule: strings,
+  })).default([]),
+  rule_proposals: z.array(z.object({ ec_id: z.string(), field: z.string(), rule: z.string(), evidence: text })).default([]),
+  stubs: strings,
+  not_captured: z.array(z.object({ ec_id: z.string(), reason: z.string() })).default([]),
+  sources: z.object({
+    plan: z.object({ version: z.number().nullable(), status: z.string().nullable() }).partial(),
+    design: z.object({ version: z.number().nullable(), status: z.string().nullable() }).partial(),
+  }).partial().default({}),
+  capture: z.object({
+    id: z.string().nullable(), startedAt: z.string().nullable(), finishedAt: z.string().nullable(),
+    imageId: z.string().nullable(), commit: z.string().nullable(), profileSource: z.string().nullable(),
+  }).partial().default({}),
+  mapping: z.record(z.string(), strings).default({}),
+  scenarios: z.array(BaselineScenario).default([]),
+  placements: z.array(z.object({ module_id: z.string(), baseline_ids: strings })).default([]),
+  notes: strings,
+  recorded_at: z.string().nullable().default(null),
+});
+export type Baseline = z.infer<typeof Baseline>;
+
+export const Capture = z.object({
+  id: z.string(),
+  status: z.enum(["running", "complete", "failed"]).catch("failed"),
+  startedAt: z.string().nullable().default(null),
+  finishedAt: z.string().nullable().default(null),
+  error: z.string().nullable().default(null),
+  planVersion: z.number().nullable().default(null),
+  commit: z.string().nullable().default(null),
+  mapping: z.record(z.string(), strings).nullable().transform((v) => v ?? {}),
+  scenarios: z.array(BaselineScenario.pick({ id: true, kind: true, cases: true, describes: true }))
+    .nullable().transform((v) => v ?? []),
+  keep: z.boolean().nullable().transform((v) => v ?? false),
+});
+export type Capture = z.infer<typeof Capture>;
+
+export const CaptureList = z.object({ projectId: z.string(), captures: z.array(Capture).default([]) });
+export type CaptureList = z.infer<typeof CaptureList>;
+
 export const LegacyInterface = z.object({
   kind: z.string(),
   direction: z.string(),

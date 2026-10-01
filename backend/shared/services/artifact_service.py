@@ -44,6 +44,7 @@ _COLUMN_MAP = {
     "discovery": "discovery_artifacts",
     "design_modernization": "target_design_artifacts",  # 0071
     "strategy": "strategy_artifacts",  # 0072
+    "testing_modernization": "equivalence_artifacts",  # 0073
 }
 
 

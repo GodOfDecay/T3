@@ -1,0 +1,47 @@
+{
+ "root": "frontend",
+ "target": "components/modernization/equivalence-view.tsx",
+ "cmd": [
+  "node",
+  "node_modules/vitest/vitest.mjs",
+  "run",
+  "__tests__/app/equivalence-page.test.tsx"
+ ],
+ "mutants": [
+  [
+   "ledger-claims-rejected",
+   "  if (status === \"rejected\") return",
+   "  if (false) return"
+  ],
+  [
+   "ledger-no-refetch",
+   "    if (approved) void refetch();",
+   "    if (false) void refetch();"
+  ],
+  [
+   "unhandled-hidden",
+   "                    ) : isProposed ? (",
+   "                    ) : true ? ("
+  ],
+  [
+   "proposed-as-covered",
+   "                    {covered ? (",
+   "                    {covered || isProposed ? ("
+  ],
+  [
+   "failed-looks-fine",
+   "        {c.status === \"failed\" && <Badge variant=\"danger\" className=\"font-normal\">failed — nothing recorded, nothing accepted</Badge>}",
+   ""
+  ],
+  [
+   "running-not-polled",
+   "    refetchInterval: (query) => (query.state.data?.captures.some((c) => c.status === \"running\") ? 5000 : false),",
+   "    refetchInterval: false,"
+  ],
+  [
+   "examples-hidden",
+   "{s.examples[f] && <span className=\"text-muted-foreground\"> — {s.examples[f][0]} vs {s.examples[f][1]}</span>}",
+   ""
+  ]
+ ]
+}

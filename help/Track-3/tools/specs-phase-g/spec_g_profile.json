@@ -1,0 +1,83 @@
+{
+ "target": "agents_orchestrator/testing_modernization_agent/sandbox/profile.py",
+ "tests": [
+  "tests/testing_modernization/test_units.py"
+ ],
+ "mutants": [
+  [
+   "outside-checkout-ok",
+   "        path.relative_to(root)\n    except ValueError:\n        return None",
+   "        pass\n    except ValueError:\n        return None"
+  ],
+  [
+   "absolute-ok",
+   "    if not isinstance(rel, str) or not rel.strip() or rel.startswith((\"/\", \"\\\\\")) or \":\" in rel:",
+   "    if not isinstance(rel, str) or not rel.strip():"
+  ],
+  [
+   "unpinned-base-ok",
+   "        if image.lower() not in stages and not DIGEST_RE.search(image):",
+   "        if False:"
+  ],
+  [
+   "real-data-ok",
+   "    if p.get(\"data\") not in DATA_KINDS:",
+   "    if False:"
+  ],
+  [
+   "version-any",
+   "    if p.get(\"version\") != 1:",
+   "    if False:"
+  ],
+  [
+   "root-writable-ok",
+   "w.strip(\"/\") == \"\"",
+   "False"
+  ],
+  [
+   "bad-port-ok",
+   "                or not isinstance(port, int) or not 0 < port < 65536 \\",
+   "                or False \\"
+  ],
+  [
+   "reserved-stub-name-ok",
+   "        if s[\"name\"] in stub_names or s[\"name\"] == \"app\":",
+   "        if s[\"name\"] in stub_names:"
+  ],
+  [
+   "bad-env-ok",
+   "        if not _ENV_RE.match(str(s.get(\"env\", \"\"))):",
+   "        if False:"
+  ],
+  [
+   "duplicate-scenario-ok",
+   "        if sc[\"id\"] in seen:\n            problems.append(f\"{where}: the id is used twice.\")",
+   "        if False:\n            problems.append(f\"{where}: the id is used twice.\")"
+  ],
+  [
+   "http-without-service-ok",
+   "            if service is None:\n                problems.append(f\"{where} sends HTTP requests",
+   "            if False:\n                problems.append(f\"{where} sends HTTP requests"
+  ],
+  [
+   "shell-in-output-ok",
+   "        and bool(re.fullmatch(r\"[A-Za-z0-9._*?-]+\", name))",
+   "        and bool(name)"
+  ],
+  [
+   "glob-dir-ok",
+   "    return directory not in (\"\", \"/\") and \"*\" not in directory and \"?\" not in directory \\",
+   "    return directory not in (\"\", \"/\") \\"
+  ],
+  [
+   "bad-method-ok",
+   "        if not isinstance(req, dict) or str(req.get(\"method\", \"\")).upper() not in _METHODS:",
+   "        if not isinstance(req, dict):"
+  ],
+  [
+   "ui-kind-ok",
+   "        else:\n            problems.append(f\"{where}: kind must be http or batch",
+   "        elif False:\n            problems.append(f\"{where}: kind must be http or batch"
+  ]
+ ]
+}

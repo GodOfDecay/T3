@@ -62,6 +62,7 @@ DISPLAY_NAME: dict[str, str] = {
     "discovery": "Dependency and Risk",
     "design_modernization": "Target Architecture",
     "strategy": "Migration Strategy",
+    "testing_modernization": "Equivalence Testing",
 }
 
 # Every agent must have a display name, or a deliverable renders under a blank

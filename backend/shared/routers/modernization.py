@@ -43,7 +43,8 @@ modernization_router = APIRouter()
 
 #: Page kind (URL segment) -> backend stage.
 _KINDS = {"migration-intent": "requirements_modernization", "discovery": "discovery",
-          "target-architecture": "design_modernization", "strategy": "strategy"}
+          "target-architecture": "design_modernization", "strategy": "strategy",
+          "equivalence-testing": "testing_modernization"}
 _MEDIA = {
     "docx": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
     "pdf": "application/pdf",
@@ -109,6 +110,30 @@ async def latest_migration_plan(
 ) -> dict:
     """The project's current migration plan, or `payload: null`."""
     return await _latest(db, request, project_id, "strategy", "strategy_artifacts")
+
+
+@modernization_router.get("/projects/{project_id}/modernization/equivalence-testing")
+async def latest_baseline(
+    project_id: str, request: Request, db: AsyncSession = Depends(get_db_session),
+) -> dict:
+    """The project's current baseline, or `payload: null`."""
+    return await _latest(db, request, project_id, "testing_modernization", "equivalence_artifacts")
+
+
+@modernization_router.get("/projects/{project_id}/modernization/equivalence-testing/captures")
+async def list_captures(
+    project_id: str, request: Request, db: AsyncSession = Depends(get_db_session),
+) -> dict:
+    """The project's captures, newest first: status (running | complete | failed), times, the plan
+    version, scenario counts and — for a failed one — the reason. Never a recording: counts, field
+    names and masked shapes only."""
+    from agents_orchestrator.testing_modernization_agent.store import LocalBaselineStore  # noqa: PLC0415
+
+    resolved, _tenant, _user = await _guard(db, request, project_id, "testing_modernization", artifact=True)
+    keys = ("id", "status", "startedAt", "finishedAt", "error", "planVersion", "commit", "requestedBy",
+            "profileSource", "mapping", "notCaptured", "stubs", "scenarios", "noise", "keep")
+    return {"projectId": resolved,
+            "captures": [{k: m.get(k) for k in keys} for m in LocalBaselineStore().list_captures(resolved)[:20]]}
 
 
 # ── legacy code ──────────────────────────────────────────────────────────────
@@ -247,6 +272,10 @@ def _version_markdown(stage: str, payload: dict) -> tuple[str, str]:
         from agents_orchestrator.strategy_agent.strategy_document import strategy_markdown  # noqa: PLC0415
 
         return strategy_markdown(payload), "migration-strategy"
+    if stage == "testing_modernization":
+        from agents_orchestrator.testing_modernization_agent.baseline_document import baseline_markdown  # noqa: PLC0415
+
+        return baseline_markdown(payload), "equivalence-baseline"
     from agents_orchestrator.discovery_agent.analysis.assessment import assessment_markdown  # noqa: PLC0415
 
     return assessment_markdown(payload), "discovery-assessment"
@@ -259,7 +288,7 @@ async def version_packet(project_id: str, kind: str, version: int, request: Requ
     built from the frozen version and validated by the hand-over models — or, when it cannot
     be handed over, the reasons in words. `{ok, problems, packet}`."""
     from agents_orchestrator.modernization_common.handover.emit import (  # noqa: PLC0415
-        assessment_packet, brief_packet, design_packet, envelope_of, plan_packet,
+        assessment_packet, baseline_packet, brief_packet, design_packet, envelope_of, plan_packet,
     )
     from shared.services import artifact_versions as svc  # noqa: PLC0415
 
@@ -271,7 +300,8 @@ async def version_packet(project_id: str, kind: str, version: int, request: Requ
     if row is None or row.payload is None:
         raise HTTPException(status_code=404, detail=f"v{version} not found")
     build = {"requirements_modernization": brief_packet, "discovery": assessment_packet,
-             "design_modernization": design_packet, "strategy": plan_packet}[stage]
+             "design_modernization": design_packet, "strategy": plan_packet,
+             "testing_modernization": baseline_packet}[stage]
     return {"stage": stage, "version": version, **build(row.payload, envelope_of(row)).as_dict()}
 
 

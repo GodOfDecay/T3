@@ -460,7 +460,8 @@ async def serve_agent_socket(
 #: The page whose versions feed each Track 3 input artifact: (producing stage, noun).
 _UPSTREAM_STAGE = {"migration_intent_payload": ("requirements_modernization", "Migration-intent brief"),
                    "discovery_artifacts": ("discovery", "Dependency and Risk assessment"),
-                   "target_design_artifacts": ("design_modernization", "Target design")}
+                   "target_design_artifacts": ("design_modernization", "Target design"),
+                   "strategy_artifacts": ("strategy", "Migration plan")}
 
 
 #: (agent, session, producing stage) → the version this chat session already recorded

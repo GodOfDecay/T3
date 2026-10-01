@@ -311,6 +311,26 @@ AGENT_REGISTRY: dict[str, AgentDefinition] = {
         ],
         optional_capabilities=["board.write", "board.read", "doc.export.docx", "doc.export.pdf"],
     ),
+    "testing_modernization": AgentDefinition(
+        id="testing_modernization",
+        name="Equivalence Testing Agent",
+        pipeline_position=5,
+        # Research §6.5: the plan's criteria and baseline plan, the design's contracts/traps/ADRs.
+        input_artifacts=["strategy_artifacts", "target_design_artifacts"],
+        output_artifact="equivalence_artifacts",
+        route_path="/equivalence-testing",
+        # "Accept the baseline" is a Sign-off; its approval marks the modules baselined. Running
+        # the legacy system (a capture) is a separate Consequential action.
+        gate_type="approval_required",
+        sla_hours=48,
+        can_parallel_with=[],
+        max_rejections=1,
+        required_capabilities=[
+            "test.legacy.sandbox.provision", "test.golden_master.capture", "test.noise.floor.measure",
+            "artifact.write",
+        ],
+        optional_capabilities=["legacy.code.read", "doc.export.docx", "doc.export.pdf"],
+    ),
 }
 
 
@@ -340,7 +360,8 @@ TRACK_PORTFOLIOS: dict[str, list[str]] = {
     "enhancement": _PORTFOLIO_1,
     # Built so far: the first four of Portfolio 2's ten (Phase 1, Phase E, Phase F). The rest
     # are added one at a time as each is built and mounted.
-    "modernization": ["requirements_modernization", "discovery", "design_modernization", "strategy"],
+    "modernization": ["requirements_modernization", "discovery", "design_modernization", "strategy",
+                      "testing_modernization"],
     "rpa_infra": [],
     "data_engineering": [],
 }

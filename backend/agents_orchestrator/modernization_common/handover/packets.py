@@ -647,16 +647,29 @@ class NoiseReport(_Strict):
     covered_by_rule: list[str] = []
 
 
+class NotCaptured(_Strict):
+    """A criterion of a baselined module that Baseline mode could not record (a load test, a UI
+    journey) — said, with why, instead of silently missing (Phase G)."""
+
+    ec_id: CriterionId
+    reason: str = Field(min_length=3)
+
+
 class BaselinePayload(_Strict):
     mode: Literal["baseline"] = "baseline"
     baselines: list[Baseline] = Field(min_length=1)
     noise: list[NoiseReport] = []
     rule_proposals: list[RuleProposal] = []
     stubs: list[str] = []
+    not_captured: list[NotCaptured] = []
 
     @model_validator(mode="after")
     def _every_uncovered_noise_is_proposed(self):
         _require_unique([b.id for b in self.baselines], "baseline ids")
+        _require_unique([n.ec_id for n in self.not_captured], "criteria not captured")
+        both = sorted({e for b in self.baselines for e in b.ec_ids} & {n.ec_id for n in self.not_captured})
+        if both:
+            raise ValueError(f"{', '.join(both)} are both baselined and listed as not captured")
         proposed = {(p.ec_id, p.field) for p in self.rule_proposals}
         for report in self.noise:
             for fld in report.varying_fields:

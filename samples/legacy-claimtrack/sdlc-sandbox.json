@@ -1,0 +1,20 @@
+{
+  "version": 1,
+  "data": "synthetic",
+  "build": {"dockerfile": "Dockerfile"},
+  "writable": ["/data"],
+  "seed": "python db/init.py",
+  "service": {"command": "python claims-api/server.py", "port": 8080, "health": "/health"},
+  "stubs": [
+    {"name": "fraudscore", "port": 9000, "env": "FRAUD_URL", "responses": "stubs/fraudscore.json"}
+  ],
+  "scenarios": [
+    {"id": "claims-read", "kind": "http", "requests": "scenarios/claims-read.jsonl",
+     "describes": "Read five claims, including a settled one, a rejected one and one that does not exist"},
+    {"id": "settle", "kind": "http", "requests": "scenarios/settle.jsonl",
+     "describes": "Settle six claims: ordinary payouts, two half-cent roundings, a fraud referral, an already-settled claim"},
+    {"id": "bank-file", "kind": "batch", "command": "python settlement-batch/run.py --date 2027-01-31",
+     "outputs": ["/data/out/*.txt"],
+     "describes": "The nightly bank payment file for 31 Jan 2027 after the settlements above"}
+  ]
+}

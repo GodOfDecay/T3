@@ -423,11 +423,30 @@ def _fmt_target_design(design: Dict[str, Any]) -> str:
     return "\n".join(lines)
 
 
+def _fmt_migration_plan(plan: Dict[str, Any]) -> str:
+    """Track 3's migration plan, compact, as Equivalence Testing reads it first: the criteria per
+    module with their comparison and normalization, and the waves. The full plan is one tool call
+    away (`read_migration_plan`)."""
+    lines = ["MIGRATION PLAN:"]
+    criteria = plan.get("equivalence_criteria") or []
+    for c in criteria[:60]:
+        rules = "; ".join(str(r.get("field")) for r in c.get("normalization") or [])
+        lines.append(f"    - {c.get('id')} ({c.get('module_id')}): {c.get('observable')} — {c.get('comparison')}"
+                     + (f"; normalized: {rules}" if rules else ""))
+    if len(criteria) > 60:
+        lines.append(f"    … and {len(criteria) - 60} more criteria — read_migration_plan lists them all")
+    waves = [f"{w.get('id')} {', '.join(w.get('modules') or []) or '(foundation)'}" for w in plan.get("waves") or []]
+    if waves:
+        lines.append("  WAVES: " + "; ".join(waves))
+    return "\n".join(lines)
+
+
 _ARTIFACT_FORMATTERS = {
     "requirements_payload": _fmt_requirements,
     "migration_intent_payload": _fmt_migration_intent,
     "discovery_artifacts": _fmt_assessment,
     "target_design_artifacts": _fmt_target_design,
+    "strategy_artifacts": _fmt_migration_plan,
     "design_artifacts": _fmt_design,
     "development_artifacts": _fmt_development,
     "testing_artifacts": _fmt_testing,
@@ -476,6 +495,8 @@ _ARTIFACT_FIELDS = (
     # Track 3 — Target Architecture reads the assessment too; Migration Strategy the design.
     "discovery_artifacts",
     "target_design_artifacts",
+    # Track 3 — Equivalence Testing reads the migration plan.
+    "strategy_artifacts",
     "design_artifacts",
     "development_artifacts",
     "testing_artifacts",

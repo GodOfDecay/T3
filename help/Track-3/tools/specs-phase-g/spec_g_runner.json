@@ -1,0 +1,43 @@
+{
+ "target": "agents_orchestrator/testing_modernization_agent/sandbox/runner.py",
+ "tests": [
+  "tests/testing_modernization/test_sandbox.py"
+ ],
+ "mutants": [
+  [
+   "egress-open",
+   "        docker(\"network\", \"create\", \"--internal\", *self._labels(), self.net)",
+   "        docker(\"network\", \"create\", *self._labels(), self.net)"
+  ],
+  [
+   "no-cleanup",
+   "    finally:\n        cleanup(capture_id)\n        docker(\"rmi\", \"-f\", tag, check=False)",
+   "    finally:\n        docker(\"rmi\", \"-f\", tag, check=False)"
+  ],
+  [
+   "image-kept",
+   "        cleanup(capture_id)\n        docker(\"rmi\", \"-f\", tag, check=False)",
+   "        cleanup(capture_id)"
+  ],
+  [
+   "one-run",
+   "        for n in range(1, runs + 1):",
+   "        for n in range(1, 2):"
+  ],
+  [
+   "unhealthy-ok",
+   "            if self._driver(\"wait\", url, str(health_seconds()), timeout=health_seconds() + 30).returncode != 0:",
+   "            if False:"
+  ],
+  [
+   "no-reseed",
+   "        script = f\"set -e\\n{seed}\\n{main}\" if seed else main",
+   "        script = main"
+  ],
+  [
+   "files-lost",
+   "                        (files / name).write_bytes(data)",
+   "                        pass"
+  ]
+ ]
+}

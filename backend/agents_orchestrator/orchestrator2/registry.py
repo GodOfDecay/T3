@@ -335,6 +335,18 @@ def _load_prompt_strategy() -> str:
     return STRATEGY_SYS_MESSAGE
 
 
+def _load_graph_testing_modernization() -> Any:
+    from agents_orchestrator.testing_modernization_agent.agents.tester import app
+
+    return app
+
+
+def _load_prompt_testing_modernization() -> str:
+    from agents_orchestrator.testing_modernization_agent.agents.tester import EQUIVALENCE_SYS_MESSAGE
+
+    return EQUIVALENCE_SYS_MESSAGE
+
+
 REGISTRY: dict[str, AgentCapability] = {
     "requirements": AgentCapability(
         agent_id="requirements",
@@ -414,6 +426,12 @@ REGISTRY: dict[str, AgentCapability] = {
         agent_id="strategy",
         load_graph=_load_graph_strategy,
         load_prompt=_load_prompt_strategy,
+        mode="stream",
+    ),
+    "testing_modernization": AgentCapability(
+        agent_id="testing_modernization",
+        load_graph=_load_graph_testing_modernization,
+        load_prompt=_load_prompt_testing_modernization,
         mode="stream",
     ),
 }

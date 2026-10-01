@@ -276,6 +276,48 @@ async def baseline_accepted(db: AsyncSession, *, project_id: str, module_id: str
                              fields={"baseline_ids": list(baseline_ids)})
 
 
+async def baselines_approved(db: AsyncSession, *, project_id: str, placements: Iterable[dict],
+                             actor: Optional[str], artifact: ArtifactRef) -> list[ModernizationModule]:
+    """An accepted baseline marks each module it covers: `sequenced → baselined` with its BL ids.
+    A REVISED baseline accepted later updates a module still `baselined` (history note "baseline
+    revised"). A module whose migration has started keeps the baselines it is being built against —
+    a baseline that changes them is refused, naming it; so is a module not yet sequenced (its plan
+    unapproved), a blocked one, or one not on the ledger. All or nothing: the caller's transaction
+    rolls back on any refusal."""
+    placements = list(placements)
+    rows = {r.module_id: r for r in (await db.execute(
+        select(ModernizationModule).where(ModernizationModule.project_id == project_id).with_for_update()
+    )).scalars().all()}
+    for p in placements:
+        row = rows.get(p["module_id"])
+        if row is None:
+            raise LedgerRefused(f"{p['module_id']} is not on the ledger — approve its design and plan first")
+        if row.state == "blocked":
+            raise LedgerRefused(f"{p['module_id']} is blocked ({row.blocked_reason}); unblock it before baselining it")
+        if row.state in ("assessed", "designed"):
+            raise LedgerRefused(f"{p['module_id']} is {row.state}: a module is baselined once its migration plan is "
+                                "approved (sequenced)")
+        if row.state not in ("sequenced", "baselined") and sorted(row.baseline_ids or []) != sorted(p["baseline_ids"]):
+            raise LedgerRefused(f"{p['module_id']} is already {row.state} against baselines "
+                                f"{', '.join(row.baseline_ids or []) or 'none'}; this baseline changes them. Keep them, "
+                                "or reopen the module first")
+    out = []
+    for p in placements:
+        row = rows[p["module_id"]]
+        if row.state == "sequenced":
+            out.append(await _transition(db, project_id=project_id, module_id=row.module_id,
+                                         agent="testing_modernization", to="baselined", actor=actor,
+                                         artifact=artifact, fields={"baseline_ids": list(p["baseline_ids"])}))
+            continue
+        if row.state == "baselined":
+            row.baseline_ids = list(p["baseline_ids"])
+            row.history = [*row.history, _entry(frm=row.state, to=row.state, agent="testing_modernization",
+                                                 actor=actor, artifact=artifact, note="baseline revised")]
+        out.append(row)
+    await db.flush()
+    return out
+
+
 async def equivalence_recorded(db: AsyncSession, *, project_id: str, module_id: str, verdict: str,
                                perf_verdict: Optional[str], actor: Optional[str],
                                artifact: ArtifactRef) -> ModernizationModule:

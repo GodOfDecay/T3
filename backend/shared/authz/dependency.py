@@ -329,6 +329,7 @@ _WS_IN_HANDLER_AUTH_PATHS: set[str] = {
     "/sdlc/agent/requirements-modernization/ws",
     "/sdlc/agent/design-modernization/ws",  # Target Architecture (Phase E)
     "/sdlc/agent/strategy/ws",  # Migration Strategy (Phase F)
+    "/sdlc/agent/testing-modernization/ws",  # Equivalence Testing (Phase G)
 }
 
 

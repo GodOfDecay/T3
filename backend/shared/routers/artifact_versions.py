@@ -339,7 +339,30 @@ async def publish_stage_version(
         await _design_approved(db, request, project_id, row)
     elif stage == "strategy":
         await _strategy_approved(db, request, project_id, row)
+    elif stage == "testing_modernization":
+        await _baseline_approved(db, request, project_id, row)
     return await _labelled(db, request, VersionOut.of(row))
+
+
+async def _baseline_approved(db: AsyncSession, request: Request, project_id: str, row) -> None:
+    """Equivalence Testing's ledger transition on ACCEPTANCE (Phase G): every baselined module
+    `sequenced → baselined` with its BL ids, in this request's transaction — a ledger refusal rolls
+    the acceptance back. The placements are the record tool's; a baseline without them marks no
+    module and was not recorded by the agent."""
+    from shared.services import modernization_ledger as ledger  # noqa: PLC0415
+
+    placements = (row.payload or {}).get("placements")
+    if not placements:
+        raise HTTPException(status_code=409, detail=(
+            "Not accepted: this baseline marks no module on the ledger. Record it with the Equivalence Testing "
+            "agent, mapping each module's criteria."))
+    try:
+        await ledger.baselines_approved(
+            db, project_id=project_id, placements=placements,
+            actor=str(getattr(request.state, "user_id", "") or ""),
+            artifact=ledger.ArtifactRef("equivalence_artifacts", row.version))
+    except ledger.LedgerRefused as exc:
+        raise HTTPException(status_code=409, detail=f"Not accepted: {exc}") from exc
 
 
 async def _strategy_approved(db: AsyncSession, request: Request, project_id: str, row) -> None:

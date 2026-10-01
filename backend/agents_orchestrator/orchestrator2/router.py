@@ -121,6 +121,7 @@ DISPLAY_NAMES: dict[str, str] = {
     "discovery": "Dependency and Risk",
     "design_modernization": "Target Architecture",
     "strategy": "Migration Strategy",
+    "testing_modernization": "Equivalence Testing",
 }
 
 # An agent that exists but has no display name is unreachable by name — the exact
@@ -184,6 +185,7 @@ _EXTRA_NAMES: dict[str, tuple[str, ...]] = {
     "discovery": ("discovery and assessment", "assessment", "dependency and risk", "dependency & risk", "dependancy and risk"),
     "design_modernization": ("target architecture", "target design", "architecture", "design"),
     "strategy": ("strategy", "migration plan", "wave plan", "waves", "migration strategy"),
+    "testing_modernization": ("equivalence testing", "equivalence", "testing", "baseline", "golden master"),
 }
 
 _NAME_TO_IDS: dict[str, tuple[str, ...]] = {}
@@ -374,6 +376,13 @@ _CAPABILITIES: dict[str, str] = {
         "what behaviour must be recorded from the legacy system first, the legacy change freeze, the "
         "rollback for each wave, the calendar conflicts and an effort estimate; and can write the "
         "waves to the connected board"
+    ),
+    "testing_modernization": (
+        "records the legacy system's actual behaviour as a BASELINE before any code changes: runs the "
+        "legacy code in an isolated sandbox (no internet, synthetic data, stubbed external services) "
+        "against the approved plan's equivalence criteria, twice, finds what varies between runs, "
+        "proposes normalization rules to Migration Strategy, and records the baselines every migrated "
+        "module is later proven against"
     ),
 }
 
@@ -659,6 +668,10 @@ How a modernization starts:
   the waves", "in what order do the modules move", "the migration plan", "equivalence
   criteria", "what baseline do we need", "the change freeze", "the rollback plan", "does it fit
   the deadline or budget", "write the waves to the board".
+- RECORDING WHAT THE LEGACY SYSTEM DOES is Equivalence Testing work, when that agent is in the
+  list above: "capture the baseline", "record the legacy behaviour", "run the legacy system in
+  the sandbox", "golden master", "what varies between runs", "the capture profile". Deciding
+  WHICH baselines are needed is planning (Migration Strategy); capturing them is this agent's.
 
 How to decide:
 

@@ -1,0 +1,33 @@
+{
+ "target": "agents_orchestrator/testing_modernization_agent/store.py",
+ "tests": [
+  "tests/testing_modernization/test_units.py"
+ ],
+ "mutants": [
+  [
+   "any-capture-id",
+   "        if not _CAPTURE_RE.match(capture_id or \"\"):\n            raise ValueError",
+   "        if False:\n            raise ValueError"
+  ],
+  [
+   "any-scenario-id",
+   "            if not _SCENARIO_RE.match(sid):",
+   "            if False:"
+  ],
+  [
+   "run2-hashed",
+   "        run1 = self.capture_dir(project_id, capture_id) / \"run1\"",
+   "        run1 = self.capture_dir(project_id, capture_id) / \"run2\""
+  ],
+  [
+   "kept-purged",
+   "            if m.get(\"keep\") or not until or datetime.fromisoformat(until) > now:",
+   "            if not until or datetime.fromisoformat(until) > now:"
+  ],
+  [
+   "fresh-purged",
+   "            if m.get(\"keep\") or not until or datetime.fromisoformat(until) > now:",
+   "            if m.get(\"keep\") or not until:"
+  ]
+ ]
+}

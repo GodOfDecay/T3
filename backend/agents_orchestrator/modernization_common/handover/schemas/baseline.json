@@ -124,6 +124,14 @@
           "title": "Noise",
           "type": "array"
         },
+        "not_captured": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/NotCaptured"
+          },
+          "title": "Not Captured",
+          "type": "array"
+        },
         "rule_proposals": {
           "default": [],
           "items": {
@@ -239,6 +247,28 @@
         "runs_compared"
       ],
       "title": "NoiseReport",
+      "type": "object"
+    },
+    "NotCaptured": {
+      "additionalProperties": false,
+      "description": "A criterion of a baselined module that Baseline mode could not record (a load test, a UI\njourney) \u2014 said, with why, instead of silently missing (Phase G).",
+      "properties": {
+        "ec_id": {
+          "pattern": "^EC-\\d{2,}$",
+          "title": "Ec Id",
+          "type": "string"
+        },
+        "reason": {
+          "minLength": 3,
+          "title": "Reason",
+          "type": "string"
+        }
+      },
+      "required": [
+        "ec_id",
+        "reason"
+      ],
+      "title": "NotCaptured",
       "type": "object"
     },
     "ProducedBy": {

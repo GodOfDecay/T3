@@ -65,7 +65,7 @@ logger = logging.getLogger(__name__)
 #: connections may hold the credential for a private repository. Legacy is read-only for every
 #: stage (repository roles, master plan §3); Target Architecture reads the same checkout the
 #: assessment was made from.
-TRACK3_STAGES = ("requirements_modernization", "discovery", "design_modernization")
+TRACK3_STAGES = ("requirements_modernization", "discovery", "design_modernization", "testing_modernization")
 
 _STALE_PULL = timedelta(minutes=15)
 _MAX_READ_BYTES = 2_000_000
@@ -270,7 +270,8 @@ def profile_markdown(pull: dict) -> str:
 
 _STAGE_LABELS = {"requirements_modernization": "Migration Intent",
                  "discovery": "Dependency and Risk",
-                 "design_modernization": "Target Architecture"}
+                 "design_modernization": "Target Architecture",
+                 "testing_modernization": "Equivalence Testing"}
 
 
 def stage_may_read() -> bool:

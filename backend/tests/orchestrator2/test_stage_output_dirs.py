@@ -37,6 +37,7 @@ _WRITES_UNDER = {
     "discovery": ("discovery_agent", "output"),
     "design_modernization": ("design_modernization_agent", "output"),
     "strategy": ("strategy_agent", "output"),
+    "testing_modernization": ("testing_modernization_agent", "output"),
     "plan": ("orchestrator", "output"),
     "design": ("orchestrator", "output"),
     "testing": ("orchestrator", "output"),
