@@ -256,7 +256,13 @@ def test_a_stray_container_of_a_failed_capture_is_removed_by_its_label(tmp_path)
     net = f"sdlc-stray-{capture_id}".lower()
     R.docker("network", "create", "--internal", "--label", label, net)
     R.docker("run", "-d", "--label", label, "--network", net, harness_image(), "sleep", "300")
-    assert len(R.leftovers(capture_id)) == 2
-    with pytest.raises(R.CaptureFailed, match="docker build failed"):
-        R.capture(checkout, profile, tmp_path / "out", capture_id)
-    assert R.leftovers(capture_id) == []
+    try:
+        assert len(R.leftovers(capture_id)) == 2
+        with pytest.raises(R.CaptureFailed, match="docker build failed"):
+            R.capture(checkout, profile, tmp_path / "out", capture_id)
+        assert R.leftovers(capture_id) == []
+    finally:  # when the clean-up under test is broken, the test still removes what it planted
+        ids = R.leftovers(capture_id)
+        if ids:
+            R.docker("rm", "-f", *ids, check=False)
+            R.docker("network", "rm", net, check=False)

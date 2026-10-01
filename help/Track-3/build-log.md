@@ -802,6 +802,7 @@ first). **Tile not flipped** (R42).
 | G-7 | Nothing was audited | Running legacy code and changing what runs are security-relevant | `audit_events`: `modernization.capture_profile_saved` (sha256 + scenario/stub ids, never commands), `baseline_capture_started`, `_completed`, `_failed` |
 | G-8 | Rule proposals went "to Migration Strategy" but Strategy could not read them | The feedback loop of research §6.5 was broken: a proposal was a dead end on a page | Strategy gains `read_baseline_proposals` (the newest baseline's proposals, each marked open or covered by the newest plan using the capture's own matching) and a prompt paragraph: agree with the user, add the rule in a revised plan, never adopt silently |
 | G-9 | `mutate.py` had a hard-coded `C:\Users\…` root and cp1252 bytes | It ran on one laptop only | UTF-8; the root is `SDLC_REPO_ROOT` or its own checkout |
+| G-10 | The BFF legacy-code routes allowed three stages, not `testing_modernization` | **Found in the browser, not by a test**: the page always read "No legacy code pulled yet" and its Pull dialog's repository list was refused (404 at the proxy). The render tests mock the API | Both allow-lists gain the stage; `tests/modernization_common/test_legacy_code_bff_stages.py` reads the route files and pins them to `legacy_code.TRACK3_STAGES` (mutation-checked: removing the stage fails it) |
 
 **Decisions (G10–G13, this session)**
 - G10. The capture lock lives in the baseline store, not Redis: the store is already the shared state a capture
@@ -816,3 +817,36 @@ first). **Tile not flipped** (R42).
 deterministic tokenisation for non-synthetic data (`DATA_KINDS` is "synthetic" only); Azure blob storage behind
 `BaselineStore`; Docker on a dedicated sandbox host rather than the API pod (the build step has network access
 to fetch base images; the RUNS have none).
+
+**Mutation (R46)**: `help/Track-3/tools/specs-phase-g/` (`make_specs.py` writes 15 specs, 113 mutants). The 11 original
+specs had **never been run** (no Entry 13 existed). They had run on the Windows laptop only through a hard-coded path.
+| Pass | Result | Notes |
+|---|---|---|
+| First (the build + this fix wave) | 98/113 killed; 10 survived, 2 BAD | Every survivor was in the original build and was a test that refused for the WRONG reason or was missing: (1) a path outside the checkout was refused only because the file did not exist; (2) an absolute path likewise; (3) "`; rm -rf /`" was refused only because its name ended in "/"; (4) an extra output line in one run only; (5) the runner's label clean-up (a stray driver whose client timed out); (6) a capture mapping that does not hold, never asked of a tool; (7) a failed capture's partial recordings, never present when the test failed; (8) a stopped capture freeing the project early (the test landed during the build, before any container existed); (9) the captures list polling while running (the test was NAMED "polls" and checked no poll). BAD: two noise patterns escaped `À-ɏ` the source writes literally |
+| Second (the five specs with survivors) | **113/113 killed** | New tests: files that EXIST outside the checkout and a symlink out; an absolute path inside it; five shell-syntax names; one-run-only lines; a planted stray container; a bad mapping through `plan_capture` and `capture_baseline`; `_fail` drops every partial recording; the stopped capture held at a gate inside the build (deterministic); fake-timer polling tests both ways |
+- `verify_no_mutants`: Phase G, 0 originals absent.
+- A leak check in the chain test matched "0.13" inside a timestamp ("…:50.136481"): numbers now match whole (`_leaks`).
+
+**Tests**: `tests/testing_modernization` 114 (units 67, lifecycle 14, record/approval chain 16 on Postgres and
+Docker, sandbox 6 in Docker, agent 11) + `tests/modernization_common/test_legacy_code_bff_stages.py` 2. Frontend:
+`equivalence-page.test.tsx` 15.
+
+**Regression (this container: Linux, Postgres 16, Docker 29, Python 3.12, Node 22), test DB at 0073, one group at a time:**
+group 1 (with `tests/design_modernization tests/strategy tests/testing_modernization`) **1,803 passed**, 6 failed, all
+in `test_project_scoped.py` because this container had no `SECRET_STORE_KEY`: with a key, that file is **24/24**. Group 2
+**787 passed**, 1 failed: `test_paths_that_differ_only_in_case_or_separator_are_one_directory`, a Windows-only
+assertion (`C:\files\U1` == `c:/files/u1`), Track 1 code this phase does not touch. Group 3 **41 passed**. Frontend:
+**1,243/1,245**; the 2 are `document-preview.test.tsx` (`object.stream is not a function`: jsdom's Blob under Node 22
+here), failing identically when run alone and untouched by this phase (its only frontend changes are the
+Equivalence test and the two BFF allow-lists). `tsc` clean, eslint clean on touched files.
+
+**Live (this container's dev database, migrated to 0073; the user's own dev DB is untouched):** the backend booted with
+the retention sweeper; a "ClaimTrack Lite (Phase G demo)" project with an approved design and plan, the sample pulled
+through `pull_now`. The agent's tools as QA: profile → capture plan → a REAL two-run capture in Docker (claims-read 5,
+settle 6, bank-file 1; varying fields `generatedAt`, `requestId`, `settledAt`, the bank header line; shapes only) →
+baseline v1 recorded with two proposals → Migration Strategy's `read_baseline_proposals` listed both **open**. Audit:
+`baseline_capture_started` and `_completed`, with the actor. Then in Chromium (Playwright) as a SECOND QA through the
+real login and BFF: the page, baseline v1 with every tile, the ledger panel, **Approve** → v1 Approved, "Ready to hand
+to Migration Development", ledger M-01/M-02 **baselined** (confirmed in the database), the Captures dialog showing the
+capture "recorded as a baseline". This found G-10. No chat was held with the model: the container has no model key.
+

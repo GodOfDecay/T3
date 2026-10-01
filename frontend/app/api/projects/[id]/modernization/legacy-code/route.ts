@@ -6,11 +6,12 @@ import { bffProxy } from "@/lib/bff/proxy";
  * Track 3 — the project's pulled legacy code, proxied to FastAPI
  * `GET|POST /projects/{id}/modernization/legacy-code`.
  *
- * `stage` names the page asking (Requirements or Discovery): the backend checks the
+ * `stage` names the page asking (every Track 3 stage that reads the code: the backend
+ * `legacy_code.TRACK3_STAGES`, pinned by `tests/modernization_common/test_legacy_code_bff_stages.py`): the backend checks the
  * caller's reach to THAT agent, and tries that stage's repository connection first for
  * a private repository's credential. Anything else is refused here rather than proxied.
  */
-const STAGES = new Set(["requirements_modernization", "discovery", "design_modernization"]);
+const STAGES = new Set(["requirements_modernization", "discovery", "design_modernization", "testing_modernization"]);
 
 export async function GET(
   req: NextRequest,

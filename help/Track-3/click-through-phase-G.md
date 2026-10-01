@@ -27,6 +27,7 @@ and note anything that differs.
 |---|---|---|---|
 | A1 | QA | Open `/equivalence-testing` on a **Greenfield** project | "Equivalence Testing is a Code Modernization agent", no chat |
 | A2 | QA | Open it on the Track 3 project | The intro, the Programme strip, the legacy-code pull control, **Run Equivalence Testing agent** and a **Captures** button. Left: **Baselines** (empty) and **Documents**. Centre: the four-step guide "How a baseline gets recorded" |
+| A2b | QA | Look at the legacy-code line under the intro | The repository, its commit and when it was pulled (a fix in this phase: it used to read "No legacy code pulled yet" on this page whatever was pulled) |
 | A3 | Developer (no reach) | Open the page and the chat | The chat refuses |
 
 ## B. The capture profile
