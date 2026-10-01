@@ -51,10 +51,10 @@ SPECS = {
         "mutants": [
             ["timestamp-shown", "    if _TS.match(text):\n        return \"<timestamp>\"", "    if False:\n        return \"<timestamp>\""],
             ["uuid-shown", "    if _UUID.match(text):\n        return \"<uuid>\"", "    if False:\n        return \"<uuid>\""],
-            ["letters-shown", 'shape = re.sub(r"[A-Za-z\\u00c0-\\u024f]", "A", re.sub(r"\\d", "9", text))',
+            ["letters-shown", 'shape = re.sub(r"[A-Za-zÀ-ɏ]", "A", re.sub(r"\\d", "9", text))',
              'shape = re.sub(r"\\d", "9", text)'],
-            ["digits-shown", 'shape = re.sub(r"[A-Za-z\\u00c0-\\u024f]", "A", re.sub(r"\\d", "9", text))',
-             'shape = re.sub(r"[A-Za-z\\u00c0-\\u024f]", "A", text)'],
+            ["digits-shown", 'shape = re.sub(r"[A-Za-zÀ-ɏ]", "A", re.sub(r"\\d", "9", text))',
+             'shape = re.sub(r"[A-Za-zÀ-ɏ]", "A", text)'],
             ["status-ignored", '        fx = {k: v for k, v in x.items() if k != "request" and k != "body"} | {',
              '        fx = {} | {'],
             ["missing-file-ok", '        if name not in fa or name not in fb:\n            varying[name]',
@@ -117,7 +117,7 @@ SPECS = {
     },
     "spec_g_runner.json": {
         "target": "agents_orchestrator/testing_modernization_agent/sandbox/runner.py",
-        "tests": [f"{T}/test_sandbox.py"],
+        "tests": [f"{T}/test_sandbox.py", f"{T}/test_lifecycle.py"],
         "mutants": [
             ["egress-open", '        docker("network", "create", "--internal", *self._labels(), self.net)',
              '        docker("network", "create", *self._labels(), self.net)'],
@@ -133,7 +133,7 @@ SPECS = {
     },
     "spec_g_tool.json": {
         "target": "agents_orchestrator/testing_modernization_agent/tools/equivalence_tools.py",
-        "tests": [f"{T}/test_record_approval.py"], **DB,
+        "tests": [f"{T}/test_record_approval.py", f"{T}/test_lifecycle.py"], **DB,
         "mutants": [
             ["orchestrator-captures", "    if get_orchestrator_run():\n        return None, (\"A baseline is captured",
              "    if False:\n        return None, (\"A baseline is captured"],

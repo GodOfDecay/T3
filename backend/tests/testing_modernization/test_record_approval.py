@@ -166,6 +166,13 @@ def _publish(env, v, user, body=None):
                        json=body or {}, headers=hdr)
 
 
+def _leaks(text: str) -> list[str]:
+    """Recorded values that must never reach the model or the store's payload. Numbers match whole
+    (a timestamp's "50.136481" is not the payout 0.13)."""
+    found = [w for w in ("Test Claimant", "Zoë", "CLM-000") if w in text]
+    return found + [n for n in ("0.13", "960.0") if re.search(r"(?<![\d.])" + re.escape(n) + r"(?![\d])", text)]
+
+
 # ── reading and planning ────────────────────────────────────────────────────
 
 async def test_the_profile_and_plan_are_read_and_a_capture_plan_is_shown_before_anything_runs(chat):
@@ -179,6 +186,18 @@ async def test_the_profile_and_plan_are_read_and_a_capture_plan_is_shown_before_
     shown = await tools.plan_capture.ainvoke({"mapping": lite.MAPPING, "not_captured": lite.NOT_CAPTURED})
     assert "Runs the legacy system **twice**" in shown and "| EC-02 | settle | 6 |" in shown
     assert "EC-04 (a load test" in shown and "fraudscore" in shown
+    assert LocalBaselineStore().list_captures(chat["modern"]) == []
+
+
+async def test_a_capture_plan_that_does_not_hold_is_refused_before_anything_runs(chat):
+    await _approved_inputs(chat)
+    await _turn(chat)
+    out = await tools.plan_capture.ainvoke({"mapping": {**lite.MAPPING, "EC-99": ["claims-read"]},
+                                            "not_captured": lite.NOT_CAPTURED})
+    assert out.startswith("The capture plan does not hold:") and "EC-99 is not a criterion of the approved plan" in out
+    set_consequential_approved(True)
+    out = await tools.capture_baseline.ainvoke({"mapping": {"EC-01": ["no-such-scenario"]}})
+    assert out.startswith("The capture plan does not hold:") and "no-such-scenario" in out, out
     assert LocalBaselineStore().list_captures(chat["modern"]) == []
 
 
@@ -234,8 +253,7 @@ async def test_capture_record_and_accept_move_the_modules_to_baselined(chat):
     assert "| settle | 6 | requestId (6; <uuid> vs <uuid>), settledAt (4; <timestamp> vs <timestamp>) |" in out
     assert "- EC-01: requestId" in out and "- EC-02: requestId" in out
     # The model saw shapes only: no claimant, amount, id or time from the recordings.
-    for leak in ("Test Claimant", "Zoë", "0.13", "960.0", "CLM-000"):
-        assert leak not in out, leak
+    assert _leaks(out) == []
     assert not re.search(r"\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d+Z", out)
     assert not re.search(r"[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}", out)
 
@@ -258,7 +276,7 @@ async def test_capture_record_and_accept_move_the_modules_to_baselined(chat):
                                      {"module_id": "M-02", "baseline_ids": ["BL-03"]}]
     assert {p["artifact"] for p in rows[0]["built_from"]} >= {"strategy_artifacts", "target_design_artifacts"}
     text_payload = json.dumps(payload)
-    assert "Test Claimant" not in text_payload and "0.13" not in text_payload
+    assert _leaks(text_payload) == []
     assert LocalBaselineStore().read_manifest(chat["modern"], capture_id)["keep"] is True
     assert {r.state for r in (await _ledger(chat)).values()} == {"sequenced"}, "recording writes nothing to the ledger"
 
@@ -413,7 +431,7 @@ async def test_a_capture_is_refused_while_another_process_holds_the_project_lock
 
 
 @needs_docker
-async def test_a_stopped_capture_is_marked_and_frees_the_project_once_its_sandbox_is_gone(chat, audited):
+async def test_a_stopped_capture_is_marked_and_frees_the_project_once_its_sandbox_is_gone(chat, audited, monkeypatch):
     import asyncio
     from datetime import datetime, timedelta, timezone
 
@@ -433,14 +451,24 @@ async def test_a_stopped_capture_is_marked_and_frees_the_project_once_its_sandbo
     store.write_manifest(chat["modern"], expired, {"id": expired, "status": "failed", "startedAt": long_ago.isoformat(),
                                                    "retainUntil": long_ago.isoformat()})
 
+    # Hold the sandbox thread inside its build, so the stop lands while the thread is still working.
+    import threading
+    building, go_on = threading.Event(), threading.Event()
+    real_build = runner.build_image
+
+    def held_build(*args, **kwargs):
+        building.set()
+        go_on.wait(120)
+        return real_build(*args, **kwargs)
+
+    monkeypatch.setattr(runner, "build_image", held_build)
     set_consequential_approved(True)
     task = asyncio.ensure_future(_capture())
     for _ in range(600):
         await asyncio.sleep(0.1)
-        live = [m for m in store.list_captures(chat["modern"]) if m["id"] not in (dead, expired)]
-        if live:
+        if building.is_set():
             break
-    [m] = live
+    [m] = [m for m in store.list_captures(chat["modern"]) if m["id"] not in (dead, expired)]
     assert m["status"] == "running"
     assert store.read_manifest(chat["modern"], dead)["status"] == "failed", "the dead capture is reaped first"
     assert "interrupted" in store.read_manifest(chat["modern"], dead)["error"]
@@ -450,7 +478,11 @@ async def test_a_stopped_capture_is_marked_and_frees_the_project_once_its_sandbo
         await task
     stopped = store.read_manifest(chat["modern"], m["id"])
     assert stopped["status"] == "failed" and stopped["error"].startswith("cancelled")
-    # The project stays locked until the sandbox thread has removed its containers ...
+    # The project stays locked while the sandbox thread still runs ...
+    await asyncio.sleep(0.5)
+    assert not store.acquire_lock(chat["modern"], "cap-20261001120000-eeeeee"), "freed before the sandbox was removed"
+    go_on.set()
+    # ... and is freed once it has stopped and removed what it built.
     for _ in range(1200):
         if store.acquire_lock(chat["modern"], "cap-20261001120000-eeeeee"):
             break
@@ -458,7 +490,6 @@ async def test_a_stopped_capture_is_marked_and_frees_the_project_once_its_sandbo
     else:
         pytest.fail("the lock was never released after the stop")
     store.release_lock(chat["modern"], "cap-20261001120000-eeeeee")
-    # ... and then nothing of it is left.
     assert runner.leftovers(m["id"]) == []
     d = store.capture_dir(chat["modern"], m["id"])
     assert not (d / "run1").exists() and not (d / "run2").exists()

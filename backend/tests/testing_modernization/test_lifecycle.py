@@ -226,3 +226,37 @@ def test_a_capture_stopped_between_scenarios_records_no_further_scenario(tmp_pat
     assert not (tmp_path / "out" / "run2").exists()
     assert R.leftovers(capture_id) == []
 
+
+
+def test_a_failed_capture_drops_every_partial_recording(store):
+    from agents_orchestrator.testing_modernization_agent.tools.equivalence_tools import _fail
+
+    project, cid = str(uuid.uuid4()), "cap-20261001120000-aaaaaa"
+    manifest = {"id": cid, "status": "running", "startedAt": NOW.isoformat()}
+    store.write_manifest(project, cid, manifest)
+    for sub in ("run1/settle", "run2/settle"):
+        (store.capture_dir(project, cid) / sub).mkdir(parents=True)
+        (store.capture_dir(project, cid) / sub / "responses.jsonl").write_text("{}", encoding="utf-8")
+    _fail(store, project, manifest, "the stub did not start")
+    kept = store.read_manifest(project, cid)
+    assert kept["status"] == "failed" and kept["error"] == "the stub did not start" and kept["retainUntil"]
+    assert sorted(p.name for p in store.capture_dir(project, cid).iterdir()) == ["manifest.json"]
+
+
+@needs_docker
+def test_a_stray_container_of_a_failed_capture_is_removed_by_its_label(tmp_path):
+    """A request driver whose `docker run` client timed out keeps running (and keeps the network in use):
+    `Run.stop` does not know it by name; the capture's final clean-up removes everything by label."""
+    from agents_orchestrator.testing_modernization_agent.sandbox.images import harness_image
+
+    checkout, profile = _checkout(tmp_path)
+    (checkout / "Dockerfile").write_text(f"FROM {harness_image()}\nRUN false\n", encoding="utf-8")
+    capture_id = new_capture_id()
+    label = f"sdlc.capture={capture_id}"
+    net = f"sdlc-stray-{capture_id}".lower()
+    R.docker("network", "create", "--internal", "--label", label, net)
+    R.docker("run", "-d", "--label", label, "--network", net, harness_image(), "sleep", "300")
+    assert len(R.leftovers(capture_id)) == 2
+    with pytest.raises(R.CaptureFailed, match="docker build failed"):
+        R.capture(checkout, profile, tmp_path / "out", capture_id)
+    assert R.leftovers(capture_id) == []

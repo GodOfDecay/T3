@@ -270,9 +270,27 @@ describe("the baseline", () => {
 });
 
 describe("captures", () => {
-  it("polls while a capture runs and says when there is none", async () => {
+  afterEach(() => vi.useRealTimers());
+
+  it("says when there is none, and does not poll then", async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
     state.captures = { projectId: PROJECT, captures: [] };
+    state.captureCalls = 0;
     wrap(<CapturesPanel projectId={PROJECT as never} />);
     expect(await screen.findByText(/No capture yet/)).toBeTruthy();
+    await vi.advanceTimersByTimeAsync(12_000);
+    expect(state.captureCalls).toBe(1);
+  });
+
+  it("re-reads the list every few seconds while a capture runs, so its end shows without a reload", async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    const running = (fixtures.captures as { captures: { status: string }[] }).captures.find((c) => c.status === "running");
+    expect(running).toBeTruthy();
+    state.captures = { projectId: PROJECT, captures: [running] };
+    state.captureCalls = 0;
+    wrap(<CapturesPanel projectId={PROJECT as never} />);
+    await waitFor(() => expect(state.captureCalls).toBe(1));
+    await vi.advanceTimersByTimeAsync(5_500);
+    await waitFor(() => expect(state.captureCalls).toBe(2));
   });
 });

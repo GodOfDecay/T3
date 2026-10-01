@@ -16,13 +16,13 @@
   ],
   [
    "letters-shown",
-   "shape = re.sub(r\"[A-Za-z\\u00c0-\\u024f]\", \"A\", re.sub(r\"\\d\", \"9\", text))",
+   "shape = re.sub(r\"[A-Za-zÀ-ɏ]\", \"A\", re.sub(r\"\\d\", \"9\", text))",
    "shape = re.sub(r\"\\d\", \"9\", text)"
   ],
   [
    "digits-shown",
-   "shape = re.sub(r\"[A-Za-z\\u00c0-\\u024f]\", \"A\", re.sub(r\"\\d\", \"9\", text))",
-   "shape = re.sub(r\"[A-Za-z\\u00c0-\\u024f]\", \"A\", text)"
+   "shape = re.sub(r\"[A-Za-zÀ-ɏ]\", \"A\", re.sub(r\"\\d\", \"9\", text))",
+   "shape = re.sub(r\"[A-Za-zÀ-ɏ]\", \"A\", text)"
   ],
   [
    "status-ignored",

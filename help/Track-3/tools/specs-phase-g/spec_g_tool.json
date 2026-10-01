@@ -1,7 +1,8 @@
 {
  "target": "agents_orchestrator/testing_modernization_agent/tools/equivalence_tools.py",
  "tests": [
-  "tests/testing_modernization/test_record_approval.py"
+  "tests/testing_modernization/test_record_approval.py",
+  "tests/testing_modernization/test_lifecycle.py"
  ],
  "env_test": true,
  "mutants": [

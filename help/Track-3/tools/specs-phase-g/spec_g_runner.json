@@ -1,7 +1,8 @@
 {
  "target": "agents_orchestrator/testing_modernization_agent/sandbox/runner.py",
  "tests": [
-  "tests/testing_modernization/test_sandbox.py"
+  "tests/testing_modernization/test_sandbox.py",
+  "tests/testing_modernization/test_lifecycle.py"
  ],
  "mutants": [
   [

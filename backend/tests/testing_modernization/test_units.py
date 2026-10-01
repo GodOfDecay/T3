@@ -65,6 +65,36 @@ def test_a_profile_the_sandbox_cannot_run_safely_is_refused(checkout, mutate, ne
     assert any(needle in x for x in problems), problems
 
 
+def test_a_file_that_exists_outside_the_checkout_is_refused_for_being_outside(checkout):
+    # Each of these files EXISTS, so only containment can refuse it (a missing file is refused anyway).
+    outside = checkout.parent / "host-secrets.json"
+    outside.write_text((checkout / "stubs" / "fraudscore.json").read_text(encoding="utf-8"), encoding="utf-8")
+    (checkout / "stubs" / "link.json").symlink_to(outside)  # a repository may ship a symlink out
+    for rel in ("../host-secrets.json", "stubs/link.json"):
+        p = _profile(checkout)
+        p["stubs"][0]["responses"] = rel
+        _c, problems = P.validate(p, checkout)
+        assert any("responses must name a file inside the legacy checkout" in x for x in problems), (rel, problems)
+
+
+def test_an_absolute_path_is_refused_even_inside_the_checkout(checkout):
+    # A profile names files relative to its checkout; an absolute path ties it to one machine's layout.
+    p = _profile(checkout)
+    p["build"]["dockerfile"] = str((checkout / "Dockerfile").resolve())
+    _c, problems = P.validate(p, checkout)
+    assert any("Dockerfile inside the legacy checkout" in x for x in problems), problems
+
+
+@pytest.mark.parametrize("glob", ["/data/out/x$(id).txt", "/data/out/a b.txt", "/data/out/*.txt;reboot",
+                                  "/data/out/`id`.txt", "/data/out/x|y.txt"])
+def test_an_output_file_name_never_carries_shell_syntax(checkout, glob):
+    # The name reaches `sh` unquoted (so its wildcard globs): nothing but a name and the wildcards.
+    p = _profile(checkout)
+    p["scenarios"][2]["outputs"] = [glob]
+    _c, problems = P.validate(p, checkout)
+    assert any("a wildcard only in the file name" in x for x in problems), (glob, problems)
+
+
 def test_a_base_image_must_be_pinned_by_digest():
     assert P.check_dockerfile("FROM python:2.7-slim\n") and "not pinned by digest" in P.check_dockerfile("FROM python:2.7")[0]
     assert P.check_dockerfile("FROM python@sha256:" + "a" * 64 + " AS build\nFROM build\n") == []
@@ -137,6 +167,16 @@ def test_a_file_in_one_run_only_and_a_changed_exit_code_are_differences(tmp_path
         (d.parent / "exec.json").write_text(json.dumps({"exit": n - 1, "stdout": f"line {n}\n"}), encoding="utf-8")
     out = N.compare(tmp_path / "run1", tmp_path / "run2", [{"id": "bank", "kind": "batch"}])["bank"]
     assert out["varying"] == {"exit": 1, "extra.txt": 1, "stdout#L1": 1}
+
+
+def test_a_line_present_in_one_run_only_is_a_difference(tmp_path):
+    for n, body in ((1, b"H1\r\nD1\r\n"), (2, b"H1\r\nD1\r\nD2\r\n")):
+        d = tmp_path / f"run{n}" / "bank" / "files"
+        d.mkdir(parents=True)
+        (d / "out.txt").write_bytes(body)
+        (d.parent / "exec.json").write_text(json.dumps({"exit": 0, "stdout": ""}), encoding="utf-8")
+    out = N.compare(tmp_path / "run1", tmp_path / "run2", [{"id": "bank", "kind": "batch"}])["bank"]
+    assert out["varying"] == {"out.txt#L3": 1} and out["examples"]["out.txt#L3"] == ["<null>", "A9"]
 
 
 @pytest.mark.parametrize("value,shape", [
