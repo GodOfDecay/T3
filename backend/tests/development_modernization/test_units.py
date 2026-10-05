@@ -342,3 +342,25 @@ def test_the_document_never_states_a_count_the_record_does_not_hold():
               "recipes": [{"tool": "lib2to3", "version": "CPython 3.12.14", "args": "-w claims-api"}]}
     text = migration_markdown(record)
     assert "| lib2to3 | CPython 3.12.14 | -w claims-api |" in text and "| Files |" not in text
+
+
+def test_a_secret_git_itself_echoes_is_scrubbed_from_the_error(tmp_path):
+    """Modern git already hides credentials in URLs, so the scrub is proven on an error that ECHOES the
+    value (an unknown ref named like it)."""
+    subprocess.run(["git", "init", "-q", str(tmp_path)], check=True)
+    with pytest.raises(W.WorkspaceError) as caught:
+        W.git(tmp_path, "checkout", "SUPERSECRET123", secret="SUPERSECRET123")
+    assert "SUPERSECRET123" not in str(caught.value) and "git checkout failed" in str(caught.value)
+
+
+def test_the_stored_remote_is_the_clean_url_never_the_credentialed_one(tmp_path, monkeypatch):
+    bare = _bare(tmp_path, seed=True)
+    # As a real https clone would: the URL git is given carries the credential; the stored one must not.
+    monkeypatch.setattr(W, "_with_secret", lambda url, secret: pathlib.Path(url).as_uri())
+    _open(tmp_path, bare, secret="tok")
+    assert W.git(tmp_path / "ws" / "repo", "remote", "get-url", "origin") == str(bare)
+
+
+def test_reported_rounds_never_exceed_five_whatever_the_state_holds():
+    builds = [{"ok": False, "failing": "e"}] * 6 + [{"ok": True}]
+    assert R.build_result({"builds": builds})["rounds"] == 5
