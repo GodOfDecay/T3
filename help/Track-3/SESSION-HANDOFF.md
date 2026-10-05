@@ -26,7 +26,7 @@ mandatory stops are in `help/Track-3/Track-3 Implementation Prompt.md` §9.
 - [x] I0 Plan written: `docs/superpowers/plans/2026-10-05-track3-phase-i-review-security.md`
 - [x] I1 Migration Review agent (`code_review_modernization`): tools, prompt, graph, socket
 - [x] I2 Security (Modernization) agent (`security_modernization`): tools, prompt, graph, socket
-- [ ] I3 Wiring: registry, orchestrator2, migration 0075, routes, ledger verdicts, roster pins
+- [x] I3 Wiring: registry, orchestrator2, migration 0075, routes, ledger verdicts, roster pins
 - [ ] I4 Tests: units, Postgres chain (review + security on Phase H's PR), rework loop
 - [ ] I5 Frontend: `/migration-review`, `/modernization-security` pages + tests
 - [ ] I6 Mutation, regression, build-log Entry 15, click-through I, this file
