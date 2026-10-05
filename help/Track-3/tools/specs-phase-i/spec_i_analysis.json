@@ -7,8 +7,8 @@
  "mutants": [
   [
    "private-functions-public",
-   "            if (m := _DEF.match(line)) and not m.group(1).startswith(\"_\"):",
-   "            if (m := _DEF.match(line)):"
+   "_DEF = re.compile(r\"^(?:async\\s+)?def\\s+([A-Za-z]\\w*)",
+   "_DEF = re.compile(r\"^(?:async\\s+)?def\\s+(\\w+)"
   ],
   [
    "no-status",

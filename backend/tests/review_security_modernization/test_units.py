@@ -451,3 +451,34 @@ def test_the_track3_prompts_state_the_policy_the_tools_enforce():
     assert "READ-ONLY on both repositories" in R and "files you opened are recorded" in R
     assert "never with a required scanner not run: not scanned is not clean" in P
     assert "AI analysis" not in P and "fall back" not in P.lower()
+
+
+# ── closing the gaps the first mutation pass found (R46) ───────────────────
+
+def test_private_functions_are_not_surface_and_rules_keep_to_their_languages():
+    names = {i["name"] for i in A._own_surface("m/a.py", "def _helper(x):\n    pass\ndef run(a, b=1):\n    pass\n")}
+    assert names == {"run(a, b)"}
+    assert A.antipatterns({"m/a.js": "print 'x'\nimport urllib2\n"}) == []
+
+
+def test_a_vault_reference_is_not_a_legacy_secret_value():
+    assert C.credential_values({"m/a.py": "DB_PASSWORD = 'kv://claimtrack/db'\nTOKEN = '${API_TOKEN}'\n"}) == []
+
+
+def test_a_dependency_hit_matches_only_the_same_cve_on_the_same_package():
+    hit = {**_hit("trivy", cve="CVE-1", package="requests"), "origin": "introduced"}
+    wrong_pkg = {"findings": [{"cve": "CVE-1", "package": "urllib3", "origin": "introduced"}]}
+    assert "CVE-1 in requests" in security_check(report=wrong_pkg, target_hits=[hit], carryover=[], http_contracts=[], authz={})[0]
+
+
+def test_a_semgrep_error_is_high():
+    hits, _ = S.parse_semgrep(json.dumps({"results": [{"check_id": "r.x", "path": "/scan/m/a.py", "start": {"line": 1},
+                                                       "extra": {"severity": "ERROR", "message": "m"}}]}))
+    assert hits[0]["severity"] == "high"
+
+
+def test_a_path_that_climbs_out_of_the_checkout_is_refused_even_when_the_file_exists(tmp_path):
+    base = tmp_path / "checkout"
+    base.mkdir()
+    (tmp_path / "outside.txt").write_text("secret")
+    assert RC.resolve(base, "../outside.txt") is None

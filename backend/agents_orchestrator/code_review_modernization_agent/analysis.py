@@ -81,7 +81,7 @@ def _own_surface(rel: str, text: str) -> list[dict]:
         def add(kind: str, name: str) -> None:
             items.append({"kind": kind, "name": name, "location": f"{rel}:{n}", "evidence": line.strip()[:200]})
         if is_py:
-            if (m := _DEF.match(line)) and not m.group(1).startswith("_"):
+            if m := _DEF.match(line):  # _DEF starts with a letter: private (_x) functions never match
                 add("function", f"{m.group(1)}({_params(m.group(2))})")
             if m := _HANDLER.match(line):
                 add("http_method", m.group(1))

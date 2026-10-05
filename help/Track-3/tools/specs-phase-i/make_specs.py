@@ -17,8 +17,7 @@ SPECS = {
     "spec_i_analysis.json": {
         "target": f"{R}/analysis.py", "tests": UNIT,
         "mutants": [
-            ["private-functions-public", '            if (m := _DEF.match(line)) and not m.group(1).startswith("_"):',
-             "            if (m := _DEF.match(line)):"],
+            ["private-functions-public", '_DEF = re.compile(r"^(?:async\\s+)?def\\s+([A-Za-z]\\w*)', '_DEF = re.compile(r"^(?:async\\s+)?def\\s+(\\w+)'],
             ["no-status", "        for m in _STATUS.finditer(line):\n            add(\"status\", m.group(1))", "        for m in []:\n            add(\"status\", m.group(1))"],
             ["no-path-eq", "        for m in _PATH_EQ.finditer(line):", "        for m in []:"],
             ["sql-double-only", "            add(\"sql\", _norm(m.group(1) or m.group(2)))", "            add(\"sql\", _norm(m.group(1) or \"\"))"],
