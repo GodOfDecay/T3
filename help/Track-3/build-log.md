@@ -1034,3 +1034,60 @@ frontend 12.
   awaiting the user's OK to change Track 1.
 - Revoke the GitHub token shared in the chat during Phase H.
 - Reachability is the agent's reading (unknown counts as reachable), not a call-graph analysis.
+
+## Entry 16 — 2026-10-05 — Workflow review, then Phase J: Equivalence Testing Verify mode
+
+Plan (decisions J1–J10): `docs/superpowers/plans/2026-10-05-track3-phase-j-equivalence-verify.md`.
+Click-through: `click-through-phase-J.md`. No new migration (0075 is the head). At the user's request the
+Migration Development, Migration Review and Security tiles were flipped first (`8ccd3ec`), before their
+browser click-throughs.
+
+**The workflow review (before building J).** One project, two modules, walked from Migration Intent to sign-off
+through the code. Five things would have stopped real work; each fixed with tests:
+| # | Found | Fix |
+|---|---|---|
+| W-1 | **One approved version per stage**, but Migration Development, Review and Security keep one version per MODULE: accepting M-02's record superseded M-01's (M-01 could no longer be pushed or reviewed), and M-01's older record could never be accepted after M-02's ("would go backwards"). The single-module ClaimTrack tests could not see it | `artifact_versions`: approvals per SUBJECT on the four Track 3 per-module stages (`subject_of`); Equivalence Testing keeps the baseline and each module's verification apart, and readers that name no subject mean the baseline. Every other stage unchanged. `test_per_subject_versions.py` |
+| W-2 | Migration Development could not read what Review / Security (and later Verify) found: rework was blind | `read_review_findings` (the rework list: findings with file and line, unhandled traps, carried-over secrets, weaker authz, verification differences, the rejection count) |
+| W-3 | A module rejected three times stayed `blocked` for ever; a verified one could not be reopened (the ledger functions existed, nothing called them) | `POST /modernization-programme/{id}/ledger/{module}/unblock|reopen` (Architect or Project Admin of THIS project, a reason, audited); Programme page buttons with a reason dialog |
+| W-4 | The Programme board did not show the review / security verdicts or the rejection count | Columns added |
+| W-5 | A verification would have been "the approved Equivalence Testing version" every Phase H/I reader takes as the baseline | Covered by W-1's default subject; tested in the verify chain (the baseline stays approved) |
+
+**Phase J — what was built**
+- `analysis/verify.py` (pure): the target's two runs against the accepted baseline's run 1, per criterion, after ONLY
+  that criterion's rules; every remaining field classified by the TOOL — `normalization_gap` (the legacy varies
+  there too: a proposal to Strategy), `environment` (one run only), `regression`; the agent may only re-classify a
+  regression as `accepted_change` with an ADR on the module; verdicts computed (passed / failed / open / not_run);
+  p95 on both sides, not measured = not run, never 0.
+- Driver `perf` mode (latencies only, no bodies) and `runner.measure` (same container limits both sides).
+- `tools/verify_tools.py`: `get_verification_plan`, `run_verification` (Consequential; QA or PA; the module from the
+  accepted head overlaid on the legacy system — Phase H's overlay — run twice in the baseline's sandbox),
+  `record_equivalence_results` (one version = one module; `VerificationArtifact`, `emit.verification_packet`).
+- Acceptance hook: verify versions write `equivalence_recorded` (verified / migrating / open, perf verdict); a
+  verification of an older migration record is refused. Packet route dispatches by mode.
+- Prompt: VERIFY MODE section; Orchestrator capability text, aliases and routing bullet.
+- Frontend: `VerificationView` on `/equivalence-testing` (chosen by the version's mode).
+
+**Proven on the real chain** (`test_verify_chain.py`: Postgres, git, Docker — research §6.5's acceptance checks):
+a faithful migration is VERIFIED (EC-01 5 cases, EC-02 6 cases passed; EC-04 p95 measured on both sides, a few ms
+against 250 ms); the same replay twice gives the same verdict; accepted by a second QA the module is `verified`
+(perf `passed`) and the baseline is still approved; the rounding trap left in is CAUGHT (EC-02 failed: `settle:payout`
+in 2 cases, `<number> vs <number>`, likely TR-01), an "accepted change" without an ADR on the module is refused, and
+accepting sends M-01 back to `migrating` with the difference in the developer's rework list; the legacy module
+replayed against its own baseline gives zero differences.
+
+| # | Found by the first real run | Resolution |
+|---|---|---|
+| J-F1 | The faithful migration came out OPEN: `requestId` is a fresh uuid per response, in the legacy too, and the plan never adopted the baseline's rule proposal | Correct behaviour (a gap is the plan's to close, never Testing's). The test now models the workflow: Strategy adopts the proposals in plan v2 — same waves and criteria, which the ledger allows mid-flight — then QA verifies |
+
+**Mutation (R46)** — `help/Track-3/tools/specs-phase-j/` (3 specs, 25 mutants: verify analysis, the rework list,
+per-subject publication on the database). First pass 22/25 + one equivalent mutant: survivors were a difference only
+in the target's SECOND run and a scenario with zero cases (tests added); the equivalent one exposed a redundant branch
+(removed). Second pass **25/25**, `verify_no_mutants` 0 absent.
+
+**Regression**: (filled when the run finished — see the closing line below).
+
+**Open (need the user, not code):**
+- Run click-throughs H, I and J in the browser (the H and I tiles were flipped at the user's request first).
+- Trivy's database (Phase I) and the Track 1 `git_tools.py` tenant decision are unchanged.
+- Performance is measured with the driver's sequential requests (p95 of N repetitions), not a load generator;
+  a concurrency profile (k6) is a later step if a criterion needs it.
