@@ -39,7 +39,7 @@ describe("Track 3 roster", () => {
 
   it("builds exactly its first three agents; Portfolio 1's list is unchanged", () => {
     expect(builtAgentsForTrack("modernization")).toEqual(["requirements_modernization", "discovery", "design_modernization", "strategy",
-      "testing_modernization"]);
+      "testing_modernization", "development_modernization"]);
     expect(builtAgentsForTrack("greenfield")).toBe(BUILT_AGENTS);
     expect(BUILT_AGENTS).not.toContain("discovery");
   });
@@ -189,11 +189,19 @@ describe("Track 3 agents 3–10", () => {
     expect(tileStateFor("developer", "testing_modernization", "modernization", built)).not.toBe("available");
   });
 
+  it("then Migration Development (Phase H), for the Developer and the Project Admin", () => {
+    const built = builtAgentsForTrack("modernization");
+    expect(tileStateFor("developer", "development_modernization", "modernization", built)).toBe("owner");
+    expect(tileStateFor("project_admin", "development_modernization", "modernization", built)).toBe("owner");
+    expect(tileStateFor("qa", "development_modernization", "modernization", built)).not.toBe("available");
+  });
+
   it("stay locked, even for their owner and the Project Admin, until each is built", () => {
     const built = builtAgentsForTrack("modernization");
     for (const [phase, want] of Object.entries(LATER)) {
       const p = phase as keyof typeof AGENT_OWNER_ROLE;
-      if (p === "design_modernization" || p === "strategy" || p === "testing_modernization") continue; // built (E, F, G): above
+      if (p === "design_modernization" || p === "strategy" || p === "testing_modernization"
+        || p === "development_modernization") continue; // built (E, F, G, H): above
       expect(built).not.toContain(p);
       expect(tileStateFor(want.owner as never, p, "modernization", built), phase).toBe("coming_soon");
       expect(tileStateFor("project_admin", p, "modernization", built), phase).toBe("coming_soon");

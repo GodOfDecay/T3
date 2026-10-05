@@ -207,7 +207,8 @@ export const BUILT_AGENTS: readonly Phase[] = [
 export const BUILT_AGENTS_BY_TRACK: Record<DeliveryTrack, readonly Phase[]> = {
   greenfield: BUILT_AGENTS,
   enhancement: BUILT_AGENTS,
-  modernization: ["requirements_modernization", "discovery", "design_modernization", "strategy", "testing_modernization"],
+  modernization: ["requirements_modernization", "discovery", "design_modernization", "strategy", "testing_modernization",
+    "development_modernization"],
   rpa_infra: BUILT_AGENTS,
   data_engineering: BUILT_AGENTS,
 };

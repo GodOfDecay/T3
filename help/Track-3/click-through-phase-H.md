@@ -17,8 +17,8 @@ repository and its credential below. Tick each step and note anything that diffe
   Tools per stage → wire the GitHub connection to **Migration Development** with **write** access. The
   connection's token needs `contents: write` and `pull requests: write` on that repository only.
 - Developers: `dev@gmail.com` drives; a SECOND Developer or `projadmin@gmail.com` accepts.
-- The tile says **Coming soon** until this click-through passes (R42). Open the page by URL:
-  `/projects/<id>/migration-development`.
+- The **Migration Development** tile is unlocked (at your request) for the Developer and the Project Admin.
+- Run on 2026-10-05: A1, A2 and the Workspaces dialog passed; A3 and B–E wait for a working model key.
 
 ## A. The page
 

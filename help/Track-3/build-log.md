@@ -944,7 +944,7 @@ Tests added by this phase: `tests/development_modernization` 66 units + 6 sandbo
 **Open (need the user, not code):**
 - Revoke the token used for the live run (it was shared in the chat); a fresh one goes only into the app's
   Integrations page.
-- Run `click-through-phase-H.md`, then flip the tile (R42).
+- Run the rest of `click-through-phase-H.md` (the tile is already unlocked at the user's request).
 - Third-party dependencies: the sandbox has no network, so a module needing packages builds red ("cannot import
   X") until an install step against the organisation's package mirror is allowed (one host). ClaimTrack Lite is
   standard library only.
@@ -952,3 +952,12 @@ Tests added by this phase: `tests/development_modernization` 66 units + 6 sandbo
 - Azure DevOps: a rework push reuses the ledger's pull request; finding an existing ADO pull request for a branch
   that the ledger does not know is not implemented (GitHub's is).
 - Verify mode (Phase J) is still the verdict; the preview is a hint.
+
+**Tile (2026-10-05, the user's request):** Migration Development added to `BUILT_AGENTS_BY_TRACK.modernization`, as
+Phases F's and G's tiles were, before the full click-through. `track3-agents.test.ts` pins it (the Developer and the
+Project Admin get the tile, QA does not); removing it fails 2 tests (killed). Frontend after the flip: 1,261/1,261,
+`tsc` and eslint clean. On the user's machine the same day: dev DB 0072 → 0074 (`grant_app_role` verified), ClaimTrack
+Lite installed as "Migration test"'s legacy code (`e3b6e97`), and in a real browser A1, A2 and the Workspaces dialog
+passed. The chat steps (A3, B–E) were not run: no model calls at the user's request (the key has no credit), and the
+stored model key does not decrypt with the current `SECRET_STORE_KEY` (`secret decrypt failed`), so it must be
+re-entered in Org Settings → Model Providers first.

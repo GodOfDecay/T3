@@ -1,6 +1,6 @@
 # Track 3 (Code Modernization) — Handoff for whoever builds the next agents
 
-**Updated:** 2026-10-05, end of Phase H (built; proven on Postgres + Docker and LIVE: a real pull request on GodOfDecay/claimtrack-lite-target; 71/71 mutants; migration 0074 on the test DB; tile not flipped until the user's click-through). Before that, 2026-10-01, end of Phase G (built, fix wave, mutation-proven; migration 0073 on the test DB; the user's own dev DB is still at 0072 and needs 0073 with their OK; tile flipped at the user's request on 2026-10-01, as Phase F's was). Phase G's build and fix wave are on `claude/intelligent-pasteur-m7ea75` (based on `akshat_track3`), to merge back. **Branch:** `akshat_track3` on `origin` (the team's shared branch; never push Track 3
+**Updated:** 2026-10-05, end of Phase H (built; proven on Postgres + Docker and LIVE: a real pull request on GodOfDecay/claimtrack-lite-target; 71/71 mutants; migration 0074 on the test DB and, on 2026-10-05, on the user's dev DB; tile flipped at the user's request on 2026-10-05, as F's and G's were). Before that, 2026-10-01, end of Phase G (built, fix wave, mutation-proven; migration 0073 on the test DB; the user's own dev DB is still at 0072 and needs 0073 with their OK; tile flipped at the user's request on 2026-10-01, as Phase F's was). Phase G's build and fix wave are on `claude/intelligent-pasteur-m7ea75` (based on `akshat_track3`), to merge back. **Branch:** `akshat_track3` on `origin` (the team's shared branch; never push Track 3
 work to `track-3`). Last commit: `12418303` (handoff) on `999b1b3e` (Phase E), `0c814fad` (Phase D),
 `9f2e81f6` (Phase C closed) and `8c90522c` (A, B and most of C).
 
@@ -28,7 +28,7 @@ Track 3 has ten agents in hand-off order. The four built ones are live on their 
 | 3 | `design_modernization` | Target Architecture | Architect | **Built** (Phase E; tile unlocked, user-tested) |
 | 4 | `strategy` | Migration Strategy | Architect | **Built** (Phase F; tile unlocked at the user's request) |
 | 5 | `testing_modernization` | Equivalence Testing | QA | **Built: Baseline mode** (Phase G; tile unlocked at the user's request). Verify mode is Phase J |
-| 6 | `development_modernization` | Migration Development | Developer (D10) | **Built** (Phase H; live PR proven; open by URL until the click-through) |
+| 6 | `development_modernization` | Migration Development | Developer (D10) | **Built** (Phase H; live PR proven; tile unlocked at the user's request) |
 | 7 | `code_review_modernization` | Migration Review | Architect | Phase I |
 | 8 | `security_modernization` | Security (Modernization) | Security Engineer | Phase I |
 | 9 | `deployment_modernization` | Cutover | DevOps Engineer | Phase K |
@@ -327,6 +327,8 @@ Also decided:
   - run `click-through-phase-G.md` (the tile is already unlocked at the user's request);
   - Phase H: an EMPTY target repository (GitHub or Azure DevOps) set as the project's target, and a connection
     wired to Migration Development with WRITE (token: contents + pull requests write on that repository only);
-    then run `click-through-phase-H.md` and flip the tile. Also the organisation's package mirror for modules
+    then run the rest of `click-through-phase-H.md` (A1, A2 and the Workspaces dialog passed on 2026-10-05; the chat
+    steps wait for a funded model key, and the stored key must be re-entered: it does not decrypt with the current
+    `SECRET_STORE_KEY`). The tile is already unlocked at the user's request. Also the organisation's package mirror for modules
     with third-party dependencies (the build sandbox has no network);
   - the Cutover policy decision R13 (K).
