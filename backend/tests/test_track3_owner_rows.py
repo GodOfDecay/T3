@@ -40,4 +40,5 @@ def test_only_built_track3_agents_are_in_the_portfolio():
     """Owner rows are not a build: the portfolio (what the Orchestrator offers and the
     track check admits) grows one agent at a time, as each is built."""
     assert TRACK_PORTFOLIOS["modernization"] == ["requirements_modernization", "discovery", "design_modernization", "strategy",
-                                           "testing_modernization", "development_modernization"]
+                                           "testing_modernization", "development_modernization",
+                                           "code_review_modernization", "security_modernization"]

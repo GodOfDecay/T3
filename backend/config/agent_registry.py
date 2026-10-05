@@ -354,6 +354,47 @@ AGENT_REGISTRY: dict[str, AgentDefinition] = {
         optional_capabilities=["code.behavior.preserve.verify", "legacy.code.read", "doc.export.docx",
                                "doc.export.pdf"],
     ),
+    "code_review_modernization": AgentDefinition(
+        id="code_review_modernization",
+        name="Migration Review Agent",
+        pipeline_position=7,
+        # Research §6.7: the module's ACCEPTED migration (its record and head), side by side with the
+        # legacy code, judged against the design's contracts and traps and the plan's criteria.
+        input_artifacts=["target_design_artifacts", "strategy_artifacts", "migration_artifacts"],
+        output_artifact="migration_review_artifacts",
+        route_path="/migration-review",
+        # "Accept the migration review" is a Sign-off by the Architect; accepting writes the
+        # recommendation on the ledger (Phase I, I11).
+        gate_type="approval_required",
+        sla_hours=24,
+        can_parallel_with=["security_modernization"],
+        max_rejections=3,
+        required_capabilities=[
+            "review.equivalence.criteria.check", "review.contract.drift.detect", "review.legacy.antipattern.detect",
+            "review.traceability.check", "review.design.conformance", "artifact.write",
+        ],
+        optional_capabilities=["quality.sast.scan", "legacy.code.read", "doc.export.docx", "doc.export.pdf"],
+    ),
+    "security_modernization": AgentDefinition(
+        id="security_modernization",
+        name="Security Agent (Modernization)",
+        pipeline_position=7,
+        # Research §6.8: Track 1's scan stack on the migrated module plus the same scans of the legacy
+        # module, so every finding is carried over, fixed or introduced.
+        input_artifacts=["target_design_artifacts", "migration_artifacts"],
+        output_artifact="modernization_security_artifacts",
+        route_path="/modernization-security",
+        gate_type="mandatory",
+        sla_hours=24,
+        can_parallel_with=["code_review_modernization"],
+        max_rejections=3,
+        required_capabilities=[
+            "quality.sca.scan", "quality.sbom.generate", "quality.sast.scan", "quality.secret.scan",
+            "sec.legacy.baseline.scan", "sec.finding.diff", "sec.secret.carryover.check", "sec.contract.authz.check",
+            "sec.signoff", "artifact.write",
+        ],
+        optional_capabilities=["legacy.code.read", "doc.export.docx", "doc.export.pdf"],
+    ),
 }
 
 
@@ -381,10 +422,11 @@ _PORTFOLIO_1: list[str] = [
 TRACK_PORTFOLIOS: dict[str, list[str]] = {
     "greenfield": _PORTFOLIO_1,
     "enhancement": _PORTFOLIO_1,
-    # Built so far: the first four of Portfolio 2's ten (Phase 1, Phase E, Phase F). The rest
+    # Built so far: the first eight of Portfolio 2's ten (Phase 1, Phases E to I). The rest
     # are added one at a time as each is built and mounted.
     "modernization": ["requirements_modernization", "discovery", "design_modernization", "strategy",
-                      "testing_modernization", "development_modernization"],
+                      "testing_modernization", "development_modernization", "code_review_modernization",
+                      "security_modernization"],
     "rpa_infra": [],
     "data_engineering": [],
 }

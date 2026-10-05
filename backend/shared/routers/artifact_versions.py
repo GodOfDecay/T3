@@ -341,7 +341,42 @@ async def publish_stage_version(
         await _strategy_approved(db, request, project_id, row)
     elif stage == "testing_modernization":
         await _baseline_approved(db, request, project_id, row)
+    elif stage in ("code_review_modernization", "security_modernization"):
+        await _verdict_approved(db, request, project_id, stage, row)
     return await _labelled(db, request, VersionOut.of(row))
+
+
+async def _verdict_approved(db: AsyncSession, request: Request, project_id: str, stage: str, row) -> None:
+    """Migration Review's and Security's ledger verdicts on ACCEPTANCE (Phase I, I11), in this request's
+    transaction — a ledger refusal rolls the acceptance back. Only a review of the module's CURRENT
+    migration counts: one made on an earlier record (the module was reworked since) is refused, so a
+    stale approval can never move a reworked module on."""
+    from shared.services import artifact_versions as versions  # noqa: PLC0415
+    from shared.services import modernization_ledger as ledger  # noqa: PLC0415
+
+    payload = row.payload or {}
+    module_id = payload.get("module_id")
+    review = stage == "code_review_modernization"
+    verdict = payload.get("merge_recommendation" if review else "verdict")
+    noun = "review" if review else "security report"
+    if not module_id or not verdict or not payload.get("migration_version"):
+        raise HTTPException(status_code=409, detail=(
+            f"Not accepted: this {noun} names no module, verdict and migration; submit it with the agent."))
+    current = next((r for r in await versions.list_versions(db, project_id, "development_modernization")
+                    if (r.payload or {}).get("module_id") == module_id), None)
+    if current is None or current.version != payload["migration_version"] \
+            or (current.payload or {}).get("head_sha") != payload.get("head_sha"):
+        raise HTTPException(status_code=409, detail=(
+            f"Not accepted: this {noun} is of {module_id}'s migration record v{payload['migration_version']}, and the "
+            f"module has been migrated again since (v{getattr(current, 'version', '?')}). Review the current one."))
+    record = ledger.review_submitted if review else ledger.security_submitted
+    try:
+        await record(db, project_id=project_id, module_id=module_id, verdict=str(verdict),
+                     actor=str(getattr(request.state, "user_id", "") or ""),
+                     artifact=ledger.ArtifactRef("migration_review_artifacts" if review
+                                                 else "modernization_security_artifacts", row.version))
+    except ledger.LedgerRefused as exc:
+        raise HTTPException(status_code=409, detail=f"Not accepted: {exc}") from exc
 
 
 async def _baseline_approved(db: AsyncSession, request: Request, project_id: str, row) -> None:

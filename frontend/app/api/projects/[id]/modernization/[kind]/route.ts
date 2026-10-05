@@ -11,7 +11,7 @@ import { bffProxy } from "@/lib/bff/proxy";
  * it does not know rather than proxying an arbitrary path segment.
  */
 const KINDS = new Set(["migration-intent", "discovery", "target-architecture", "strategy", "equivalence-testing",
-  "migration-development"]);
+  "migration-development", "migration-review", "modernization-security"]);
 
 export async function GET(
   _req: NextRequest,

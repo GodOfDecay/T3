@@ -123,6 +123,8 @@ DISPLAY_NAMES: dict[str, str] = {
     "strategy": "Migration Strategy",
     "testing_modernization": "Equivalence Testing",
     "development_modernization": "Migration Development",
+    "code_review_modernization": "Migration Review",
+    "security_modernization": "Security",
 }
 
 # An agent that exists but has no display name is unreachable by name — the exact
@@ -189,6 +191,10 @@ _EXTRA_NAMES: dict[str, tuple[str, ...]] = {
     "testing_modernization": ("equivalence testing", "equivalence", "testing", "baseline", "golden master"),
     "development_modernization": ("migration development", "migrate the module", "migrate module", "migration pull request",
                                   "upgrade recipe", "port the module"),
+    "code_review_modernization": ("migration review", "review the migration", "review the pull request",
+                                  "review the migration pull request", "code review", "review"),
+    "security_modernization": ("security", "security scan", "security sign-off", "security signoff",
+                               "vulnerabilities", "scan for secrets"),
 }
 
 _NAME_TO_IDS: dict[str, tuple[str, ...]] = {}
@@ -392,6 +398,16 @@ _CAPABILITIES: dict[str, str] = {
         "plan: runs upgrade recipes where they exist, rewrites the rest with the legacy code, the frozen "
         "contracts and the equivalence criteria in context, migrates the build, previews the module against "
         "the accepted baseline, and opens a pull request only after the record is accepted and with approval"
+    ),
+    "code_review_modernization": (
+        "reviews a module's migration pull request side by side with the legacy code — conformance to the "
+        "target design, every frozen interface unchanged, every known version trap handled, legacy "
+        "anti-patterns carried over, and anything added beyond the plan — and gives a merge recommendation"
+    ),
+    "security_modernization": (
+        "security-scans a migrated module read-only — dependency vulnerabilities, static analysis, secrets, "
+        "SBOM — and compares it with the same scan of the legacy code, so every finding is marked carried "
+        "over, fixed or introduced, then issues the mandatory security sign-off"
     ),
 }
 
@@ -685,6 +701,11 @@ How a modernization starts:
   work, when that agent is in the list above: "migrate M-02", "port the claims API to Python 3",
   "run the upgrade recipe", "open the migration pull request", "fix what review found". Proving the
   migrated module equivalent is Equivalence Testing's; reviewing the pull request is Migration Review's.
+- REVIEWING A MODULE'S MIGRATION is Migration Review work, when that agent is in the list above: "review
+  the M-01 pull request", "does the migration keep the contracts", "were the traps handled", "what was
+  carried over from the legacy code". SCANNING IT is Security work: "security-scan M-01", "any
+  vulnerabilities or secrets", "the security sign-off", "what did the migration fix or introduce". The
+  two run on the same pull request, in either order.
 
 How to decide:
 

@@ -29,12 +29,13 @@ export const getDiscoveryAssessment = (id: ProjectId) =>
 
 export type Track3Stage =
   | "requirements_modernization" | "discovery" | "design_modernization" | "strategy" | "testing_modernization"
-  | "development_modernization";
+  | "development_modernization" | "code_review_modernization" | "security_modernization";
 
 /** URL segment of each stage's page data on the backend. */
 export const KIND_FOR_STAGE: Record<
   Track3Stage,
-  "migration-intent" | "discovery" | "target-architecture" | "strategy" | "equivalence-testing" | "migration-development"
+  | "migration-intent" | "discovery" | "target-architecture" | "strategy" | "equivalence-testing" | "migration-development"
+  | "migration-review" | "modernization-security"
 > = {
   requirements_modernization: "migration-intent",
   discovery: "discovery",
@@ -42,6 +43,8 @@ export const KIND_FOR_STAGE: Record<
   strategy: "strategy",
   testing_modernization: "equivalence-testing",
   development_modernization: "migration-development",
+  code_review_modernization: "migration-review",
+  security_modernization: "modernization-security",
 };
 
 /** The project's baseline captures, newest first — status, times, counts and masked shapes; never

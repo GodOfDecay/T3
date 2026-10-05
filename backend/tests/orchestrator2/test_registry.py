@@ -17,12 +17,13 @@ def test_registry_covers_every_stage_in_order():
     logger.warning. Deriving the id list from STAGE_ORDER makes that impossible.
     """
     assert list(AGENT_IDS) == list(STAGE_ORDER)
-    # Portfolio 1's nine plus Track 3's first two. Which of them a given project sees
+    # Portfolio 1's nine plus Track 3's first eight. Which of them a given project sees
     # is `registry_for_track`'s job, not this table's.
-    assert len(AGENT_IDS) == 15
+    assert len(AGENT_IDS) == 17
     assert "plan" in AGENT_IDS
     assert {"requirements_modernization", "discovery", "design_modernization", "strategy",
-            "testing_modernization", "development_modernization"} <= set(AGENT_IDS)
+            "testing_modernization", "development_modernization", "code_review_modernization",
+            "security_modernization"} <= set(AGENT_IDS)
     assert set(REGISTRY) == set(AGENT_IDS)
 
 
@@ -61,7 +62,7 @@ def test_validate_registry_resolves_graph_for_all_nine_and_prompt_for_stream_age
     stream_agents = {a for a, c in REGISTRY.items() if c.mode == "stream"}
     invoke_agents = {a for a, c in REGISTRY.items() if c.mode == "invoke"}
     assert invoke_agents == {"testing"}
-    assert len(stream_agents) == 14  # eight of Portfolio 1 + Track 3's six
+    assert len(stream_agents) == 16  # eight of Portfolio 1 + Track 3's eight
 
     # Every stream agent resolves to a real, non-blank prompt.
     for agent_id in stream_agents:

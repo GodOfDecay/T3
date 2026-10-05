@@ -44,7 +44,8 @@ modernization_router = APIRouter()
 #: Page kind (URL segment) -> backend stage.
 _KINDS = {"migration-intent": "requirements_modernization", "discovery": "discovery",
           "target-architecture": "design_modernization", "strategy": "strategy",
-          "equivalence-testing": "testing_modernization", "migration-development": "development_modernization"}
+          "equivalence-testing": "testing_modernization", "migration-development": "development_modernization",
+          "migration-review": "code_review_modernization", "modernization-security": "security_modernization"}
 _MEDIA = {
     "docx": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
     "pdf": "application/pdf",
@@ -142,6 +143,22 @@ async def latest_migration(
 ) -> dict:
     """The project's newest module migration record, or `payload: null`."""
     return await _latest(db, request, project_id, "development_modernization", "migration_artifacts")
+
+
+@modernization_router.get("/projects/{project_id}/modernization/migration-review")
+async def latest_migration_review(
+    project_id: str, request: Request, db: AsyncSession = Depends(get_db_session),
+) -> dict:
+    """The project's newest module migration review, or `payload: null`."""
+    return await _latest(db, request, project_id, "code_review_modernization", "migration_review_artifacts")
+
+
+@modernization_router.get("/projects/{project_id}/modernization/modernization-security")
+async def latest_modernization_security(
+    project_id: str, request: Request, db: AsyncSession = Depends(get_db_session),
+) -> dict:
+    """The project's newest module security report, or `payload: null`."""
+    return await _latest(db, request, project_id, "security_modernization", "modernization_security_artifacts")
 
 
 @modernization_router.get("/projects/{project_id}/modernization/migration-development/workspaces")
@@ -321,6 +338,14 @@ def _version_markdown(stage: str, payload: dict) -> tuple[str, str]:
         from agents_orchestrator.development_modernization_agent.migration_document import migration_markdown  # noqa: PLC0415
 
         return migration_markdown(payload), f"migration-{str(payload.get('module_id') or 'module').lower()}"
+    if stage == "code_review_modernization":
+        from agents_orchestrator.code_review_modernization_agent.review_document import review_markdown  # noqa: PLC0415
+
+        return review_markdown(payload), f"migration-review-{str(payload.get('module_id') or 'module').lower()}"
+    if stage == "security_modernization":
+        from agents_orchestrator.security_modernization_agent.security_document import security_markdown  # noqa: PLC0415
+
+        return security_markdown(payload), f"security-report-{str(payload.get('module_id') or 'module').lower()}"
     from agents_orchestrator.discovery_agent.analysis.assessment import assessment_markdown  # noqa: PLC0415
 
     return assessment_markdown(payload), "discovery-assessment"
@@ -334,6 +359,7 @@ async def version_packet(project_id: str, kind: str, version: int, request: Requ
     be handed over, the reasons in words. `{ok, problems, packet}`."""
     from agents_orchestrator.modernization_common.handover.emit import (  # noqa: PLC0415
         assessment_packet, baseline_packet, brief_packet, design_packet, envelope_of, migration_packet, plan_packet,
+        review_packet, security_packet,
     )
     from shared.services import artifact_versions as svc  # noqa: PLC0415
 
@@ -346,7 +372,8 @@ async def version_packet(project_id: str, kind: str, version: int, request: Requ
         raise HTTPException(status_code=404, detail=f"v{version} not found")
     build = {"requirements_modernization": brief_packet, "discovery": assessment_packet,
              "design_modernization": design_packet, "strategy": plan_packet,
-             "testing_modernization": baseline_packet, "development_modernization": migration_packet}[stage]
+             "testing_modernization": baseline_packet, "development_modernization": migration_packet,
+             "code_review_modernization": review_packet, "security_modernization": security_packet}[stage]
     return {"stage": stage, "version": version, **build(row.payload, envelope_of(row)).as_dict()}
 
 
