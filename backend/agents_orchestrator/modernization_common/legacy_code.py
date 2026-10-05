@@ -273,7 +273,9 @@ _STAGE_LABELS = {"requirements_modernization": "Migration Intent",
                  "discovery": "Dependency and Risk",
                  "design_modernization": "Target Architecture",
                  "testing_modernization": "Equivalence Testing",
-                 "development_modernization": "Migration Development"}
+                 "development_modernization": "Migration Development",
+                 "code_review_modernization": "Migration Review",
+                 "security_modernization": "Security (Modernization)"}
 
 
 def stage_may_read() -> bool:

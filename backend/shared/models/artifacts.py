@@ -541,6 +541,80 @@ class MigrationArtifact(BaseModel):
     agent_session_id: Optional[str] = None
 
 
+class MigrationReviewArtifact(BaseModel):
+    """-> runs.migration_review_artifacts (0075), and each frozen `code_review_modernization` version.
+
+    Phase I: ONE MODULE's migration review. The REVIEW is the hand-over packet's payload
+    (`handover/packets.ReviewPayload`), which `emit.review_payload` reads back. Around it, set by the
+    submit tool and never by the model: the migration record version and head reviewed, the files the
+    run actually opened (`files_read` is that log), the API-surface diff and the anti-pattern scan."""
+
+    schema_version: int = 1
+    system_name: str = ""
+    # ── the review (ReviewPayload) ──
+    module_id: str
+    pr: str
+    summary: str
+    merge_recommendation: str
+    findings: List[Dict[str, Any]] = []
+    equivalence_coverage: List[Dict[str, Any]] = []
+    contract_check: List[Dict[str, Any]] = []
+    trap_check: List[Dict[str, Any]] = []
+    traceability: List[Dict[str, Any]] = []
+    known_debt: List[Dict[str, Any]] = []
+    files_read: Dict[str, Any] = {}
+    # ── set by the submit tool ──
+    migration_version: Optional[int] = None
+    head_sha: Optional[str] = None
+    legacy_commit: Optional[str] = None
+    module: Dict[str, Any] = {}
+    sources: Dict[str, Any] = {}
+    surface: Dict[str, Any] = {}
+    antipatterns: Dict[str, Any] = {}
+    notes: List[str] = []
+    recorded_at: Optional[str] = None
+    agent_session_id: Optional[str] = None
+
+
+class ModernizationSecurityArtifact(BaseModel):
+    """-> runs.modernization_security_artifacts (0075), and each frozen `security_modernization` version.
+
+    Phase I: ONE MODULE's security report. The REPORT is the hand-over packet's payload
+    (`handover/packets.SecurityPayload`), which `emit.security_payload` reads back. The scans, the SBOM
+    counts and the scanner hits are the tools' (never the model's words), kept beside it with the
+    legacy baseline's, the carry-over check and the contract-authz evidence."""
+
+    schema_version: int = 1
+    system_name: str = ""
+    # ── the report (SecurityPayload) ──
+    module_id: str
+    pr: str
+    legacy_commit: str
+    scans: Dict[str, str] = {}
+    findings: List[Dict[str, Any]] = []
+    fixed_from_legacy: List[Dict[str, Any]] = []
+    contract_authz: List[Dict[str, Any]] = []
+    sbom: Dict[str, Any] = {}
+    verdict: str
+    rationale: str
+    # ── set by the submit tool ──
+    required_verdict: Optional[str] = None
+    migration_version: Optional[int] = None
+    head_sha: Optional[str] = None
+    module: Dict[str, Any] = {}
+    sources: Dict[str, Any] = {}
+    scanner_versions: Dict[str, str] = {}
+    scan_notes: Dict[str, str] = {}
+    target_hits: List[Dict[str, Any]] = []
+    legacy_hits: List[Dict[str, Any]] = []
+    legacy_cached: bool = False
+    secret_carryover: List[Dict[str, Any]] = []
+    authz_evidence: Dict[str, Any] = {}
+    notes: List[str] = []
+    recorded_at: Optional[str] = None
+    agent_session_id: Optional[str] = None
+
+
 # ---------------------------------------------------------------------------
 # Traceability and handoff helpers
 # ---------------------------------------------------------------------------

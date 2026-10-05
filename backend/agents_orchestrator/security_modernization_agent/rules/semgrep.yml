@@ -1,0 +1,109 @@
+# The platform's offline Semgrep rule pack for Track 3 Security (Phase I, I7). Local, versioned with the
+# code, so a scan needs no registry and no network. Severity: ERROR = high, WARNING = medium, INFO = low.
+rules:
+- id: py-sql-string-built
+  languages: [python]
+  severity: ERROR
+  message: SQL built from strings (injection)
+  pattern-either:
+    - pattern: $C.execute("..." % $X, ...)
+    - pattern: $C.execute("..." + $X, ...)
+    - pattern: $C.execute("...".format(...), ...)
+    - pattern: $C.execute(f"...", ...)
+- id: py-shell-true
+  languages: [python]
+  severity: ERROR
+  message: A subprocess runs through the shell (command injection)
+  pattern-either:
+    - pattern: subprocess.$F(..., shell=True, ...)
+    - pattern: os.system(...)
+    - pattern: os.popen(...)
+- id: py-eval-exec
+  languages: [python]
+  severity: ERROR
+  message: eval or exec of a value
+  pattern-either:
+    - pattern: eval($X)
+    - pattern: exec($X)
+- id: py-unsafe-deserialization
+  languages: [python]
+  severity: ERROR
+  message: Unsafe deserialization (pickle, yaml.load without SafeLoader, marshal)
+  pattern-either:
+    - pattern: pickle.loads(...)
+    - pattern: pickle.load(...)
+    - pattern: cPickle.loads(...)
+    - pattern: marshal.loads(...)
+    - pattern: yaml.load($X)
+    - pattern: yaml.load($X, Loader=yaml.Loader)
+    - pattern: yaml.load($X, Loader=yaml.UnsafeLoader)
+- id: py-tls-verify-off
+  languages: [python]
+  severity: ERROR
+  message: TLS certificate verification turned off
+  pattern-either:
+    - pattern: requests.$F(..., verify=False, ...)
+    - pattern: ssl._create_unverified_context(...)
+- id: py-weak-hash
+  languages: [python]
+  severity: WARNING
+  message: Weak hash (MD5 or SHA-1) used
+  pattern-either:
+    - pattern: hashlib.md5(...)
+    - pattern: hashlib.sha1(...)
+- id: py-insecure-tempfile
+  languages: [python]
+  severity: WARNING
+  message: tempfile.mktemp is racy
+  pattern: tempfile.mktemp(...)
+- id: py-flask-debug
+  languages: [python]
+  severity: WARNING
+  message: Flask debug mode in code
+  pattern: $APP.run(..., debug=True, ...)
+- id: py-bind-all
+  languages: [python]
+  severity: INFO
+  message: Server binds every interface
+  pattern-either:
+    - pattern: $S(("0.0.0.0", $P), ...)
+    - pattern: $S(("", $P), ...)
+- id: py-hardcoded-password
+  languages: [python]
+  severity: ERROR
+  message: Hard-coded password
+  pattern-either:
+    - pattern: $X.password = "$V"
+    - pattern: password = "$V"
+    - pattern: PASSWORD = "$V"
+- id: java-sql-string-built
+  languages: [java]
+  severity: ERROR
+  message: SQL built from strings (injection)
+  pattern-either:
+    - pattern: $S.executeQuery("..." + $X)
+    - pattern: $S.executeUpdate("..." + $X)
+    - pattern: $S.execute("..." + $X)
+    - pattern: $C.prepareStatement("..." + $X)
+- id: java-weak-hash
+  languages: [java]
+  severity: WARNING
+  message: Weak hash (MD5 or SHA-1)
+  pattern-either:
+    - pattern: MessageDigest.getInstance("MD5")
+    - pattern: MessageDigest.getInstance("SHA-1")
+- id: java-deserialization
+  languages: [java]
+  severity: ERROR
+  message: Java deserialization of a stream
+  pattern: new ObjectInputStream(...).readObject()
+- id: js-eval
+  languages: [javascript, typescript]
+  severity: ERROR
+  message: eval of a value
+  pattern: eval($X)
+- id: js-inner-html
+  languages: [javascript, typescript]
+  severity: WARNING
+  message: Assignment to innerHTML (XSS)
+  pattern: $E.innerHTML = $X
