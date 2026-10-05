@@ -116,8 +116,12 @@ _SECRET_RULES: tuple[tuple[str, re.Pattern], ...] = (
     ("a connection string with a password", re.compile(
         r"(?i)\b(?:password|pwd)\s*=\s*(?![\"']?\s*(?:\$\{|\{\{|%\(|<|os\.environ|getenv|env\[|kv://|vault:))[^\s;\"'<>]{4,}")),
     ("a URL with a password in it", re.compile(r"\b[a-z][a-z0-9+.-]*://[^\s/:@]+:[^\s/@]{4,}@[^\s/]+")),
+    # A name that CONTAINS the word (DB_PASSWORD, clientSecret), a quoted value (Phase I found the
+    # plain `\bpassword\b` form missed both, and quoted passwords altogether).
+    ("a hard-coded password", re.compile(
+        r"(?i)\b\w*(?:password|passwd|pwd)\w*\s*[:=]\s*[\"'](?!kv://|vault:|keyvault:|secretsmanager:|env:|\$\{)[^\"'\s]{6,}[\"']")),
     ("a hard-coded secret", re.compile(
-        r"(?i)\b(?:secret|api[_-]?key|access[_-]?token|client[_-]?secret)\s*[:=]\s*[\"'][A-Za-z0-9+/_\-]{12,}[\"']")),
+        r"(?i)\b\w*(?:secret|api[_-]?key|access[_-]?token)\w*\s*[:=]\s*[\"'][A-Za-z0-9+/_\-]{12,}[\"']")),
 )
 
 

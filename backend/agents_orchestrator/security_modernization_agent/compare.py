@@ -19,7 +19,8 @@ from typing import Iterable, Optional
 
 from agents_orchestrator.security_modernization_agent.scanners import secret_hash
 
-_CREDENTIAL = re.compile(r"""(?i)\b(?:password|passwd|pwd|secret|api[_-]?key|token|access[_-]?key)\b\s*[:=]\s*["']([^"'\s]{6,})["']""")
+# A name that CONTAINS one of the words (DB_PASSWORD, clientSecret), then = or :, then a quoted value.
+_CREDENTIAL = re.compile(r"""(?i)\b\w*(?:password|passwd|pwd|secret|api[_-]?key|token|access[_-]?key)\w*\s*[:=]\s*["'](?!kv://|vault:|keyvault:|secretsmanager:|env:|\$\{)([^"'\s]{6,})["']""")
 _URL_PASSWORD = re.compile(r"[a-z][a-z0-9+.-]*://[^/\s:@]+:([^@\s/]{4,})@", re.IGNORECASE)
 _AUTH_MARKERS = [
     ("login_required", re.compile(r"@login_required|@auth\.login_required|@requires_auth|@jwt_required")),

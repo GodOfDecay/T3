@@ -57,6 +57,10 @@ def test_build_files_are_known_wherever_they_are():
     ("DB = 'Server=x;User Id=sa;Password=Hunter2!;'", "a connection string with a password"),
     ("URL = 'postgres://app:s3cretpw@db:5432/x'", "a URL with a password in it"),
     ("api_key = 'abcdef0123456789abcd'", "a hard-coded secret"),
+    # Phase I: names that CONTAIN the word, and a quoted password, were missed.
+    ("DB_PASSWORD = 'hunter22secret'", "a hard-coded password"),
+    ("password = 'hunter22secret'", "a hard-coded password"),
+    ("clientSecret: 'abcd1234xyzabcd0'", "a hard-coded secret"),
 ])
 def test_a_secret_is_named_by_kind_never_by_value(text, kind):
     assert kind in rules.secrets_in(text)
@@ -65,7 +69,7 @@ def test_a_secret_is_named_by_kind_never_by_value(text, kind):
 @pytest.mark.parametrize("text", [
     "password = os.environ['DB_PASSWORD']", "Password=${DB_PASSWORD}", "pwd = getenv('X')",
     "conn = 'Server=x;Password={{ secret }}'", "url = 'https://example.com/a'", "secret = kv://claimtrack/db",
-    "round(amount * rate, 2)",
+    "round(amount * rate, 2)", "password = ''", "DB_PASSWORD_REF = 'kv://claimtrack/db'",
 ])
 def test_references_to_secrets_are_not_secrets(text):
     assert rules.secrets_in(text) == []

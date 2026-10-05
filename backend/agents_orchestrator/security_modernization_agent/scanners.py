@@ -113,7 +113,8 @@ def parse_trivy(raw: str, module_path: str) -> list[dict]:
 
 
 def parse_sbom(raw: str) -> int:
-    return len(json.loads(raw or "{}").get("components") or [])
+    """The SBOM's packages: CycloneDX also lists each manifest it read as an `application`, not a component."""
+    return sum(1 for c in json.loads(raw or "{}").get("components") or [] if c.get("type") != "application")
 
 
 def parse_semgrep(raw: str) -> tuple[list[dict], list[str]]:

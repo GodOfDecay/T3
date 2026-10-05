@@ -202,7 +202,7 @@ RULES: list[tuple[str, str, str, tuple[str, ...], re.Pattern]] = [
     ("hardcoded-host", "Hard-coded host or URL", "low", (),
      re.compile(r"""["'](?:https?|jdbc:\w+|mongodb|redis|amqp)://(?!localhost|127\.0\.0\.1|example\.|[\w.-]*\.invalid)[\w.-]+""")),
     ("hardcoded-credential", "Hard-coded credential", "high", (),
-     re.compile(r"""(?i)\b(?:password|passwd|pwd|secret|api[_-]?key|token)\b\s*[:=]\s*["'][^"'\s]{4,}["']""")),
+     re.compile(r"""(?i)\b\w*(?:password|passwd|pwd|secret|api[_-]?key|token)\w*\s*[:=]\s*["'](?!kv://|vault:|keyvault:|secretsmanager:|env:|\$\{)[^"'\s]{4,}["']""")),
     ("static-mutable", "Static mutable state", "medium", (".java", ".cs", ".kt"),
      re.compile(r"\bstatic\s+(?!final\b|readonly\b|const\b)[\w<>\[\], ]+\s+\w+\s*=")),
     ("module-mutable", "Module-level mutable state", "low", (".py",),
