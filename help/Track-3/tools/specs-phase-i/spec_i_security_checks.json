@@ -1,0 +1,49 @@
+{
+ "root": "backend",
+ "target": "agents_orchestrator/security_modernization_agent/checks.py",
+ "tests": [
+  "tests/review_security_modernization/test_units.py"
+ ],
+ "mutants": [
+  [
+   "late-ok",
+   "        if late:\n",
+   "        if False:\n"
+  ],
+  [
+   "highs-optional",
+   "        if hit.get(\"severity\") not in _BLOCKING:\n            continue",
+   "        if True:\n            continue"
+  ],
+  [
+   "origin-ignored",
+   "        elif not any(f.get(\"origin\") == hit.get(\"origin\") for f in found):",
+   "        elif False:"
+  ],
+  [
+   "cve-only",
+   "        return bool(hit.get(\"cve\")) and finding.get(\"cve\") == hit[\"cve\"] and \\\n            (finding.get(\"package\") or \"\").lower() == (hit.get(\"package\") or \"\").lower()",
+   "        return finding.get(\"cve\") == hit[\"cve\"]"
+  ],
+  [
+   "carryover-ok",
+   "    for c in carryover:",
+   "    for c in []:"
+  ],
+  [
+   "carryover-any-severity",
+   "                   and f.get(\"severity\") == \"critical\" for f in findings):",
+   "                   for f in findings):"
+  ],
+  [
+   "authz-coverage-ok",
+   "    if missing := sorted(set(http_contracts) - set(stated)):",
+   "    if missing := []:"
+  ],
+  [
+   "weaker-ok",
+   "        if a and ev.get(\"suggested\") == \"weaker\" and a.get(\"status\") != \"weaker\" and not (a.get(\"note\") or \"\").strip():",
+   "        if False:"
+  ]
+ ]
+}

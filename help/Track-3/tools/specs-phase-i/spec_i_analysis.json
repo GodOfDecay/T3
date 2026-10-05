@@ -1,0 +1,94 @@
+{
+ "root": "backend",
+ "target": "agents_orchestrator/code_review_modernization_agent/analysis.py",
+ "tests": [
+  "tests/review_security_modernization/test_units.py"
+ ],
+ "mutants": [
+  [
+   "private-functions-public",
+   "            if (m := _DEF.match(line)) and not m.group(1).startswith(\"_\"):",
+   "            if (m := _DEF.match(line)):"
+  ],
+  [
+   "no-status",
+   "        for m in _STATUS.finditer(line):\n            add(\"status\", m.group(1))",
+   "        for m in []:\n            add(\"status\", m.group(1))"
+  ],
+  [
+   "no-path-eq",
+   "        for m in _PATH_EQ.finditer(line):",
+   "        for m in []:"
+  ],
+  [
+   "sql-double-only",
+   "            add(\"sql\", _norm(m.group(1) or m.group(2)))",
+   "            add(\"sql\", _norm(m.group(1) or \"\"))"
+  ],
+  [
+   "no-encoding",
+   "        for m in _ENCODING.finditer(line):",
+   "        for m in []:"
+  ],
+  [
+   "no-file-write",
+   "        for m in _OPEN_WRITE.finditer(line):",
+   "        for m in []:"
+  ],
+  [
+   "no-phase-e-inventory",
+   "    if top.is_dir():\n        inv = capture_interfaces(top)",
+   "    if False:\n        inv = capture_interfaces(top)"
+  ],
+  [
+   "moved-file-not-followed",
+   "            legacy_path = path if change == \"removed\" else back.get(path, path)",
+   "            legacy_path = path"
+  ],
+  [
+   "added-not-tied",
+   "    for change, items in ((\"removed\", removed), (\"added\", added)):",
+   "    for change, items in ((\"removed\", removed),):"
+  ],
+  [
+   "contract-path-with-line",
+   "        path = loc.split(\":\", 1)[0].strip().lstrip(\"/\")",
+   "        path = loc.strip().lstrip(\"/\")"
+  ],
+  [
+   "comments-scanned",
+   "            if line.lstrip().startswith((\"#\", \"//\")) and not line.lstrip().startswith(\"#!\"):",
+   "            if False:"
+  ],
+  [
+   "suffix-ignored",
+   "                if suffixes and suffix not in suffixes:",
+   "                if False:"
+  ],
+  [
+   "carried-by-name-only",
+   "        counterpart = back.get(h[\"file\"], h[\"file\"])",
+   "        counterpart = h[\"file\"]"
+  ],
+  [
+   "nothing-fixed",
+   "    fixed = [{**h, \"origin\": \"fixed\"} for h in legacy_hits if id(h) not in used]",
+   "    fixed = []"
+  ],
+  [
+   "double-use",
+   "            used.add(id(match))\n            target_out.append",
+   "            target_out.append"
+  ],
+  [
+   "credential-word-boundary",
+   "re.compile(r\"\"\"(?i)\\b\\w*(?:password|passwd|pwd|secret|api[_-]?key|token)\\w*\\s*[:=]",
+   "re.compile(r\"\"\"(?i)\\b(?:password|passwd|pwd|secret|api[_-]?key|token)\\b\\s*[:=]"
+  ],
+  [
+   "localhost-host",
+   "(?!localhost|127\\.0\\.0\\.1|example\\.|[\\w.-]*\\.invalid)[\\w.-]+\"\"\")),",
+   "[\\w.-]+\"\"\")),"
+  ]
+ ]
+}
