@@ -23,7 +23,7 @@ mandatory stops are in `help/Track-3/Track-3 Implementation Prompt.md` §9.
 `akshat_track3` and Phase I as it lands. Every checkpoint is committed and pushed; the newest commit is the state.
 
 **Phase I progress (the cloud session ticks these as it goes; a local session continues from the first unticked):**
-- [ ] I0 Plan written: `docs/superpowers/plans/2026-10-05-track3-phase-i-review-security.md`
+- [x] I0 Plan written: `docs/superpowers/plans/2026-10-05-track3-phase-i-review-security.md`
 - [ ] I1 Migration Review agent (`code_review_modernization`): tools, prompt, graph, socket
 - [ ] I2 Security (Modernization) agent (`security_modernization`): tools, prompt, graph, socket
 - [ ] I3 Wiring: registry, orchestrator2, migration 0075, routes, ledger verdicts, roster pins
