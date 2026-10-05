@@ -39,9 +39,10 @@ def migration_markdown(r: dict) -> str:
     if p:
         lines.append(f"- Equivalence preview (a hint, not the verdict): {p.get('headline')}")
     if r.get("recipes"):
-        lines += ["", "## Recipes", "", "| Tool | Version | Arguments | Files |", "|---|---|---|---:|"]
-        lines += [f"| {x['tool']} | {_cell(x['version'])} | {_cell(x.get('args'))} | {len(x.get('files') or [])} |"
-                  for x in r["recipes"]]
+        # The record keeps what the hand-over contract holds (tool, pinned version, arguments); what each recipe
+        # changed is in its own commit, listed below.
+        lines += ["", "## Recipes", "", "| Tool | Version | Arguments |", "|---|---|---|"]
+        lines += [f"| {x['tool']} | {_cell(x['version'])} | {_cell(x.get('args'))} |" for x in r["recipes"]]
     lines += ["", "## Legacy → target", "", "| Legacy file | Disposition | Target / reason |", "|---|---|---|"]
     lines += [f"| {e['legacy_path']} | {e['disposition']} | {_cell(e.get('target_path') or e.get('reason'))} |"
               for e in r.get("file_map") or []]

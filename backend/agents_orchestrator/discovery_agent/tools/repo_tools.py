@@ -142,7 +142,11 @@ async def _stage_credentials() -> tuple[str, str, str, str]:
                 "it to this stage with read access in project settings."
             )
     try:
-        auth = await conn.auth_adapter()
+        from config.ws_helper import get_tenant_id  # noqa: PLC0415
+
+        # The tenant is required: the GitHub connector raises without it, which read as "could not be
+        # authenticated" for every private GitHub legacy repository (found in Phase H).
+        auth = await conn.auth_adapter(str(get_tenant_id() or ""))
     except Exception as exc:  # noqa: BLE001
         return "", "", "", f"The repository connection could not be authenticated ({type(exc).__name__})."
     name = str(getattr(conn, "connector_name", "") or "")

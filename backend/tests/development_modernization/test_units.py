@@ -282,3 +282,63 @@ def test_module_ids_and_paths_are_validated(tmp_path):
     with pytest.raises(ValueError):
         W.module_dir("not-a-uuid", "M-01", base=tmp_path)
     assert W.branch_for("Claims API/v1") == "migrate/claims-api-v1"
+
+
+# ── the credential reaches the connector with the tenant ────────────────────
+
+class _Conn:
+    connector_name = "github_issues"
+
+    def __init__(self):
+        self.asked = []
+
+    async def auth_adapter(self, tenant_id: str = ""):
+        self.asked.append(tenant_id)
+        if not tenant_id:
+            raise ValueError("tenant_id is required")  # as GitHubIssuesConnector does
+        return {"token": "tok-for-" + tenant_id}
+
+
+async def test_the_target_credential_is_asked_for_with_the_tenant(monkeypatch):
+    from config.connectors import context
+    from config.ws_helper import set_tenant_id
+
+    conn = _Conn()
+    monkeypatch.setattr(context, "get_connector", lambda: conn)
+    set_tenant_id("t-1")
+    try:
+        target = remote.Target(url="https://github.com/o/r", kind="github", branch="main",
+                               git_url="https://github.com/o/r", local=False)
+        assert await remote.credential(target) == "tok-for-t-1" and conn.asked == ["t-1"]
+        wrong = remote.Target(url="https://dev.azure.com/o/p/_git/r", kind="azure_devops", branch="main",
+                              git_url="x", local=False)
+        with pytest.raises(remote.RemoteError, match="for github, but the target is on azure devops"):
+            await remote.credential(wrong)
+    finally:
+        set_tenant_id(None)
+
+
+async def test_a_legacy_pull_asks_its_credential_with_the_tenant(monkeypatch):
+    from agents_orchestrator.discovery_agent.tools import repo_tools
+    from config.connectors import context
+    from config.ws_helper import set_tenant_id
+
+    conn = _Conn()
+    monkeypatch.setattr(context, "get_connector", lambda: conn)
+    set_tenant_id("t-2")
+    try:
+        provider, _org, secret, problem = await repo_tools._stage_credentials()
+        assert (provider, secret, problem) == ("github", "tok-for-t-2", "")
+    finally:
+        set_tenant_id(None)
+
+
+def test_the_document_never_states_a_count_the_record_does_not_hold():
+    """The recipes table once showed "0" files for a recipe that changed one: the record does not keep it."""
+    from agents_orchestrator.development_modernization_agent.migration_document import migration_markdown
+
+    record = {"module_id": "M-01", "outcome": "ready_for_review", "legacy_module_path": "claims-api", "module": {},
+              "build": {"status": "green", "rounds": 2}, "file_map": [],
+              "recipes": [{"tool": "lib2to3", "version": "CPython 3.12.14", "args": "-w claims-api"}]}
+    text = migration_markdown(record)
+    assert "| lib2to3 | CPython 3.12.14 | -w claims-api |" in text and "| Files |" not in text

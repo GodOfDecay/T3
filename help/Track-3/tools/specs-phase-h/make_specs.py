@@ -75,6 +75,14 @@ SPECS = {
         "target": f"{A}/remote.py", "tests": [f"{T}/test_units.py"],
         "mutants": [
             ["map-in-production", '    return os.environ.get("ENV", "").strip().lower() in ("dev", "test")', "    return True"],
+            ["credential-without-tenant", '        auth = await conn.auth_adapter(str(get_tenant_id() or ""))', "        auth = await conn.auth_adapter()"],
+            ["token-sent-to-other-host", "    if provider != target.kind:", "    if False:"],
+        ],
+    },
+    "spec_h_legacy_credential.json": {
+        "target": "agents_orchestrator/discovery_agent/tools/repo_tools.py", "tests": [f"{T}/test_units.py"],
+        "mutants": [
+            ["legacy-credential-without-tenant", '        auth = await conn.auth_adapter(str(get_tenant_id() or ""))', "        auth = await conn.auth_adapter()"],
         ],
     },
     "spec_h_toolchains.json": {

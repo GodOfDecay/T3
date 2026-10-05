@@ -91,8 +91,11 @@ async def credential(target: Target) -> str:
         raise RemoteError(f"The repository connection wired to Migration Development is for {provider.replace('_', ' ')}, "
                           f"but the target is on {target.kind.replace('_', ' ')}. A Project Admin wires the target's "
                           "connection to this stage.")
+    from config.ws_helper import get_tenant_id  # noqa: PLC0415
+
     try:
-        auth = await conn.auth_adapter()
+        # The tenant is required: credentials are per tenant, and the GitHub connector refuses without it.
+        auth = await conn.auth_adapter(str(get_tenant_id() or ""))
     except Exception as exc:  # noqa: BLE001
         raise RemoteError(f"The repository connection could not be authenticated ({type(exc).__name__}).") from exc
     return str(auth.get("pat") or auth.get("token") or "")
