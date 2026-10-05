@@ -1020,7 +1020,12 @@ PyYAML 5.3's two critical CVEs and `yaml.load` fixed.
 | First | 62/69 + 1 BAD | Survivors: private functions, per-language rules, vault references, CVE without package, Semgrep ERROR severity, a path climbing out of an existing file; BAD: a spec indentation typo |
 | Second | **69/69** | Tests added; dead check removed; `verify_no_mutants` 0 absent |
 
-**Regression**: see the closing note below (filled when the run finished).
+**Regression** (this container, test DB at 0075, one group at a time): group 1 with every Track 3 suite
+(`… design_modernization strategy testing_modernization development_modernization review_security_modernization`)
+**1,943 passed, 0 failed** (2 skipped); group 2 **811 passed**, 1 failed — the Windows-only path test (unchanged,
+Track 1); group 3 **41 passed**. Frontend **1,270/1,272** (the same two `document-preview` jsdom failures), `tsc`
+and eslint clean. Tests added by this phase: `tests/review_security_modernization` 36 units + 3 scanners + 6 chain;
+frontend 12.
 
 **Open (need the user, not code):**
 - Fill Trivy's database once with network (command in the click-through); production: an organisation mirror.
