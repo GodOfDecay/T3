@@ -1084,7 +1084,12 @@ per-subject publication on the database). First pass 22/25 + one equivalent muta
 in the target's SECOND run and a scenario with zero cases (tests added); the equivalent one exposed a redundant branch
 (removed). Second pass **25/25**, `verify_no_mutants` 0 absent.
 
-**Regression**: (filled when the run finished — see the closing line below).
+**Regression** (test DB at 0075, four groups): group 1 (platform + Track 3 agents 1–4) **1,706 passed, 0 failed**;
+group 2 (`testing_modernization development_modernization review_security_modernization`, Docker included) **261
+passed** after one fix — `test_the_prompt_says_propose_never_apply_consent_and_masked_only` pinned the old "Verify
+mode is not available yet" sentence; it now pins the verify rules instead; group 3 (orchestrator2) **811 passed**,
+1 failed — the Windows-only path test (unchanged, Track 1); group 4 **41 passed**. Frontend **1,277/1,279** (the same
+two `document-preview` jsdom failures), `tsc` and eslint clean.
 
 **Open (need the user, not code):**
 - Run click-throughs H, I and J in the browser (the H and I tiles were flipped at the user's request first).
