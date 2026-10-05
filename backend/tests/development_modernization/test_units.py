@@ -368,3 +368,32 @@ def test_the_stored_remote_is_the_clean_url_never_the_credentialed_one(tmp_path,
 def test_reported_rounds_never_exceed_five_whatever_the_state_holds():
     builds = [{"ok": False, "failing": "e"}] * 6 + [{"ok": True}]
     assert R.build_result({"builds": builds})["rounds"] == 5
+
+
+# ── rework: what review and security found (workflow review before Phase J) ─
+
+def test_the_rework_list_names_every_finding_with_where_and_what_to_do():
+    from agents_orchestrator.development_modernization_agent.tools.migration_tools import rework_markdown
+
+    class V:
+        def __init__(self, version, status, payload):
+            self.version, self.status, self.payload = version, status, payload
+    review = V(2, "published", {"merge_recommendation": "request_changes", "migration_version": 1, "summary": "s",
+                                "findings": [{"id": "F-002", "severity": "medium", "category": "scope_creep", "file": "a.py",
+                                              "line": 3, "description": "metrics", "recommendation": "remove"},
+                                             {"id": "F-001", "severity": "high", "category": "trap_unhandled", "file": "a.py",
+                                              "line": 27, "legacy_file": "a.py", "legacy_line": 27, "description": "round",
+                                              "recommendation": "Decimal"}],
+                                "trap_check": [{"tr_id": "TR-01", "status": "not_handled"}]})
+    security = V(1, "draft", {"verdict": "FAIL", "migration_version": 1, "rationale": "r",
+                              "findings": [{"id": "S-001", "severity": "critical", "origin": "carried_over", "is_secret": True,
+                                            "title": "Secret", "file": "cfg.py"}],
+                              "secret_carryover": [{"file": "cfg.py", "line": 4}],
+                              "contract_authz": [{"ct_id": "CT-01", "status": "weaker", "note": "no role check"}]})
+    md = rework_markdown("M-01", review, security, {"state": "migrating", "rejectionCount": 1})
+    assert "rejected 1 of 3" in md and "request changes, on migration record v1" in md
+    assert md.index("F-001") < md.index("F-002") and "a.py:27 (legacy a.py:27): round → Decimal" in md
+    assert "TR-01 is NOT handled" in md and "FAIL" in md and "not yet accepted" in md and "SECRET" in md
+    assert "cfg.py:4: replace it with a vault reference; it must also be rotated" in md
+    assert "CT-01: authorization weaker" in md
+    assert "Neither Migration Review nor Security has reported" in rework_markdown("M-01", None, None, {})

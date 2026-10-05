@@ -170,3 +170,48 @@ async def test_another_tenant_sees_nothing(env):
     assert client.get(_url(env["modern"], "repositories"), headers=hdr).status_code == 404
     assert client.put(_url(env["modern"], "repositories/legacy"), json={"url": LEGACY},
                       headers=hdr).status_code == 404
+
+
+# ── a person moves what no agent does (workflow review before Phase J) ─────
+
+async def _blocked(env, module="M-01"):
+    async with get_db_session_for_tenant(env["org"]) as s:
+        await ledger.design_approved(s, tenant_id=env["org"], project_id=env["modern"], actor="u-arch",
+                                     artifact=ledger.ArtifactRef("design_modernization", 1),
+                                     modules=[{"module_id": module, "legacy_path": "src/a"}])
+        await ledger.block(s, project_id=env["modern"], module_id=module, agent="code_review_modernization",
+                           reason="Rejected 3 times (limit 3); escalated to the Architect.", actor=None)
+
+
+async def test_a_blocked_module_is_unblocked_by_an_architect_or_project_admin_with_a_reason(env, monkeypatch):
+    from shared.audit.service import audit_service
+    events = []
+
+    async def emit(payload):
+        events.append(payload)
+    monkeypatch.setattr(audit_service, "emit", emit)
+    await _blocked(env)
+    await grant_role("u-arch", env["modern"], "architect", tenant_id=env["org"], scope_kind="project")
+    client, hdr = _as(env, "u-dev", READ)
+    r = client.post(_url(env["modern"], "ledger/M-01/unblock"), json={"reason": "redesigned"}, headers=hdr)
+    assert r.status_code == 403 and "Architect or a Project Admin" in r.json()["detail"]
+    client, hdr = _as(env, "u-arch", READ)
+    assert client.post(_url(env["modern"], "ledger/M-01/unblock"), json={"reason": ""}, headers=hdr).status_code == 422
+    r = client.post(_url(env["modern"], "ledger/M-01/unblock"), json={"reason": "Redesigned the writer", "toMigrating": True},
+                    headers=hdr)
+    assert r.status_code == 200, r.text
+    assert (r.json()["state"], r.json()["rejectionCount"]) == ("migrating", 0)
+    assert events[-1].event_type == "modernization.module_unblocked" and events[-1].payload["reason"] == "Redesigned the writer"
+    r = client.post(_url(env["modern"], "ledger/M-01/unblock"), json={"reason": "again"}, headers=hdr)
+    assert r.status_code == 409 and "not blocked" in r.json()["detail"]
+
+
+async def test_only_a_verified_module_is_reopened_and_another_projects_admin_cannot(env):
+    await _blocked(env)
+    client, hdr = _as(env, "u-pa", READ)
+    r = client.post(_url(env["modern"], "ledger/M-01/reopen"), json={"reason": "x"}, headers=hdr)
+    assert r.status_code == 409 and "only a verified or cut-over module is reopened" in r.json()["detail"]
+    client, hdr = _as(env, "u-pa-other", READ)  # Project Admin elsewhere, Developer here
+    assert client.post(_url(env["modern"], "ledger/M-01/unblock"), json={"reason": "x"}, headers=hdr).status_code == 403
+    client, hdr = _as(env, "u-pa", READ)
+    assert client.post(_url(env["green"], "ledger/M-01/unblock"), json={"reason": "x"}, headers=hdr).status_code == 404
