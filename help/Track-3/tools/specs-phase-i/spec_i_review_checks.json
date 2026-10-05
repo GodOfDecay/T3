@@ -1,0 +1,64 @@
+{
+ "root": "backend",
+ "target": "agents_orchestrator/code_review_modernization_agent/checks.py",
+ "tests": [
+  "tests/review_security_modernization/test_units.py"
+ ],
+ "mutants": [
+  [
+   "missing-ok",
+   "        if missing := sorted(need - have):",
+   "        if missing := []:"
+  ],
+  [
+   "unknown-ok",
+   "        if unknown := sorted(x for x in have - need if x):",
+   "        if unknown := []:"
+  ],
+  [
+   "traceability-ok",
+   "    if missing := sorted(set(legacy_files) - tr):",
+   "    if missing := []:"
+  ],
+  [
+   "ghost-files-ok",
+   "    if extra := sorted(p for p in tr - set(legacy_files) if p):",
+   "    if extra := []:"
+  ],
+  [
+   "nothing-read-ok",
+   "    if not target_read:",
+   "    if False:"
+  ],
+  [
+   "unread-target-ok",
+   "        if f.get(\"file\") and f[\"file\"] not in target_read:",
+   "        if False:"
+  ],
+  [
+   "unread-legacy-ok",
+   "        if f.get(\"legacy_file\") and f[\"legacy_file\"] not in legacy_read:",
+   "        if False:"
+  ],
+  [
+   "one-sided-ok",
+   "        if f.get(\"category\") in _COMPARING and not f.get(\"legacy_file\"):",
+   "        if False:"
+  ],
+  [
+   "where-optional",
+   "        if t.get(\"status\") == \"handled\" and not (t.get(\"where\") or \"\").strip():",
+   "        if False:"
+  ],
+  [
+   "diff-ignored",
+   "        if bearing and entry and entry.get(\"status\") == \"unchanged\" and not (entry.get(\"note\") or \"\").strip():",
+   "        if False:"
+  ],
+  [
+   "any-kind-bears",
+   "        bearing = [c for c in changes if c.get(\"kind\") in CONTRACT_KINDS]",
+   "        bearing = list(changes)"
+  ]
+ ]
+}

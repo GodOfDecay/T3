@@ -1,0 +1,64 @@
+{
+ "root": "backend",
+ "target": "agents_orchestrator/security_modernization_agent/compare.py",
+ "tests": [
+  "tests/review_security_modernization/test_units.py"
+ ],
+ "mutants": [
+  [
+   "package-case",
+   "        return (\"dep\", f.get(\"cve\"), (f.get(\"package\") or \"\").lower())",
+   "        return (\"dep\", f.get(\"cve\"), f.get(\"package\") or \"\")"
+  ],
+  [
+   "secret-by-file",
+   "    if f[\"tool\"] == \"gitleaks\" and f.get(\"secret_hash\"):",
+   "    if False:"
+  ],
+  [
+   "no-file-map",
+   "        key = _key(f, back.get(f.get(\"file\") or \"\", f.get(\"file\") or \"\"))",
+   "        key = _key(f, f.get(\"file\") or \"\")"
+  ],
+  [
+   "nothing-fixed",
+   "             for f in legacy if id(f) not in used]",
+   "             for f in []]"
+  ],
+  [
+   "reuse-match",
+   "            used.add(id(match))\n            ref = ",
+   "            ref = "
+  ],
+  [
+   "short-values",
+   "        if not value or len(value) < 6:",
+   "        if not value:"
+  ],
+  [
+   "no-url-passwords",
+   "            for rx in (_CREDENTIAL, _URL_PASSWORD):",
+   "            for rx in (_CREDENTIAL,):"
+  ],
+  [
+   "anonymous-ok",
+   "    opened = \"allow_anonymous\" in tm and \"allow_anonymous\" not in lm",
+   "    opened = False"
+  ],
+  [
+   "missing-markers-ok",
+   "    if lset - tset or opened:",
+   "    if opened:"
+  ],
+  [
+   "stricter-is-same",
+   "    if tset - lset:",
+   "    if False:"
+  ],
+  [
+   "vault-is-secret",
+   "[\"'](?!kv://|vault:|keyvault:|secretsmanager:|env:|\\$\\{)([^\"'\\s]{6,})[\"']\"\"\")",
+   "[\"']([^\"'\\s]{6,})[\"']\"\"\")"
+  ]
+ ]
+}

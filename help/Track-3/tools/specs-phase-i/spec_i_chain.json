@@ -1,0 +1,29 @@
+{
+ "root": "backend",
+ "target": "shared/routers/artifact_versions.py",
+ "tests": [
+  "tests/review_security_modernization/test_chain.py"
+ ],
+ "env_test": true,
+ "pytest_args": [
+  "-k",
+  "faithful or broken"
+ ],
+ "mutants": [
+  [
+   "no-hook",
+   "    elif stage in (\"code_review_modernization\", \"security_modernization\"):\n        await _verdict_approved",
+   "    elif False:\n        await _verdict_approved"
+  ],
+  [
+   "stale-accepted",
+   "    if current is None or current.version != payload[\"migration_version\"] \\\n            or (current.payload or {}).get(\"head_sha\") != payload.get(\"head_sha\"):",
+   "    if current is None:"
+  ],
+  [
+   "wrong-column",
+   "    verdict = payload.get(\"merge_recommendation\" if review else \"verdict\")",
+   "    verdict = payload.get(\"verdict\" if review else \"verdict\")"
+  ]
+ ]
+}

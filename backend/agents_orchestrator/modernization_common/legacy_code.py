@@ -66,7 +66,7 @@ logger = logging.getLogger(__name__)
 #: stage (repository roles, master plan §3); Target Architecture reads the same checkout the
 #: assessment was made from.
 TRACK3_STAGES = ("requirements_modernization", "discovery", "design_modernization", "testing_modernization",
-                 "development_modernization")
+                 "development_modernization", "code_review_modernization", "security_modernization")
 
 _STALE_PULL = timedelta(minutes=15)
 _MAX_READ_BYTES = 2_000_000
@@ -273,7 +273,9 @@ _STAGE_LABELS = {"requirements_modernization": "Migration Intent",
                  "discovery": "Dependency and Risk",
                  "design_modernization": "Target Architecture",
                  "testing_modernization": "Equivalence Testing",
-                 "development_modernization": "Migration Development"}
+                 "development_modernization": "Migration Development",
+                 "code_review_modernization": "Migration Review",
+                 "security_modernization": "Security (Modernization)"}
 
 
 def stage_may_read() -> bool:

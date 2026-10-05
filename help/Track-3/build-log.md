@@ -961,3 +961,85 @@ Lite installed as "Migration test"'s legacy code (`e3b6e97`), and in a real brow
 passed. The chat steps (A3, B–E) were not run: no model calls at the user's request (the key has no credit), and the
 stored model key does not decrypt with the current `SECRET_STORE_KEY` (`secret decrypt failed`), so it must be
 re-entered in Org Settings → Model Providers first.
+
+## Entry 15 — 2026-10-05 — Phase I: Migration Review (agent 7) and Security (agent 8)
+
+Implements research §6.7 and §6.8, master plan row I. Plan (decisions I1–I12):
+`docs/superpowers/plans/2026-10-05-track3-phase-i-review-security.md`. Click-through: `click-through-phase-I.md`.
+Built on Phase H (`eac87bb`). Migration 0075 on the test and dev databases (up/down/up). **Tiles not flipped**
+(R42): the browser click-through is the user's.
+
+**The use case it was built and proven on.** ClaimTrack Lite's claims API (M-01), migrated by Phase H's tools and
+in review with its pull request on a local target. A faithful migration (both traps handled) and a broken one
+(the rounding trap left in, the 409 answer changed to 400, an unasked-for `/metrics` route) — fixture
+`tests/review_security_modernization/lite_i.py`, which also locates CT-01/CT-02 in the sample (the shared design
+fixture places them in the full ClaimTrack's Java files).
+
+**What was built**
+- `modernization_common/review_checkout.py`: the module's newest ACCEPTED migration record decides what is
+  reviewed; the TARGET is cloned read-only at that record's head (push URL disabled), only when the repository
+  rule gives the stage `read`, with the connection wired to THIS stage; every file a tool opens is logged per
+  conversation (`files_read` is that log, never the model's claim). `review_tools.py`: the shared reading tools.
+- `code_review_modernization_agent/`: `analysis.py` (API surface from Phase E's `capture_interfaces` plus routes
+  on `self.path`, methods, status codes, public functions, SQL, encodings and file writers, diffed and tied to the
+  frozen contract whose file it is in; a 15-rule legacy anti-pattern pack, each hit carried over / introduced /
+  fixed through the file map); `checks.py` (every contract, trap, criterion and legacy file answered; findings only
+  on opened files, comparisons citing the legacy line; a contract whose file changed in a contract-bearing way is
+  not "unchanged" without a reason); tools, prompt, graph, socket `/sdlc/agent/code-review-modernization/ws`.
+- `security_modernization_agent/`: `scanners.py` (Trivy 0.58.1, Semgrep 1.99.0, Gitleaks 8.21.2, digest-pinned,
+  `--network none`, `runner.limits()`, read-only root, checkout read-only; Trivy's database a separate refresh
+  step; a scanner that cannot run is `not_installed`/`failed`, never clean; secret values hashed, never stored);
+  `rules/semgrep.yml` (offline pack); `compare.py` (legacy diff by CVE+package / rule+mapped file / secret hash,
+  secret carry-over by value, contract-authz markers); `checks.py`; tools, standalone prompt, graph, socket
+  `/sdlc/agent/security-modernization/ws`.
+- Ledger verdicts on ACCEPTANCE (I11): `shared/routers/artifact_versions._verdict_approved` writes
+  `review_submitted` / `security_submitted` in the acceptance's transaction, and refuses a version made on an
+  older migration record (a stale approval can never move a reworked module on).
+- Wiring: registry (both position 7, `can_parallel_with` each other; Security reads the plan too), portfolio,
+  orchestrator2 (registry, names, aliases, capability text, prompt bullet, deliverables), migration 0075, ORM,
+  artifact map, run output dirs, ws allow-list, page routes (latest, packet, export), legacy-code stages (backend
+  and both BFF lists), D12 frontend ids, chat socket map.
+- Frontend: `/migration-review` and `/modernization-security` (`ReviewView`, `SecurityView`, the ledger panel
+  saying what accepting records), zod schemas, backend-built fixtures (the API diff and anti-patterns computed by
+  `analysis` on the sample, not typed).
+
+**Findings while building (each fixed with a test)**
+| # | Finding | Fix |
+|---|---|---|
+| I-F1 | Credential names CONTAINING the word (`DB_PASSWORD`, `clientSecret`) and quoted passwords were missed by the new rules AND by Phase H's write guard (H7) — a migrated file could have carried a hard-coded password | Rules match `\w*password\w*` with a quoted value; vault references (`kv://`, `${…}`) excluded; Phase H regression cases added |
+| I-F2 | The SBOM count included the manifest (`requirements.txt`) as a component | Packages only (CycloneDX `application` entries excluded) |
+| I-F3 | Security's tools could not read the plan on a page turn (not in its registry inputs) | Plan added to its inputs: CONDITIONAL remediation dates must fall inside the module's wave — now enforced |
+| I-F4 | The stored policy verdict was empty whenever the policy was not FAIL (computed through the stated-verdict check) | `policy_verdict` computes it without that check; test |
+| I-F5 | Phase H's plan text showed contract locations blank (`location` vs `legacy_location`) | Field fixed |
+| I-F6 | A redundant private-name check (mutation found it dead: the regex already excludes `_x`) | Removed; the mutant now targets the regex |
+
+**Proven on the real chain** (`test_chain.py`, Postgres + git + Docker scanners): the review is refused until it
+opens files, explains why CT-01 is unchanged and stops approving over a high finding; accepted only by someone
+else, it records `approve`; Security scans both sides (a second legacy scan from the cache), finds 0 introduced,
+no carried-over secret, CT-01 authz "same"; a weaker authz claim gives FAIL; its accepted PASS with the review's
+approve moves M-01 to **verifying**. Without scanners the report cannot PASS. The broken migration: the diff
+shows `removed status 409`, `added http_path /metrics`; the accepted request-changes sends M-01 back to
+**migrating** (rejection 1); the re-recorded module back in review refuses the older review's acceptance.
+Real scanners on a fixture (`test_scanners.py`): requests 2.19.0 and the AWS key carried over, `eval` introduced,
+PyYAML 5.3's two critical CVEs and `yaml.load` fixed.
+
+**Mutation (R46)** — `help/Track-3/tools/specs-phase-i/` (8 specs, 69 mutants, one a DB chain spec).
+| Pass | Result | Notes |
+|---|---|---|
+| First | 62/69 + 1 BAD | Survivors: private functions, per-language rules, vault references, CVE without package, Semgrep ERROR severity, a path climbing out of an existing file; BAD: a spec indentation typo |
+| Second | **69/69** | Tests added; dead check removed; `verify_no_mutants` 0 absent |
+
+**Regression** (this container, test DB at 0075, one group at a time): group 1 with every Track 3 suite
+(`… design_modernization strategy testing_modernization development_modernization review_security_modernization`)
+**1,943 passed, 0 failed** (2 skipped); group 2 **811 passed**, 1 failed — the Windows-only path test (unchanged,
+Track 1); group 3 **41 passed**. Frontend **1,270/1,272** (the same two `document-preview` jsdom failures), `tsc`
+and eslint clean. Tests added by this phase: `tests/review_security_modernization` 36 units + 3 scanners + 6 chain;
+frontend 12.
+
+**Open (need the user, not code):**
+- Fill Trivy's database once with network (command in the click-through); production: an organisation mirror.
+- Run `click-through-phase-H.md` and `click-through-phase-I.md`, then flip the tiles (R42).
+- Track 1 `development_agent/tools/git_tools.py` (lines 201, 498): the same missing-tenant credential bug as H-F7 —
+  awaiting the user's OK to change Track 1.
+- Revoke the GitHub token shared in the chat during Phase H.
+- Reachability is the agent's reading (unknown counts as reachable), not a call-graph analysis.

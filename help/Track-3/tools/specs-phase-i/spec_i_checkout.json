@@ -1,0 +1,54 @@
+{
+ "root": "backend",
+ "target": "agents_orchestrator/modernization_common/review_checkout.py",
+ "tests": [
+  "tests/review_security_modernization/test_units.py"
+ ],
+ "mutants": [
+  [
+   "draft-reviewable",
+   "    if row.status not in (\"published\", \"granted\"):",
+   "    if False:"
+  ],
+  [
+   "failed-reviewable",
+   "    if record.get(\"outcome\") != \"ready_for_review\":",
+   "    if False:"
+  ],
+  [
+   "headless-reviewable",
+   "    if not record.get(\"head_sha\") or not record.get(\"target_branch\"):",
+   "    if False:"
+  ],
+  [
+   "push-enabled",
+   "    W.git(repo, \"remote\", \"set-url\", \"--push\", \"origin\", _DISABLED_PUSH_URL)",
+   "    pass"
+  ],
+  [
+   "any-head",
+   "    if W.git(repo, \"cat-file\", \"-t\", head, check=False) != \"commit\":",
+   "    if False:"
+  ],
+  [
+   "branch-tip",
+   "    W.git(repo, \"checkout\", \"-q\", \"--detach\", head)",
+   "    pass"
+  ],
+  [
+   "escape-ok",
+   "        path.relative_to(base.resolve())\n    except ValueError:\n        return None",
+   "        path.relative_to(\"/\")\n    except ValueError:\n        return None"
+  ],
+  [
+   "git-readable",
+   "    if not rel or \".git\" in pathlib.PurePosixPath(rel).parts:",
+   "    if not rel:"
+  ],
+  [
+   "bad-head-ok",
+   "    if not _MODULE_RE.match(module_id or \"\") or not head.isalnum():",
+   "    if not _MODULE_RE.match(module_id or \"\"):"
+  ]
+ ]
+}

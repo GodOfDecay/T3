@@ -1,0 +1,49 @@
+{
+ "root": "backend",
+ "target": "agents_orchestrator/security_modernization_agent/scanners.py",
+ "tests": [
+  "tests/review_security_modernization/test_units.py"
+ ],
+ "mutants": [
+  [
+   "unpinned-ok",
+   "    if \"@sha256:\" not in ref:",
+   "    if False:"
+  ],
+  [
+   "value-kept",
+   "        out.append({\"tool\": \"gitleaks\", \"rule\": r.get(\"RuleID\"), \"cve\": None,",
+   "        out.append({\"tool\": \"gitleaks\", \"Secret\": value, \"rule\": r.get(\"RuleID\"), \"cve\": None,"
+  ],
+  [
+   "secret-not-critical",
+   "\"title\": f\"Secret in code ({r.get('RuleID')})\", \"severity\": \"critical\",",
+   "\"title\": f\"Secret in code ({r.get('RuleID')})\", \"severity\": \"high\","
+  ],
+  [
+   "semgrep-error-medium",
+   "_SEMGREP_SEVERITY = {\"ERROR\": \"high\", \"WARNING\": \"medium\", \"INFO\": \"low\"}",
+   "_SEMGREP_SEVERITY = {\"ERROR\": \"medium\", \"WARNING\": \"medium\", \"INFO\": \"low\"}"
+  ],
+  [
+   "sbom-counts-manifests",
+   " if c.get(\"type\") != \"application\")",
+   ")"
+  ],
+  [
+   "no-db-ran",
+   "    if not trivy_db_ready():",
+   "    if False:"
+  ],
+  [
+   "failed-is-ran",
+   "        scans[\"semgrep\"], notes[\"semgrep\"] = \"failed\", str(exc)[:300]",
+   "        scans[\"semgrep\"], notes[\"semgrep\"] = \"ran\", str(exc)[:300]"
+  ],
+  [
+   "module-prefix-lost",
+   "        target = _rel(r.get(\"Target\") or \"\", module_path)",
+   "        target = r.get(\"Target\") or \"\""
+  ]
+ ]
+}

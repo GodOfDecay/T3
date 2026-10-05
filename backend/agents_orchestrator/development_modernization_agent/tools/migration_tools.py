@@ -221,7 +221,7 @@ async def get_module_plan(module_id: str) -> str:
              ""]
     if item["contracts"]:
         lines += ["Frozen contracts (kept byte for byte):"] + [
-            f"- {c['id']} {c.get('name')} ({c.get('kind')}): {c.get('location') or ''}" for c in item["contracts"]]
+            f"- {c['id']} {c.get('name')} ({c.get('kind')}): {c.get('legacy_location') or c.get('location') or ''}" for c in item["contracts"]]
     if item["traps"]:
         lines += ["Traps to handle (say where in the record):"] + [
             f"- {t['id']} {t.get('change')}: {t.get('effect')} — {t.get('where') or ''}" for t in item["traps"]]

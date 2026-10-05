@@ -120,6 +120,8 @@ export const PHASE_FOR_AGENT: Record<OrchestratorAgentId, Phase> = {
   strategy: "strategy",
   testing_modernization: "testing_modernization",
   development_modernization: "development_modernization",
+  code_review_modernization: "code_review_modernization",
+  security_modernization: "security_modernization",
 };
 
 /**

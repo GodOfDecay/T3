@@ -19,7 +19,7 @@ from agents_orchestrator.orchestrator2.registry import (
 )
 
 TRACK3 = ("requirements_modernization", "discovery", "design_modernization", "strategy", "testing_modernization",
-          "development_modernization")
+          "development_modernization", "code_review_modernization", "security_modernization")
 
 
 def test_the_modernization_portfolio_is_the_two_built_agents_in_hand_off_order():
@@ -179,7 +179,7 @@ def test_the_track3_prompt_starts_with_migration_intent_and_names_the_unbuilt_ag
     unbuilt = prompt.split("Not built for this track yet:", 1)[1].split(".", 1)[0]
     # Track 3's OWN agents 3–10 (not Portfolio 1's Design, Development, … — Phase B).
     assert [n.strip() for n in unbuilt.split(",")] == [
-        "Migration Review", "Security", "Cutover", "Cutover Pack",
+        "Cutover", "Cutover Pack",
     ]
     assert "DESIGNING WHAT THE SYSTEM BECOMES is Target Architecture work" in prompt
     assert "Discovery" not in unbuilt and "Dependency and Risk" not in unbuilt

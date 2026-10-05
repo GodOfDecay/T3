@@ -86,6 +86,10 @@ export function agentWsPath(agent?: string): string | null {
       return "/sdlc/agent/testing-modernization/ws";
     case "development_modernization":
       return "/sdlc/agent/development-modernization/ws";
+    case "code_review_modernization":
+      return "/sdlc/agent/code-review-modernization/ws";
+    case "security_modernization":
+      return "/sdlc/agent/security-modernization/ws";
     // NO FALLBACK. This returned `/sdlc/agent/orchestrator/ws` until Phase 5 retired
     // that engine. Falling through to any OTHER engine would let an unmapped agent
     // answer as something else — silently, with a reply that looks complete, which is

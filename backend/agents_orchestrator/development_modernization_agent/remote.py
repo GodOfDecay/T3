@@ -74,9 +74,10 @@ def target_of(row) -> Target:
                   git_url=local or row.url, local=local is not None)
 
 
-async def credential(target: Target) -> str:
+async def credential(target: Target, label: str = "Migration Development") -> str:
     """The stage's connection secret for the target's host ("" when none is bound: a public or a local
-    repository). Raises RemoteError when a connection IS bound but for another host or unusable."""
+    repository). Raises RemoteError when a connection IS bound but for another host or unusable.
+    `label` names the asking stage in that message (Migration Review and Security read the target too)."""
     if target.local:
         return ""
     try:
@@ -88,7 +89,7 @@ async def credential(target: Target) -> str:
     name = str(getattr(conn, "connector_name", "") or "")
     provider = "github" if "github" in name else "azure_devops"
     if provider != target.kind:
-        raise RemoteError(f"The repository connection wired to Migration Development is for {provider.replace('_', ' ')}, "
+        raise RemoteError(f"The repository connection wired to {label} is for {provider.replace('_', ' ')}, "
                           f"but the target is on {target.kind.replace('_', ' ')}. A Project Admin wires the target's "
                           "connection to this stage.")
     from config.ws_helper import get_tenant_id  # noqa: PLC0415

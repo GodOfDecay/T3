@@ -207,8 +207,10 @@ export const BUILT_AGENTS: readonly Phase[] = [
 export const BUILT_AGENTS_BY_TRACK: Record<DeliveryTrack, readonly Phase[]> = {
   greenfield: BUILT_AGENTS,
   enhancement: BUILT_AGENTS,
+  // Migration Development, Migration Review and Security flipped 2026-10-05 at the user's request,
+  // before their browser click-throughs (as Phases F and G were).
   modernization: ["requirements_modernization", "discovery", "design_modernization", "strategy", "testing_modernization",
-    "development_modernization"],
+    "development_modernization", "code_review_modernization", "security_modernization"],
   rpa_infra: BUILT_AGENTS,
   data_engineering: BUILT_AGENTS,
 };

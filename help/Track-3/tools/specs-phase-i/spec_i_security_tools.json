@@ -1,0 +1,19 @@
+{
+ "root": "backend",
+ "target": "agents_orchestrator/security_modernization_agent/tools/security_tools.py",
+ "tests": [
+  "tests/review_security_modernization/test_units.py"
+ ],
+ "mutants": [
+  [
+   "policy-from-nothing",
+   "            scans=dict(artifact.get(\"scans\") or {}),",
+   "            scans={t: \"ran\" for t in S.SCANNERS},"
+  ],
+  [
+   "authz-not-counted",
+   "            contract_authz=[ContractAuthz.model_validate(a) for a in artifact.get(\"contract_authz\") or []],",
+   "            contract_authz=[],"
+  ]
+ ]
+}

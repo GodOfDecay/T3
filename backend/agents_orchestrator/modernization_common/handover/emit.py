@@ -295,6 +295,32 @@ def migration_packet(artifact: dict, envelope: dict) -> Emitted:
     return _build(MigrationRecordPacket, {**envelope, "payload": migration_payload(artifact)})
 
 
+def review_payload(artifact: dict) -> dict:
+    """The packet's payload from a stored review (`MigrationReviewArtifact` as a dict)."""
+    from .packets import ReviewPayload  # noqa: PLC0415
+
+    return {name: artifact[name] for name in ReviewPayload.model_fields if name in artifact}
+
+
+def review_packet(artifact: dict, envelope: dict) -> Emitted:
+    from .packets import ReviewPacket  # noqa: PLC0415
+
+    return _build(ReviewPacket, {**envelope, "payload": review_payload(artifact)})
+
+
+def security_payload(artifact: dict) -> dict:
+    """The packet's payload from a stored security report (`ModernizationSecurityArtifact` as a dict)."""
+    from .packets import SecurityPayload  # noqa: PLC0415
+
+    return {name: artifact[name] for name in SecurityPayload.model_fields if name in artifact}
+
+
+def security_packet(artifact: dict, envelope: dict) -> Emitted:
+    from .packets import SecurityPacket  # noqa: PLC0415
+
+    return _build(SecurityPacket, {**envelope, "payload": security_payload(artifact)})
+
+
 def assessment_packet(assessment: dict, envelope: dict) -> Emitted:
     if any(not (m or {}).get("id") for m in assessment.get("modules") or []):
         # Schema 1 (or a restored copy of one): no module ids, so nothing downstream can cite a

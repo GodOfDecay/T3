@@ -359,6 +359,30 @@ def _load_prompt_development_modernization() -> str:
     return MIGRATION_DEVELOPMENT_SYS_MESSAGE
 
 
+def _load_graph_code_review_modernization() -> Any:
+    from agents_orchestrator.code_review_modernization_agent.agents.reviewer import app
+
+    return app
+
+
+def _load_prompt_code_review_modernization() -> str:
+    from agents_orchestrator.code_review_modernization_agent.agents.reviewer import MIGRATION_REVIEW_SYS_MESSAGE
+
+    return MIGRATION_REVIEW_SYS_MESSAGE
+
+
+def _load_graph_security_modernization() -> Any:
+    from agents_orchestrator.security_modernization_agent.agents.security import app
+
+    return app
+
+
+def _load_prompt_security_modernization() -> str:
+    from agents_orchestrator.security_modernization_agent.agents.security import SECURITY_MODERNIZATION_SYS_MESSAGE
+
+    return SECURITY_MODERNIZATION_SYS_MESSAGE
+
+
 REGISTRY: dict[str, AgentCapability] = {
     "requirements": AgentCapability(
         agent_id="requirements",
@@ -450,6 +474,18 @@ REGISTRY: dict[str, AgentCapability] = {
         agent_id="development_modernization",
         load_graph=_load_graph_development_modernization,
         load_prompt=_load_prompt_development_modernization,
+        mode="stream",
+    ),
+    "code_review_modernization": AgentCapability(
+        agent_id="code_review_modernization",
+        load_graph=_load_graph_code_review_modernization,
+        load_prompt=_load_prompt_code_review_modernization,
+        mode="stream",
+    ),
+    "security_modernization": AgentCapability(
+        agent_id="security_modernization",
+        load_graph=_load_graph_security_modernization,
+        load_prompt=_load_prompt_security_modernization,
         mode="stream",
     ),
 }

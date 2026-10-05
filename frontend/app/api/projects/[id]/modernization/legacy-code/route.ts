@@ -12,7 +12,7 @@ import { bffProxy } from "@/lib/bff/proxy";
  * a private repository's credential. Anything else is refused here rather than proxied.
  */
 const STAGES = new Set(["requirements_modernization", "discovery", "design_modernization", "testing_modernization",
-  "development_modernization"]);
+  "development_modernization", "code_review_modernization", "security_modernization"]);
 
 export async function GET(
   req: NextRequest,

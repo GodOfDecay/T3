@@ -15,7 +15,7 @@ const FASTAPI_BASE = process.env["FASTAPI_INTERNAL_URL"] ?? "http://localhost:80
  * download of v2 is v2 even after v5 exists.
  */
 const KINDS = new Set(["migration-intent", "discovery", "target-architecture", "strategy", "equivalence-testing",
-  "migration-development"]);
+  "migration-development", "migration-review", "modernization-security"]);
 const FORMATS = new Set(["docx", "pdf"]);
 
 export async function GET(

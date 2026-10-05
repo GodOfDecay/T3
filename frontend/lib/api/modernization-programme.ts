@@ -25,6 +25,8 @@ export const LedgerModule = z.object({
   blockedReason: z.string().nullable().optional(),
   rejectionCount: z.number().optional(),
   prUrl: z.string().nullable().optional(),
+  reviewVerdict: z.string().nullable().optional(),
+  securityVerdict: z.string().nullable().optional(),
   stateChangedAt: z.string().nullable().optional(),
 });
 export type LedgerModule = z.infer<typeof LedgerModule>;

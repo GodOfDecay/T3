@@ -1,6 +1,6 @@
 # Track 3 (Code Modernization) — Handoff for whoever builds the next agents
 
-**Updated:** 2026-10-05, end of Phase H (built; proven on Postgres + Docker and LIVE: a real pull request on GodOfDecay/claimtrack-lite-target; 71/71 mutants; migration 0074 on the test DB and, on 2026-10-05, on the user's dev DB; tile flipped at the user's request on 2026-10-05, as F's and G's were). Before that, 2026-10-01, end of Phase G (built, fix wave, mutation-proven; migration 0073 on the test DB; the user's own dev DB is still at 0072 and needs 0073 with their OK; tile flipped at the user's request on 2026-10-01, as Phase F's was). Phase G's build and fix wave are on `claude/intelligent-pasteur-m7ea75` (based on `akshat_track3`), to merge back. **Branch:** `akshat_track3` on `origin` (the team's shared branch; never push Track 3
+**Updated:** 2026-10-05, end of Phase I (Migration Review and Security built; proven on Postgres + git + the three scanners in Docker; 69/69 mutants; migration 0075 on the cloud session's test and dev DBs — the user's own dev DB is at 0074 and needs 0075 with their OK; the Migration Development, Migration Review and Security tiles flipped at the user's request on 2026-10-05, before their click-throughs — build-log Entry 15). Before that, end of Phase H (built; proven on Postgres + Docker and LIVE: a real pull request on GodOfDecay/claimtrack-lite-target; 71/71 mutants; migration 0074 on the test DB; tile not flipped until the user's click-through). Before that, 2026-10-01, end of Phase G (built, fix wave, mutation-proven; migration 0073 on the test DB; the user's own dev DB is still at 0072 and needs 0073 with their OK; tile flipped at the user's request on 2026-10-01, as Phase F's was). Phase G's build and fix wave are on `claude/intelligent-pasteur-m7ea75` (based on `akshat_track3`), to merge back. **Branch:** `akshat_track3` on `origin` (the team's shared branch; never push Track 3
 work to `track-3`). Last commit: `12418303` (handoff) on `999b1b3e` (Phase E), `0c814fad` (Phase D),
 `9f2e81f6` (Phase C closed) and `8c90522c` (A, B and most of C).
 
@@ -9,12 +9,85 @@ work to `track-3`). Last commit: `12418303` (handoff) on `999b1b3e` (Phase E), `
 2. `help/Track-3/track3-research.md` §6.x for **the one agent you are building**. Do not read the ~8,000
    lines of design docs up front.
 3. `help/Track-3/Track-3 Lessons from Track 1-2.md` (rules R1–R57).
-4. `help/Track-3/build-log.md` for the evidence behind any decision below (Entries 1–12).
+4. `help/Track-3/build-log.md` for the evidence behind any decision below (Entries 1–15).
 
 The phase map is `docs/superpowers/plans/2026-09-28-track3-master-plan.md`. The binding rules and the
 mandatory stops are in `help/Track-3/Track-3 Implementation Prompt.md` §9.
 
 ---
+
+## 0. RESUME HERE (read first; kept current at every checkpoint)
+
+**Where the code is.** GitHub `GodOfDecay/T3`, branch **`claude/intelligent-pasteur-m7ea75`**
+(https://github.com/GodOfDecay/T3/tree/claude/intelligent-pasteur-m7ea75). It holds Phases G and H on top of
+`akshat_track3` and Phase I as it lands. Every checkpoint is committed and pushed; the newest commit is the state.
+
+**Phase I progress (the cloud session ticks these as it goes; a local session continues from the first unticked):**
+- [x] I0 Plan written: `docs/superpowers/plans/2026-10-05-track3-phase-i-review-security.md`
+- [x] I1 Migration Review agent (`code_review_modernization`): tools, prompt, graph, socket
+- [x] I2 Security (Modernization) agent (`security_modernization`): tools, prompt, graph, socket
+- [x] I3 Wiring: registry, orchestrator2, migration 0075, routes, ledger verdicts, roster pins
+- [x] I4 Tests: units, Postgres chain (review + security on Phase H's PR), rework loop
+- [x] I5 Frontend: `/migration-review`, `/modernization-security` pages + tests
+- [x] I6 Mutation (69/69), regression, build-log Entry 15, click-through I, this file
+
+**Phase I is done.** Next is **Phase J — Equivalence Testing (verify)**: replay each `verifying` module's
+scenarios on the TARGET and record the equivalence verdict (`ledger.equivalence_recorded`). Start from
+research §6.5 (verify mode), `testing_modernization_agent/` (baseline mode is built) and Phase H's
+`preview.py` (the same overlay replay, which becomes the verdict there). Before J, the user's open items:
+Trivy DB refresh, click-throughs H and I, the Track 1 `git_tools.py` tenant decision, revoking the PAT.
+
+**Phase I needs on the laptop:** Docker Desktop running; migration 0075 (`alembic upgrade head`, then
+`grant_app_role`); Trivy's database filled once with network (command in `click-through-phase-I.md`; or set
+`SDLC_TRIVY_CACHE`). Scanner images pull on first use (aquasec/trivy, semgrep/semgrep, zricethezav/gitleaks —
+pinned digests in `security_modernization_agent/scanners.py`). New tests: `tests/review_security_modernization`
+(units run anywhere; `test_scanners.py` and part of `test_chain.py` skip without Docker).
+
+### 0.1 Run it on the Windows laptop (PowerShell)
+
+```powershell
+# once: get the branch (the remote is named t3 so it never clashes with another origin)
+cd C:\Users\Aksha\OneDrive\Desktop\PWC\SDLC
+git remote add t3 https://github.com/GodOfDecay/T3.git      # "already exists" → git remote set-url t3 <same url>
+git fetch t3 claude/intelligent-pasteur-m7ea75
+git checkout -b track3-phase-h t3/claude/intelligent-pasteur-m7ea75   # later: git pull t3 claude/intelligent-pasteur-m7ea75
+
+# every time: Docker Desktop running (Redis, and the sandboxes of Phases G/H/I)
+cd backend
+docker compose up -d redis
+uv sync
+uv run python -m alembic upgrade head        # the code's head (0074 after Phase H; 0075 after Phase I)
+uv run python -m scripts.grant_app_role      # after EVERY migration
+uv run python -m uvicorn process_api:app --port 8001 --reload --reload-exclude "files/*"
+# second window
+cd ..\frontend
+pnpm install
+pnpm dev                                       # http://localhost:3000 ; frontend/.env.local → FASTAPI_INTERNAL_URL=http://127.0.0.1:8001
+```
+
+`backend/.env.test` must also have a `SECRET_STORE_KEY` (any Fernet key: `uv run python -c "from cryptography.fernet
+import Fernet; print(Fernet.generate_key().decode())"`), or the six secret-store tests in `test_project_scoped.py` fail.
+
+### 0.2 Edit and test locally
+
+- Tests (PowerShell, from `backend/`): `uv run python -m pytest tests/development_modernization -q -p no:cacheprovider`
+  (`tests/conftest.py` loads `.env.test` itself — never point tests at the dev database). Docker tests skip when
+  Docker Desktop is off; start it to run them.
+- Frontend: `node node_modules/vitest/vitest.mjs run <file>`, `node node_modules/typescript/bin/tsc --noEmit`,
+  `node node_modules/eslint/bin/eslint.js <files>` (never npx).
+- Mutation (§6): from `backend/`, `uv run python ../help/Track-3/tools/mutate.py ../help/Track-3/tools/specs-phase-h/spec_h_rules.json`
+  (it finds the repository itself). NEVER run two DB-backed test processes at once, and never commit while a
+  mutation run is live (the target file holds a mutant until the harness restores it); after an interrupted run,
+  `verify_no_mutants.py <spec dir>` must report 0 absent.
+- Commit messages end with `Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>`. Push to the branch above
+  (`git push t3 HEAD:claude/intelligent-pasteur-m7ea75`).
+
+### 0.3 A local Claude Code (Pro) session picking up
+
+Open Claude Code in the repository root on that branch and say: "Read help/Track-3/SESSION-HANDOFF.md §0 and
+continue Phase I from the first unticked item." It needs: Docker Desktop running, PostgreSQL 16 on 5432 with
+`sdlc_product` and `sdlc_product_test` migrated to the code's head, Redis up. Everything else (decisions, traps,
+quality bar) is in this file and `build-log.md` (Entries 13–15).
 
 ## 1. Where it stands
 
@@ -29,8 +102,8 @@ Track 3 has ten agents in hand-off order. The four built ones are live on their 
 | 4 | `strategy` | Migration Strategy | Architect | **Built** (Phase F; tile unlocked at the user's request) |
 | 5 | `testing_modernization` | Equivalence Testing | QA | **Built: Baseline mode** (Phase G; tile unlocked at the user's request). Verify mode is Phase J |
 | 6 | `development_modernization` | Migration Development | Developer (D10) | **Built** (Phase H; live PR proven; tile unlocked at the user's request) |
-| 7 | `code_review_modernization` | Migration Review | Architect | Phase I |
-| 8 | `security_modernization` | Security (Modernization) | Security Engineer | Phase I |
+| 7 | `code_review_modernization` | Migration Review | Architect | **Built** (Phase I; tile unlocked at the user's request) |
+| 8 | `security_modernization` | Security (Modernization) | Security Engineer | **Built** (Phase I; tile unlocked at the user's request) |
 | 9 | `deployment_modernization` | Cutover | DevOps Engineer | Phase K |
 | 10 | `documentation_modernization` | Cutover Pack | BA | Phase L |
 
@@ -200,6 +273,7 @@ them.
 | Redis | Docker `sdlc-redis` on 6379 (start Docker Desktop). Docker Postgres on 5433 is LiteLLM's, not the app's |
 | Storage | `STORAGE_BACKEND=local`. Windows long paths must be enabled for uploads (admin PowerShell; in the A/B click-through) |
 | Ports | Backend **8001** (docs saying 8004 are stale) |
+| Cloud session (Phases G–I) | Linux container: Postgres 16 + Redis + Docker started by hand (`service postgresql start`, `redis-server --daemonize yes`, `dockerd &`); `backend/.env`/`.env.test` written there, gitignored. Its dev DB is NOT the user's laptop DB |
 | Commands | `uv run python -m alembic …`, `python -m uvicorn process_api:app --port 8001` (`uv run alembic/uvicorn` fail: "uv trampoline"). Tests: `cd backend && set -a && . ./.env.test && set +a && uv run python -m pytest <files> -q -p no:cacheprovider`. Frontend: `node node_modules/typescript/bin/tsc --noEmit`, `node node_modules/vitest/vitest.mjs run`, `node node_modules/eslint/bin/eslint.js` (**never npx**) |
 | Migrations | Code head **`0074_migration_development`** (Phase H: `runs.migration_artifacts`, deliverables CHECK). Before it, **`0073_equivalence`** (Phase G: `runs.equivalence_artifacts`, deliverables CHECK; apply to dev with the user's OK, then `grant_app_role`, then restart). Before it: **Test DB 0072; dev DB 0072** (0068–0071 applied to dev with the user's OK on 2026-09-29, grants re-applied; 0072 on 2026-09-30 at the user's request — a column only, no grants needed). A new migration goes on dev only with the user's OK. 0067 reached dev without explicit approval earlier (verified identical; the user was told) |
 | Personas (dev DB) | `ba@gmail.com`, `projadmin@gmail.com`, `architect@gmail.com`, `dev@gmail.com`, `tester@gmail.com`, `buadmin@gmail.com`, `admin@pwc.dev`. `DEV_LOGINS.txt` personas are NOT in this DB. Projects: "Migration test" (Track 3, ADO wired), "Test" (Greenfield) |

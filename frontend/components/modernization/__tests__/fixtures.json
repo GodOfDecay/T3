@@ -4083,5 +4083,701 @@
         "openedAt": "2026-12-02T10:00:00+00:00"
       }
     ]
+  },
+  "review": {
+    "schema_version": 1,
+    "system_name": "ClaimTrack Lite",
+    "module_id": "M-01",
+    "pr": "https://github.com/claimtrack/claimtrack-lite-target/pull/1",
+    "summary": "A faithful port: both traps handled where the design says, every route, status code and SQL statement kept.",
+    "merge_recommendation": "approve",
+    "findings": [],
+    "equivalence_coverage": [
+      {
+        "ec_id": "EC-01",
+        "status": "covered",
+        "note": ""
+      },
+      {
+        "ec_id": "EC-02",
+        "status": "covered",
+        "note": ""
+      },
+      {
+        "ec_id": "EC-04",
+        "status": "covered",
+        "note": ""
+      }
+    ],
+    "contract_check": [
+      {
+        "ct_id": "CT-01",
+        "status": "unchanged",
+        "note": "The same JSON on every route; encoded to bytes for the socket (TR-02)."
+      }
+    ],
+    "trap_check": [
+      {
+        "tr_id": "TR-01",
+        "status": "handled",
+        "where": "claims-api/server.py:28"
+      },
+      {
+        "tr_id": "TR-02",
+        "status": "handled",
+        "where": "claims-api/server.py:53"
+      }
+    ],
+    "traceability": [
+      {
+        "legacy_path": "claims-api/requirements.txt",
+        "target_path": "claims-api/requirements.txt",
+        "status": "mapped"
+      },
+      {
+        "legacy_path": "claims-api/runtime.txt",
+        "target_path": "claims-api/runtime.txt",
+        "status": "mapped"
+      },
+      {
+        "legacy_path": "claims-api/server.py",
+        "target_path": "claims-api/server.py",
+        "status": "mapped"
+      }
+    ],
+    "known_debt": [
+      {
+        "pattern": "Hard-coded host",
+        "legacy_file": "claims-api/server.py",
+        "note": "FRAUD_URL default; the environment overrides it"
+      }
+    ],
+    "files_read": {
+      "target": [
+        "claims-api/server.py"
+      ],
+      "legacy": [
+        "claims-api/server.py"
+      ]
+    },
+    "migration_version": 1,
+    "head_sha": "4f6a5b7c8d4f6a5b7c8d4f6a5b7c8d4f6a5b7c8d",
+    "legacy_commit": "4f1c2e9a7b4f1c2e9a7b4f1c2e9a7b4f1c2e9a7b",
+    "module": {
+      "name": "claims-api",
+      "tier": "llm_assisted",
+      "patterns": [
+        "in_place_upgrade"
+      ],
+      "legacy_path": "claims-api",
+      "contract_ids": [
+        "CT-01"
+      ],
+      "trap_ids": [
+        "TR-01",
+        "TR-02"
+      ],
+      "criterion_ids": [
+        "EC-01",
+        "EC-02",
+        "EC-04"
+      ]
+    },
+    "sources": {
+      "design": {
+        "version": 1,
+        "status": "published"
+      },
+      "plan": {
+        "version": 1,
+        "status": "published"
+      },
+      "migration": {
+        "version": 1,
+        "status": "published"
+      }
+    },
+    "surface": {
+      "removed": [
+        {
+          "kind": "http_consumes",
+          "name": "urllib2.urlopen",
+          "location": "claims-api/server.py:32",
+          "evidence": "reply = urllib2.urlopen(\"%s/score?claim=%s\" % (FRAUD_URL, claim_id), timeout=5).read()"
+        }
+      ],
+      "added": [
+        {
+          "kind": "encoding",
+          "name": "utf-8",
+          "location": "claims-api/server.py:55",
+          "evidence": "self.wfile.write(data.encode(\"utf-8\"))"
+        },
+        {
+          "kind": "http_consumes",
+          "name": "urllib.request.urlopen",
+          "location": "claims-api/server.py:34",
+          "evidence": "reply = urllib.request.urlopen(\"%s/score?claim=%s\" % (FRAUD_URL, claim_id), timeout=5).read()"
+        }
+      ],
+      "contracts": {
+        "CT-01": [
+          {
+            "kind": "http_consumes",
+            "name": "urllib2.urlopen",
+            "location": "claims-api/server.py:32",
+            "evidence": "reply = urllib2.urlopen(\"%s/score?claim=%s\" % (FRAUD_URL, claim_id), timeout=5).read()",
+            "change": "removed"
+          },
+          {
+            "kind": "encoding",
+            "name": "utf-8",
+            "location": "claims-api/server.py:55",
+            "evidence": "self.wfile.write(data.encode(\"utf-8\"))",
+            "change": "added"
+          },
+          {
+            "kind": "http_consumes",
+            "name": "urllib.request.urlopen",
+            "location": "claims-api/server.py:34",
+            "evidence": "reply = urllib.request.urlopen(\"%s/score?claim=%s\" % (FRAUD_URL, claim_id), timeout=5).read()",
+            "change": "added"
+          }
+        ]
+      },
+      "legacy_count": 17,
+      "target_count": 18
+    },
+    "antipatterns": {
+      "target": [
+        {
+          "rule": "hardcoded-host",
+          "title": "Hard-coded host or URL",
+          "severity": "low",
+          "file": "claims-api/server.py",
+          "line": 19,
+          "code": "FRAUD_URL = os.environ.get(\"FRAUD_URL\", \"http://fraudscore:9000\")",
+          "origin": "carried_over",
+          "legacy_file": "claims-api/server.py",
+          "legacy_line": 18
+        }
+      ],
+      "fixed": [
+        {
+          "rule": "py2-module",
+          "title": "Python 2 only module",
+          "severity": "medium",
+          "file": "claims-api/server.py",
+          "line": 8,
+          "code": "import BaseHTTPServer",
+          "origin": "fixed"
+        },
+        {
+          "rule": "py2-module",
+          "title": "Python 2 only module",
+          "severity": "medium",
+          "file": "claims-api/server.py",
+          "line": 14,
+          "code": "import urllib2",
+          "origin": "fixed"
+        }
+      ]
+    },
+    "notes": [],
+    "recorded_at": "2026-12-03T10:00:00+00:00",
+    "agent_session_id": null
+  },
+  "review_changes": {
+    "schema_version": 1,
+    "system_name": "ClaimTrack Lite",
+    "module_id": "M-01",
+    "pr": "https://github.com/claimtrack/claimtrack-lite-target/pull/1",
+    "summary": "The rounding trap is not handled and a settled claim answers 400 instead of 409.",
+    "merge_recommendation": "request_changes",
+    "findings": [
+      {
+        "id": "F-001",
+        "severity": "high",
+        "category": "trap_unhandled",
+        "file": "claims-api/server.py",
+        "line": 27,
+        "legacy_file": "claims-api/server.py",
+        "legacy_line": 27,
+        "refs": [
+          "TR-01",
+          "EC-02"
+        ],
+        "description": "Python 3 round() rounds halves to even: two half-cent payouts pay a cent less.",
+        "recommendation": "Decimal ROUND_HALF_UP on the exact value, as the design's TR-01 says."
+      },
+      {
+        "id": "F-002",
+        "severity": "high",
+        "category": "contract_drift",
+        "file": "claims-api/server.py",
+        "line": 84,
+        "legacy_file": "claims-api/server.py",
+        "legacy_line": 82,
+        "refs": [
+          "CT-01"
+        ],
+        "description": "Settling a claim that is not open answers 400; the legacy answers 409.",
+        "recommendation": "Answer 409."
+      },
+      {
+        "id": "F-003",
+        "severity": "medium",
+        "category": "scope_creep",
+        "file": "claims-api/server.py",
+        "line": 60,
+        "description": "A /metrics route was added; no ADR asks for it.",
+        "recommendation": "Remove it from this migration."
+      }
+    ],
+    "equivalence_coverage": [
+      {
+        "ec_id": "EC-01",
+        "status": "covered",
+        "note": ""
+      },
+      {
+        "ec_id": "EC-02",
+        "status": "covered",
+        "note": ""
+      },
+      {
+        "ec_id": "EC-04",
+        "status": "covered",
+        "note": ""
+      }
+    ],
+    "contract_check": [
+      {
+        "ct_id": "CT-01",
+        "status": "changed",
+        "note": "409 → 400; /metrics added"
+      }
+    ],
+    "trap_check": [
+      {
+        "tr_id": "TR-01",
+        "status": "not_handled",
+        "where": ""
+      },
+      {
+        "tr_id": "TR-02",
+        "status": "handled",
+        "where": "claims-api/server.py:53"
+      }
+    ],
+    "traceability": [
+      {
+        "legacy_path": "claims-api/requirements.txt",
+        "target_path": "claims-api/requirements.txt",
+        "status": "mapped"
+      },
+      {
+        "legacy_path": "claims-api/runtime.txt",
+        "target_path": "claims-api/runtime.txt",
+        "status": "mapped"
+      },
+      {
+        "legacy_path": "claims-api/server.py",
+        "target_path": "claims-api/server.py",
+        "status": "mapped"
+      }
+    ],
+    "known_debt": [],
+    "files_read": {
+      "target": [
+        "claims-api/server.py"
+      ],
+      "legacy": [
+        "claims-api/server.py"
+      ]
+    },
+    "migration_version": 2,
+    "head_sha": "3a7b6c8d9e3a7b6c8d9e3a7b6c8d9e3a7b6c8d9e",
+    "legacy_commit": "4f1c2e9a7b4f1c2e9a7b4f1c2e9a7b4f1c2e9a7b",
+    "module": {
+      "name": "claims-api",
+      "tier": "llm_assisted",
+      "patterns": [
+        "in_place_upgrade"
+      ],
+      "legacy_path": "claims-api",
+      "contract_ids": [
+        "CT-01"
+      ],
+      "trap_ids": [
+        "TR-01",
+        "TR-02"
+      ],
+      "criterion_ids": [
+        "EC-01",
+        "EC-02",
+        "EC-04"
+      ]
+    },
+    "sources": {
+      "design": {
+        "version": 1,
+        "status": "published"
+      },
+      "plan": {
+        "version": 1,
+        "status": "published"
+      },
+      "migration": {
+        "version": 2,
+        "status": "published"
+      }
+    },
+    "surface": {
+      "removed": [
+        {
+          "kind": "http_consumes",
+          "name": "urllib2.urlopen",
+          "location": "claims-api/server.py:32",
+          "evidence": "reply = urllib2.urlopen(\"%s/score?claim=%s\" % (FRAUD_URL, claim_id), timeout=5).read()"
+        },
+        {
+          "kind": "status",
+          "name": "409",
+          "location": "claims-api/server.py:82",
+          "evidence": "return self.reply(409, {\"error\": \"claim is %s\" % claim[\"status\"]})"
+        }
+      ],
+      "added": [
+        {
+          "kind": "encoding",
+          "name": "utf-8",
+          "location": "claims-api/server.py:54",
+          "evidence": "self.wfile.write(data.encode(\"utf-8\"))"
+        },
+        {
+          "kind": "http_consumes",
+          "name": "urllib.request.urlopen",
+          "location": "claims-api/server.py:33",
+          "evidence": "reply = urllib.request.urlopen(\"%s/score?claim=%s\" % (FRAUD_URL, claim_id), timeout=5).read()"
+        },
+        {
+          "kind": "http_path",
+          "name": "/metrics",
+          "location": "claims-api/server.py:60",
+          "evidence": "if self.path == \"/metrics\":"
+        },
+        {
+          "kind": "status",
+          "name": "400",
+          "location": "claims-api/server.py:85",
+          "evidence": "return self.reply(400, {\"error\": \"claim is %s\" % claim[\"status\"]})"
+        }
+      ],
+      "contracts": {
+        "CT-01": [
+          {
+            "kind": "http_consumes",
+            "name": "urllib2.urlopen",
+            "location": "claims-api/server.py:32",
+            "evidence": "reply = urllib2.urlopen(\"%s/score?claim=%s\" % (FRAUD_URL, claim_id), timeout=5).read()",
+            "change": "removed"
+          },
+          {
+            "kind": "status",
+            "name": "409",
+            "location": "claims-api/server.py:82",
+            "evidence": "return self.reply(409, {\"error\": \"claim is %s\" % claim[\"status\"]})",
+            "change": "removed"
+          },
+          {
+            "kind": "encoding",
+            "name": "utf-8",
+            "location": "claims-api/server.py:54",
+            "evidence": "self.wfile.write(data.encode(\"utf-8\"))",
+            "change": "added"
+          },
+          {
+            "kind": "http_consumes",
+            "name": "urllib.request.urlopen",
+            "location": "claims-api/server.py:33",
+            "evidence": "reply = urllib.request.urlopen(\"%s/score?claim=%s\" % (FRAUD_URL, claim_id), timeout=5).read()",
+            "change": "added"
+          },
+          {
+            "kind": "http_path",
+            "name": "/metrics",
+            "location": "claims-api/server.py:60",
+            "evidence": "if self.path == \"/metrics\":",
+            "change": "added"
+          },
+          {
+            "kind": "status",
+            "name": "400",
+            "location": "claims-api/server.py:85",
+            "evidence": "return self.reply(400, {\"error\": \"claim is %s\" % claim[\"status\"]})",
+            "change": "added"
+          }
+        ]
+      },
+      "legacy_count": 17,
+      "target_count": 19
+    },
+    "antipatterns": {
+      "target": [
+        {
+          "rule": "hardcoded-host",
+          "title": "Hard-coded host or URL",
+          "severity": "low",
+          "file": "claims-api/server.py",
+          "line": 19,
+          "code": "FRAUD_URL = os.environ.get(\"FRAUD_URL\", \"http://fraudscore:9000\")",
+          "origin": "carried_over",
+          "legacy_file": "claims-api/server.py",
+          "legacy_line": 18
+        }
+      ],
+      "fixed": [
+        {
+          "rule": "py2-module",
+          "title": "Python 2 only module",
+          "severity": "medium",
+          "file": "claims-api/server.py",
+          "line": 8,
+          "code": "import BaseHTTPServer",
+          "origin": "fixed"
+        },
+        {
+          "rule": "py2-module",
+          "title": "Python 2 only module",
+          "severity": "medium",
+          "file": "claims-api/server.py",
+          "line": 14,
+          "code": "import urllib2",
+          "origin": "fixed"
+        }
+      ]
+    },
+    "notes": [],
+    "recorded_at": "2026-12-03T11:00:00+00:00",
+    "agent_session_id": null
+  },
+  "security": {
+    "schema_version": 1,
+    "system_name": "ClaimTrack Lite",
+    "module_id": "M-01",
+    "pr": "https://github.com/claimtrack/claimtrack-lite-target/pull/1",
+    "legacy_commit": "4f1c2e9a7b4f1c2e9a7b4f1c2e9a7b4f1c2e9a7b",
+    "scans": {
+      "trivy": "ran",
+      "semgrep": "ran",
+      "gitleaks": "ran"
+    },
+    "findings": [
+      {
+        "id": "S-001",
+        "title": "Server binds every interface",
+        "severity": "low",
+        "origin": "carried_over",
+        "legacy_ref": "claims-api/server.py:98",
+        "reachable": true,
+        "file": "claims-api/server.py",
+        "remediation_plan": "Bind to the container interface from configuration",
+        "remediation_due": "2027-01-15"
+      }
+    ],
+    "fixed_from_legacy": [
+      {
+        "title": "eval or exec of a value",
+        "cve": null,
+        "package": null,
+        "legacy_ref": "claims-api/server.py:12"
+      }
+    ],
+    "contract_authz": [
+      {
+        "ct_id": "CT-01",
+        "status": "same",
+        "note": "No authentication on either side, as before (gateway-enforced)."
+      }
+    ],
+    "sbom": {
+      "components": 0,
+      "vulnerabilities": 0
+    },
+    "verdict": "CONDITIONAL",
+    "rationale": "Nothing introduced. One low finding carried over (the server binds every interface), with a plan inside the wave.",
+    "required_verdict": "CONDITIONAL",
+    "migration_version": 1,
+    "head_sha": "4f6a5b7c8d4f6a5b7c8d4f6a5b7c8d4f6a5b7c8d",
+    "module": {
+      "name": "claims-api",
+      "legacy_path": "claims-api",
+      "contract_ids": [
+        "CT-01"
+      ]
+    },
+    "sources": {
+      "design": {
+        "version": 1,
+        "status": "published"
+      },
+      "plan": {
+        "version": 1,
+        "status": "published"
+      },
+      "migration": {
+        "version": 1,
+        "status": "published"
+      }
+    },
+    "scanner_versions": {
+      "trivy": "0.58.1",
+      "semgrep": "1.99.0",
+      "gitleaks": "8.21.2"
+    },
+    "scan_notes": {},
+    "target_hits": [
+      {
+        "tool": "semgrep",
+        "rule": "py-bind-all",
+        "title": "Server binds every interface",
+        "severity": "low",
+        "file": "claims-api/server.py",
+        "line": 99,
+        "package": null,
+        "version": null,
+        "cve": null,
+        "fixed_version": null,
+        "secret_hash": null,
+        "origin": "carried_over",
+        "legacy_ref": "claims-api/server.py:98"
+      }
+    ],
+    "legacy_hits": [
+      {
+        "tool": "semgrep",
+        "rule": "py-bind-all",
+        "title": "Server binds every interface",
+        "severity": "low",
+        "file": "claims-api/server.py",
+        "line": 98,
+        "package": null,
+        "version": null,
+        "cve": null,
+        "fixed_version": null,
+        "secret_hash": null
+      },
+      {
+        "tool": "semgrep",
+        "rule": "py-eval-exec",
+        "title": "eval or exec of a value",
+        "severity": "high",
+        "file": "claims-api/server.py",
+        "line": 12,
+        "package": null,
+        "version": null,
+        "cve": null,
+        "fixed_version": null,
+        "secret_hash": null
+      }
+    ],
+    "legacy_cached": true,
+    "secret_carryover": [],
+    "authz_evidence": {
+      "CT-01": {
+        "suggested": "same",
+        "reason": "no authentication marker on either side",
+        "legacy": {},
+        "target": {},
+        "legacy_file": "claims-api/server.py",
+        "target_files": [
+          "claims-api/server.py"
+        ],
+        "found": true
+      }
+    },
+    "notes": [],
+    "recorded_at": "2026-12-03T12:00:00+00:00",
+    "agent_session_id": null
+  },
+  "security_unscanned": {
+    "schema_version": 1,
+    "system_name": "ClaimTrack Lite",
+    "module_id": "M-01",
+    "pr": "https://github.com/claimtrack/claimtrack-lite-target/pull/1",
+    "legacy_commit": "4f1c2e9a7b4f1c2e9a7b4f1c2e9a7b4f1c2e9a7b",
+    "scans": {
+      "trivy": "not_installed",
+      "semgrep": "ran",
+      "gitleaks": "ran"
+    },
+    "findings": [],
+    "fixed_from_legacy": [],
+    "contract_authz": [
+      {
+        "ct_id": "CT-01",
+        "status": "same",
+        "note": ""
+      }
+    ],
+    "sbom": {
+      "components": null,
+      "vulnerabilities": null
+    },
+    "verdict": "FAIL",
+    "rationale": "Dependencies were not scanned; the sign-off waits for the database.",
+    "required_verdict": "INCOMPLETE",
+    "migration_version": 1,
+    "head_sha": "4f6a5b7c8d4f6a5b7c8d4f6a5b7c8d4f6a5b7c8d",
+    "module": {
+      "name": "claims-api",
+      "legacy_path": "claims-api",
+      "contract_ids": [
+        "CT-01"
+      ]
+    },
+    "sources": {
+      "design": {
+        "version": 1,
+        "status": "published"
+      },
+      "plan": {
+        "version": 1,
+        "status": "published"
+      },
+      "migration": {
+        "version": 1,
+        "status": "published"
+      }
+    },
+    "scanner_versions": {
+      "trivy": "0.58.1",
+      "semgrep": "1.99.0",
+      "gitleaks": "8.21.2"
+    },
+    "scan_notes": {
+      "trivy": "Trivy's vulnerability database is not on this server."
+    },
+    "target_hits": [],
+    "legacy_hits": [],
+    "legacy_cached": false,
+    "secret_carryover": [],
+    "authz_evidence": {
+      "CT-01": {
+        "suggested": "same",
+        "reason": "no authentication marker on either side",
+        "legacy": {},
+        "target": {},
+        "legacy_file": "claims-api/server.py",
+        "target_files": [
+          "claims-api/server.py"
+        ],
+        "found": true
+      }
+    },
+    "notes": [],
+    "recorded_at": "2026-12-03T12:30:00+00:00",
+    "agent_session_id": null
   }
 }

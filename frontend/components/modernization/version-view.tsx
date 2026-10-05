@@ -484,6 +484,8 @@ export const HANDED_TO: Record<Track3Stage, string> = {
   strategy: "Equivalence Testing",
   testing_modernization: "Migration Development",
   development_modernization: "Migration Review and Security",
+  code_review_modernization: "Migration Development (rework) and Cutover",
+  security_modernization: "Migration Development (rework) and Cutover",
 };
 
 /** Only a draft or an approved version is ever handed over: a rejected or superseded one says
