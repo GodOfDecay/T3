@@ -441,12 +441,28 @@ def _fmt_migration_plan(plan: Dict[str, Any]) -> str:
     return "\n".join(lines)
 
 
+def _fmt_baseline(baseline: Dict[str, Any]) -> str:
+    """Track 3's behaviour baseline, compact, as Migration Development reads it first: which module is
+    baselined against which BL ids, and the noise each criterion must normalize. Counts and field names
+    only — never a recording (the baseline holds none)."""
+    lines = ["BEHAVIOUR BASELINE:"]
+    for p in (baseline.get("placements") or [])[:60]:
+        lines.append(f"    - {p.get('module_id')}: {', '.join(p.get('baseline_ids') or [])}")
+    for n in (baseline.get("noise") or [])[:60]:
+        varying = ", ".join(n.get("varying_fields") or []) or "none"
+        lines.append(f"    - {n.get('ec_id')} varies between legacy runs in: {varying}")
+    if baseline.get("not_captured"):
+        lines.append("  NOT CAPTURED: " + "; ".join(f"{x.get('ec_id')} ({x.get('reason')})" for x in baseline["not_captured"]))
+    return "\n".join(lines)
+
+
 _ARTIFACT_FORMATTERS = {
     "requirements_payload": _fmt_requirements,
     "migration_intent_payload": _fmt_migration_intent,
     "discovery_artifacts": _fmt_assessment,
     "target_design_artifacts": _fmt_target_design,
     "strategy_artifacts": _fmt_migration_plan,
+    "equivalence_artifacts": _fmt_baseline,
     "design_artifacts": _fmt_design,
     "development_artifacts": _fmt_development,
     "testing_artifacts": _fmt_testing,
@@ -495,8 +511,9 @@ _ARTIFACT_FIELDS = (
     # Track 3 — Target Architecture reads the assessment too; Migration Strategy the design.
     "discovery_artifacts",
     "target_design_artifacts",
-    # Track 3 — Equivalence Testing reads the migration plan.
+    # Track 3 — Equivalence Testing reads the migration plan; Migration Development the baseline too.
     "strategy_artifacts",
+    "equivalence_artifacts",
     "design_artifacts",
     "development_artifacts",
     "testing_artifacts",

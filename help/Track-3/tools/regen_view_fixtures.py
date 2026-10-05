@@ -121,6 +121,83 @@ data["captures"] = {"projectId": "p-claimtrack", "captures": [
      "keep": False},
     {**{k: _manifest.get(k) for k in _keys}, "status": "complete", "planVersion": 1, "error": None, "keep": True},
 ]}
+# Phase H: ClaimTrack Lite's claims API migrated (M-01), as `record_module_migration` stores it — built by the
+# record tool's own builder. The previews are what tests/development_modernization/test_chain.py MEASURED on the
+# real sandbox: identical after normalization once both traps are handled; the two half-cent payouts when the
+# rounding trap (TR-01) is left in. And the workspaces listing the page shows.
+from agents_orchestrator.development_modernization_agent.tools.migration_tools import build_artifact as build_migration  # noqa: E402
+from tests.development_modernization.lite_h import design as lite_design  # noqa: E402
+
+_item = {"legacy_path": "claims-api", "name": "claims-api", "tier": "llm_assisted", "patterns": ["in_place_upgrade"],
+         "wave": "W1", "baseline_ids": ["BL-01", "BL-02"], "trap_ids": ["TR-01", "TR-02"],
+         "target_runtime": "Java 21 · Node 24 · Python 3.12", "legacy_runtime": "Python 2.7", "ecosystem": "python"}
+_shas = ["9a1f0c2b3d" * 4, "8b2e1d3c4f" * 4, "7c3d2e4f5a" * 4, "6d4e3f5a6b" * 4, "5e5f4a6b7c" * 4, "4f6a5b7c8d" * 4]
+_commits = [{"sha": _shas[0], "subject": "Start main for the migration"},
+            {"sha": _shas[1], "subject": "copy: Copy claims-api from the legacy code at 4f1c2e9a7b, unchanged"},
+            {"sha": _shas[2], "subject": "recipe: lib2to3 CPython 3.12.14 stdlib over claims-api"},
+            {"sha": _shas[3], "subject": "build: run on Python 3.12 (pinned)"},
+            {"sha": _shas[4], "subject": "fix: TR-02 bytes on the socket"},
+            {"sha": _shas[5], "subject": "fix: TR-01 legacy rounding kept"}]
+_clean = {"claims-read": {"cases": 5, "differences": {}, "examples": {}, "ignored": ["generatedAt", "requestId"]},
+          "settle": {"cases": 6, "differences": {}, "examples": {}, "ignored": ["requestId", "settledAt"]}}
+_rounding = {"claims-read": _clean["claims-read"],
+             "settle": {"cases": 6, "differences": {"payout": 2}, "examples": {"payout": ["<number>", "<number>"]},
+                        "ignored": ["requestId", "settledAt"]}}
+_state = {"branch": "migrate/claims-api", "base_branch": "main", "base_sha": _shas[0], "legacy_commit": "4f1c2e9a7b" * 4,
+          "recipes": [{"tool": "lib2to3", "version": "CPython 3.12.14 stdlib (image 6d462c84e51f)",
+                       "args": "-W ignore -m lib2to3 -w -n --no-diffs claims-api"}],
+          "builds": [{"ok": False, "failing": "claims-api/server.py:8: cannot import BaseHTTPServer on this runtime", "head": _shas[1]},
+                     {"ok": True, "head": _shas[2]}, {"ok": True, "head": _shas[3]}, {"ok": True, "head": _shas[4]},
+                     {"ok": True, "head": _shas[5]}],
+          "tests": {"status": "not_run", "head": _shas[5], "note": "the module has no tests"},
+          "lint": {"status": "green", "head": _shas[5]},
+          "preview": {"head": _shas[5], "baseline_version": 1, "scenarios": _clean,
+                      "headline": "11 case(s) identical to the baseline after normalization"}}
+_sources = {"design": {"version": 1, "status": "published"}, "plan": {"version": 1, "status": "published"},
+            "baseline": {"version": 1, "status": "published"}}
+_files = ["claims-api/requirements.txt", "claims-api/runtime.txt", "claims-api/server.py"]
+data["migration"] = build_migration(
+    module_id="M-01", outcome="ready_for_review", item=_item, state=_state,
+    file_map=[{"legacy_path": f, "disposition": "mapped", "target_path": f} for f in _files],
+    rewritten=[{"file": "claims-api/server.py", "reason": "legacy rounding kept (TR-01); bytes on the socket (TR-02)"}],
+    traps_handled={"TR-01": "claims-api/server.py payout(): Decimal ROUND_HALF_UP on the exact value",
+                   "TR-02": "claims-api/server.py Handler.reply(): the JSON is encoded to bytes before the socket write"},
+    vault_references=[], follow_ups=["settlement-batch (M-02) still runs Python 2 code: the shared image moves with it in W2"],
+    handoff_note=None, commits=_commits, changed=["Dockerfile", *_files], head=_shas[5], sources=_sources,
+    system_name=lite_design()["system_name"], notes=["Legacy code at 4f1c2e9a7b; target branch from main."],
+    recorded_at="2026-12-02T11:00:00+00:00")
+_failed_state = {**_state, "builds": [{"ok": False, "failing": "claims-api/server.py:8: cannot import BaseHTTPServer on this runtime\n"
+                                                              "claims-api/server.py:14: cannot import urllib2 on this runtime",
+                                       "head": _shas[1]}] * 5,
+                 "preview": {"head": _shas[1], "baseline_version": 1, "scenarios": _rounding,
+                             "headline": "1 field(s) differ from the baseline in 11 case(s)"}}
+data["migration_failed"] = build_migration(
+    module_id="M-01", outcome="build_failed", item=_item, state=_failed_state,
+    file_map=[{"legacy_path": f, "disposition": "mapped", "target_path": f} for f in _files], rewritten=[],
+    traps_handled={}, vault_references=["kv://claimtrack/fraud-api-key"],
+    follow_ups=["The build is still red after five rounds: the HTTP server needs a person to port"],
+    handoff_note=None, commits=_commits[:2], changed=_files, head=_shas[1], sources=_sources, system_name="ClaimTrack Lite",
+    notes=[], recorded_at="2026-12-02T09:00:00+00:00")
+data["migration_rounding"] = {**data["migration"], "preview": {**data["migration"]["preview"], "scenarios": _rounding,
+                              "headline": "1 field(s) differ from the baseline in 11 case(s)"}}
+data["migration_blocked"] = build_migration(
+    module_id="M-02", outcome="blocked", item={**_item, "legacy_path": "settlement-batch", "name": "settlement-batch",
+                                                "tier": "manual", "trap_ids": ["TR-01"]},
+    state=None, file_map=[], rewritten=[], traps_handled={}, vault_references=[], follow_ups=[],
+    handoff_note="The bank file format is owned by the bank's spec v7; a person must redesign the writer.",
+    commits=[], changed=[], head=None, sources=_sources, system_name="ClaimTrack Lite", notes=[],
+    recorded_at="2026-12-02T12:00:00+00:00")
+data["migration_workspaces"] = {"projectId": "p-claimtrack", "workspaces": [
+    {"moduleId": "M-01", "modulePath": "claims-api", "branch": "migrate/claims-api", "baseBranch": "main",
+     "ecosystem": "python", "targetRuntime": _item["target_runtime"],
+     "commits": [{"sha": c["sha"][:10], "concern": c["subject"].split(":")[0], "message": c["subject"].split(": ", 1)[-1],
+                  "files": 1} for c in _commits[1:]],
+     "recipes": [{"tool": "lib2to3", "version": _state["recipes"][0]["version"], "files": 1}],
+     "builds": [{"round": n, "ok": b["ok"], "at": "2026-12-02T10:0%d:00+00:00" % n} for n, b in enumerate(_state["builds"], 1)],
+     "tests": "not_run", "lint": "green", "preview": _state["preview"]["headline"],
+     "pushed": {"head": _shas[5], "at": "2026-12-02T11:30:00+00:00", "pr_url": "https://github.com/claimtrack/claimtrack-lite-target/pull/1"},
+     "openedAt": "2026-12-02T10:00:00+00:00"},
+]}
 FIXTURES.write_text(json.dumps(data, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
 print(f"assessment: schema {new['schema_version']}, {len(new['modules'])} modules, "
       f"{len(new['not_assessable_statically'])} not-assessable questions")

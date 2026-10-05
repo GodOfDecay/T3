@@ -39,7 +39,7 @@ def test_registry_portfolio_and_upstream_reads():
     d = AGENT_REGISTRY["testing_modernization"]
     assert (d.pipeline_position, d.output_artifact, d.gate_type) == (5, "equivalence_artifacts", "approval_required")
     assert d.input_artifacts == ["strategy_artifacts", "target_design_artifacts"]
-    assert agent_ids_for_track("modernization")[-1] == "testing_modernization"
+    assert agent_ids_for_track("modernization")[4] == "testing_modernization"
     assert _UPSTREAM_STAGE["strategy_artifacts"] == ("strategy", "Migration plan")
     assert "testing_modernization" in TRACK3_STAGES
 

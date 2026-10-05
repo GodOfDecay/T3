@@ -3462,5 +3462,626 @@
         "keep": true
       }
     ]
+  },
+  "migration": {
+    "schema_version": 1,
+    "system_name": "ClaimTrack Lite",
+    "module_id": "M-01",
+    "outcome": "ready_for_review",
+    "legacy_module_path": "claims-api",
+    "target_branch": "migrate/claims-api",
+    "pr_url": null,
+    "recipes": [
+      {
+        "tool": "lib2to3",
+        "version": "CPython 3.12.14 stdlib (image 6d462c84e51f)",
+        "args": "-W ignore -m lib2to3 -w -n --no-diffs claims-api"
+      }
+    ],
+    "file_map": [
+      {
+        "legacy_path": "claims-api/requirements.txt",
+        "disposition": "mapped",
+        "target_path": "claims-api/requirements.txt"
+      },
+      {
+        "legacy_path": "claims-api/runtime.txt",
+        "disposition": "mapped",
+        "target_path": "claims-api/runtime.txt"
+      },
+      {
+        "legacy_path": "claims-api/server.py",
+        "disposition": "mapped",
+        "target_path": "claims-api/server.py"
+      }
+    ],
+    "llm_rewritten": [
+      {
+        "file": "claims-api/server.py",
+        "reason": "legacy rounding kept (TR-01); bytes on the socket (TR-02)"
+      }
+    ],
+    "traps_handled": {
+      "TR-01": "claims-api/server.py payout(): Decimal ROUND_HALF_UP on the exact value",
+      "TR-02": "claims-api/server.py Handler.reply(): the JSON is encoded to bytes before the socket write"
+    },
+    "vault_references": [],
+    "build": {
+      "status": "green",
+      "rounds": 5,
+      "failing": null
+    },
+    "manual_follow_ups": [
+      "settlement-batch (M-02) still runs Python 2 code: the shared image moves with it in W2"
+    ],
+    "handoff_note": null,
+    "module": {
+      "name": "claims-api",
+      "tier": "llm_assisted",
+      "patterns": [
+        "in_place_upgrade"
+      ],
+      "wave": "W1",
+      "baseline_ids": [
+        "BL-01",
+        "BL-02"
+      ],
+      "trap_ids": [
+        "TR-01",
+        "TR-02"
+      ],
+      "target_runtime": "Java 21 · Node 24 · Python 3.12",
+      "legacy_runtime": "Python 2.7",
+      "ecosystem": "python"
+    },
+    "sources": {
+      "design": {
+        "version": 1,
+        "status": "published"
+      },
+      "plan": {
+        "version": 1,
+        "status": "published"
+      },
+      "baseline": {
+        "version": 1,
+        "status": "published"
+      }
+    },
+    "base_branch": "main",
+    "base_sha": "9a1f0c2b3d9a1f0c2b3d9a1f0c2b3d9a1f0c2b3d",
+    "head_sha": "4f6a5b7c8d4f6a5b7c8d4f6a5b7c8d4f6a5b7c8d",
+    "commits": [
+      {
+        "sha": "9a1f0c2b3d9a1f0c2b3d9a1f0c2b3d9a1f0c2b3d",
+        "subject": "Start main for the migration"
+      },
+      {
+        "sha": "8b2e1d3c4f8b2e1d3c4f8b2e1d3c4f8b2e1d3c4f",
+        "subject": "copy: Copy claims-api from the legacy code at 4f1c2e9a7b, unchanged"
+      },
+      {
+        "sha": "7c3d2e4f5a7c3d2e4f5a7c3d2e4f5a7c3d2e4f5a",
+        "subject": "recipe: lib2to3 CPython 3.12.14 stdlib over claims-api"
+      },
+      {
+        "sha": "6d4e3f5a6b6d4e3f5a6b6d4e3f5a6b6d4e3f5a6b",
+        "subject": "build: run on Python 3.12 (pinned)"
+      },
+      {
+        "sha": "5e5f4a6b7c5e5f4a6b7c5e5f4a6b7c5e5f4a6b7c",
+        "subject": "fix: TR-02 bytes on the socket"
+      },
+      {
+        "sha": "4f6a5b7c8d4f6a5b7c8d4f6a5b7c8d4f6a5b7c8d",
+        "subject": "fix: TR-01 legacy rounding kept"
+      }
+    ],
+    "changed_files": [
+      "Dockerfile",
+      "claims-api/requirements.txt",
+      "claims-api/runtime.txt",
+      "claims-api/server.py"
+    ],
+    "tests": {
+      "status": "not_run",
+      "head": "4f6a5b7c8d4f6a5b7c8d4f6a5b7c8d4f6a5b7c8d",
+      "note": "the module has no tests"
+    },
+    "lint": {
+      "status": "green",
+      "head": "4f6a5b7c8d4f6a5b7c8d4f6a5b7c8d4f6a5b7c8d"
+    },
+    "preview": {
+      "headline": "11 case(s) identical to the baseline after normalization",
+      "scenarios": {
+        "claims-read": {
+          "cases": 5,
+          "differences": {},
+          "examples": {},
+          "ignored": [
+            "generatedAt",
+            "requestId"
+          ]
+        },
+        "settle": {
+          "cases": 6,
+          "differences": {},
+          "examples": {},
+          "ignored": [
+            "requestId",
+            "settledAt"
+          ]
+        }
+      },
+      "baseline_version": 1,
+      "head": "4f6a5b7c8d4f6a5b7c8d4f6a5b7c8d4f6a5b7c8d"
+    },
+    "notes": [
+      "Legacy code at 4f1c2e9a7b; target branch from main."
+    ],
+    "recorded_at": "2026-12-02T11:00:00+00:00",
+    "agent_session_id": null
+  },
+  "migration_failed": {
+    "schema_version": 1,
+    "system_name": "ClaimTrack Lite",
+    "module_id": "M-01",
+    "outcome": "build_failed",
+    "legacy_module_path": "claims-api",
+    "target_branch": "migrate/claims-api",
+    "pr_url": null,
+    "recipes": [
+      {
+        "tool": "lib2to3",
+        "version": "CPython 3.12.14 stdlib (image 6d462c84e51f)",
+        "args": "-W ignore -m lib2to3 -w -n --no-diffs claims-api"
+      }
+    ],
+    "file_map": [
+      {
+        "legacy_path": "claims-api/requirements.txt",
+        "disposition": "mapped",
+        "target_path": "claims-api/requirements.txt"
+      },
+      {
+        "legacy_path": "claims-api/runtime.txt",
+        "disposition": "mapped",
+        "target_path": "claims-api/runtime.txt"
+      },
+      {
+        "legacy_path": "claims-api/server.py",
+        "disposition": "mapped",
+        "target_path": "claims-api/server.py"
+      }
+    ],
+    "llm_rewritten": [],
+    "traps_handled": {},
+    "vault_references": [
+      "kv://claimtrack/fraud-api-key"
+    ],
+    "build": {
+      "status": "red",
+      "rounds": 5,
+      "failing": "claims-api/server.py:8: cannot import BaseHTTPServer on this runtime\nclaims-api/server.py:14: cannot import urllib2 on this runtime"
+    },
+    "manual_follow_ups": [
+      "The build is still red after five rounds: the HTTP server needs a person to port"
+    ],
+    "handoff_note": null,
+    "module": {
+      "name": "claims-api",
+      "tier": "llm_assisted",
+      "patterns": [
+        "in_place_upgrade"
+      ],
+      "wave": "W1",
+      "baseline_ids": [
+        "BL-01",
+        "BL-02"
+      ],
+      "trap_ids": [
+        "TR-01",
+        "TR-02"
+      ],
+      "target_runtime": "Java 21 · Node 24 · Python 3.12",
+      "legacy_runtime": "Python 2.7",
+      "ecosystem": "python"
+    },
+    "sources": {
+      "design": {
+        "version": 1,
+        "status": "published"
+      },
+      "plan": {
+        "version": 1,
+        "status": "published"
+      },
+      "baseline": {
+        "version": 1,
+        "status": "published"
+      }
+    },
+    "base_branch": "main",
+    "base_sha": "9a1f0c2b3d9a1f0c2b3d9a1f0c2b3d9a1f0c2b3d",
+    "head_sha": "8b2e1d3c4f8b2e1d3c4f8b2e1d3c4f8b2e1d3c4f",
+    "commits": [
+      {
+        "sha": "9a1f0c2b3d9a1f0c2b3d9a1f0c2b3d9a1f0c2b3d",
+        "subject": "Start main for the migration"
+      },
+      {
+        "sha": "8b2e1d3c4f8b2e1d3c4f8b2e1d3c4f8b2e1d3c4f",
+        "subject": "copy: Copy claims-api from the legacy code at 4f1c2e9a7b, unchanged"
+      }
+    ],
+    "changed_files": [
+      "claims-api/requirements.txt",
+      "claims-api/runtime.txt",
+      "claims-api/server.py"
+    ],
+    "tests": {
+      "status": "not_run",
+      "head": "4f6a5b7c8d4f6a5b7c8d4f6a5b7c8d4f6a5b7c8d",
+      "note": "the module has no tests"
+    },
+    "lint": {
+      "status": "green",
+      "head": "4f6a5b7c8d4f6a5b7c8d4f6a5b7c8d4f6a5b7c8d"
+    },
+    "preview": {
+      "headline": "1 field(s) differ from the baseline in 11 case(s)",
+      "scenarios": {
+        "claims-read": {
+          "cases": 5,
+          "differences": {},
+          "examples": {},
+          "ignored": [
+            "generatedAt",
+            "requestId"
+          ]
+        },
+        "settle": {
+          "cases": 6,
+          "differences": {
+            "payout": 2
+          },
+          "examples": {
+            "payout": [
+              "<number>",
+              "<number>"
+            ]
+          },
+          "ignored": [
+            "requestId",
+            "settledAt"
+          ]
+        }
+      },
+      "baseline_version": 1,
+      "head": "8b2e1d3c4f8b2e1d3c4f8b2e1d3c4f8b2e1d3c4f"
+    },
+    "notes": [],
+    "recorded_at": "2026-12-02T09:00:00+00:00",
+    "agent_session_id": null
+  },
+  "migration_rounding": {
+    "schema_version": 1,
+    "system_name": "ClaimTrack Lite",
+    "module_id": "M-01",
+    "outcome": "ready_for_review",
+    "legacy_module_path": "claims-api",
+    "target_branch": "migrate/claims-api",
+    "pr_url": null,
+    "recipes": [
+      {
+        "tool": "lib2to3",
+        "version": "CPython 3.12.14 stdlib (image 6d462c84e51f)",
+        "args": "-W ignore -m lib2to3 -w -n --no-diffs claims-api"
+      }
+    ],
+    "file_map": [
+      {
+        "legacy_path": "claims-api/requirements.txt",
+        "disposition": "mapped",
+        "target_path": "claims-api/requirements.txt"
+      },
+      {
+        "legacy_path": "claims-api/runtime.txt",
+        "disposition": "mapped",
+        "target_path": "claims-api/runtime.txt"
+      },
+      {
+        "legacy_path": "claims-api/server.py",
+        "disposition": "mapped",
+        "target_path": "claims-api/server.py"
+      }
+    ],
+    "llm_rewritten": [
+      {
+        "file": "claims-api/server.py",
+        "reason": "legacy rounding kept (TR-01); bytes on the socket (TR-02)"
+      }
+    ],
+    "traps_handled": {
+      "TR-01": "claims-api/server.py payout(): Decimal ROUND_HALF_UP on the exact value",
+      "TR-02": "claims-api/server.py Handler.reply(): the JSON is encoded to bytes before the socket write"
+    },
+    "vault_references": [],
+    "build": {
+      "status": "green",
+      "rounds": 5,
+      "failing": null
+    },
+    "manual_follow_ups": [
+      "settlement-batch (M-02) still runs Python 2 code: the shared image moves with it in W2"
+    ],
+    "handoff_note": null,
+    "module": {
+      "name": "claims-api",
+      "tier": "llm_assisted",
+      "patterns": [
+        "in_place_upgrade"
+      ],
+      "wave": "W1",
+      "baseline_ids": [
+        "BL-01",
+        "BL-02"
+      ],
+      "trap_ids": [
+        "TR-01",
+        "TR-02"
+      ],
+      "target_runtime": "Java 21 · Node 24 · Python 3.12",
+      "legacy_runtime": "Python 2.7",
+      "ecosystem": "python"
+    },
+    "sources": {
+      "design": {
+        "version": 1,
+        "status": "published"
+      },
+      "plan": {
+        "version": 1,
+        "status": "published"
+      },
+      "baseline": {
+        "version": 1,
+        "status": "published"
+      }
+    },
+    "base_branch": "main",
+    "base_sha": "9a1f0c2b3d9a1f0c2b3d9a1f0c2b3d9a1f0c2b3d",
+    "head_sha": "4f6a5b7c8d4f6a5b7c8d4f6a5b7c8d4f6a5b7c8d",
+    "commits": [
+      {
+        "sha": "9a1f0c2b3d9a1f0c2b3d9a1f0c2b3d9a1f0c2b3d",
+        "subject": "Start main for the migration"
+      },
+      {
+        "sha": "8b2e1d3c4f8b2e1d3c4f8b2e1d3c4f8b2e1d3c4f",
+        "subject": "copy: Copy claims-api from the legacy code at 4f1c2e9a7b, unchanged"
+      },
+      {
+        "sha": "7c3d2e4f5a7c3d2e4f5a7c3d2e4f5a7c3d2e4f5a",
+        "subject": "recipe: lib2to3 CPython 3.12.14 stdlib over claims-api"
+      },
+      {
+        "sha": "6d4e3f5a6b6d4e3f5a6b6d4e3f5a6b6d4e3f5a6b",
+        "subject": "build: run on Python 3.12 (pinned)"
+      },
+      {
+        "sha": "5e5f4a6b7c5e5f4a6b7c5e5f4a6b7c5e5f4a6b7c",
+        "subject": "fix: TR-02 bytes on the socket"
+      },
+      {
+        "sha": "4f6a5b7c8d4f6a5b7c8d4f6a5b7c8d4f6a5b7c8d",
+        "subject": "fix: TR-01 legacy rounding kept"
+      }
+    ],
+    "changed_files": [
+      "Dockerfile",
+      "claims-api/requirements.txt",
+      "claims-api/runtime.txt",
+      "claims-api/server.py"
+    ],
+    "tests": {
+      "status": "not_run",
+      "head": "4f6a5b7c8d4f6a5b7c8d4f6a5b7c8d4f6a5b7c8d",
+      "note": "the module has no tests"
+    },
+    "lint": {
+      "status": "green",
+      "head": "4f6a5b7c8d4f6a5b7c8d4f6a5b7c8d4f6a5b7c8d"
+    },
+    "preview": {
+      "headline": "1 field(s) differ from the baseline in 11 case(s)",
+      "scenarios": {
+        "claims-read": {
+          "cases": 5,
+          "differences": {},
+          "examples": {},
+          "ignored": [
+            "generatedAt",
+            "requestId"
+          ]
+        },
+        "settle": {
+          "cases": 6,
+          "differences": {
+            "payout": 2
+          },
+          "examples": {
+            "payout": [
+              "<number>",
+              "<number>"
+            ]
+          },
+          "ignored": [
+            "requestId",
+            "settledAt"
+          ]
+        }
+      },
+      "baseline_version": 1,
+      "head": "4f6a5b7c8d4f6a5b7c8d4f6a5b7c8d4f6a5b7c8d"
+    },
+    "notes": [
+      "Legacy code at 4f1c2e9a7b; target branch from main."
+    ],
+    "recorded_at": "2026-12-02T11:00:00+00:00",
+    "agent_session_id": null
+  },
+  "migration_blocked": {
+    "schema_version": 1,
+    "system_name": "ClaimTrack Lite",
+    "module_id": "M-02",
+    "outcome": "blocked",
+    "legacy_module_path": "settlement-batch",
+    "target_branch": null,
+    "pr_url": null,
+    "recipes": [],
+    "file_map": [],
+    "llm_rewritten": [],
+    "traps_handled": {},
+    "vault_references": [],
+    "build": {
+      "status": "not_run",
+      "rounds": 0,
+      "failing": null
+    },
+    "manual_follow_ups": [],
+    "handoff_note": "The bank file format is owned by the bank's spec v7; a person must redesign the writer.",
+    "module": {
+      "name": "settlement-batch",
+      "tier": "manual",
+      "patterns": [
+        "in_place_upgrade"
+      ],
+      "wave": "W1",
+      "baseline_ids": [
+        "BL-01",
+        "BL-02"
+      ],
+      "trap_ids": [
+        "TR-01"
+      ],
+      "target_runtime": "Java 21 · Node 24 · Python 3.12",
+      "legacy_runtime": "Python 2.7",
+      "ecosystem": "python"
+    },
+    "sources": {
+      "design": {
+        "version": 1,
+        "status": "published"
+      },
+      "plan": {
+        "version": 1,
+        "status": "published"
+      },
+      "baseline": {
+        "version": 1,
+        "status": "published"
+      }
+    },
+    "base_branch": null,
+    "base_sha": null,
+    "head_sha": null,
+    "commits": [],
+    "changed_files": [],
+    "tests": null,
+    "lint": null,
+    "preview": null,
+    "notes": [],
+    "recorded_at": "2026-12-02T12:00:00+00:00",
+    "agent_session_id": null
+  },
+  "migration_workspaces": {
+    "projectId": "p-claimtrack",
+    "workspaces": [
+      {
+        "moduleId": "M-01",
+        "modulePath": "claims-api",
+        "branch": "migrate/claims-api",
+        "baseBranch": "main",
+        "ecosystem": "python",
+        "targetRuntime": "Java 21 · Node 24 · Python 3.12",
+        "commits": [
+          {
+            "sha": "8b2e1d3c4f",
+            "concern": "copy",
+            "message": "Copy claims-api from the legacy code at 4f1c2e9a7b, unchanged",
+            "files": 1
+          },
+          {
+            "sha": "7c3d2e4f5a",
+            "concern": "recipe",
+            "message": "lib2to3 CPython 3.12.14 stdlib over claims-api",
+            "files": 1
+          },
+          {
+            "sha": "6d4e3f5a6b",
+            "concern": "build",
+            "message": "run on Python 3.12 (pinned)",
+            "files": 1
+          },
+          {
+            "sha": "5e5f4a6b7c",
+            "concern": "fix",
+            "message": "TR-02 bytes on the socket",
+            "files": 1
+          },
+          {
+            "sha": "4f6a5b7c8d",
+            "concern": "fix",
+            "message": "TR-01 legacy rounding kept",
+            "files": 1
+          }
+        ],
+        "recipes": [
+          {
+            "tool": "lib2to3",
+            "version": "CPython 3.12.14 stdlib (image 6d462c84e51f)",
+            "files": 1
+          }
+        ],
+        "builds": [
+          {
+            "round": 1,
+            "ok": false,
+            "at": "2026-12-02T10:01:00+00:00"
+          },
+          {
+            "round": 2,
+            "ok": true,
+            "at": "2026-12-02T10:02:00+00:00"
+          },
+          {
+            "round": 3,
+            "ok": true,
+            "at": "2026-12-02T10:03:00+00:00"
+          },
+          {
+            "round": 4,
+            "ok": true,
+            "at": "2026-12-02T10:04:00+00:00"
+          },
+          {
+            "round": 5,
+            "ok": true,
+            "at": "2026-12-02T10:05:00+00:00"
+          }
+        ],
+        "tests": "not_run",
+        "lint": "green",
+        "preview": "11 case(s) identical to the baseline after normalization",
+        "pushed": {
+          "head": "4f6a5b7c8d4f6a5b7c8d4f6a5b7c8d4f6a5b7c8d",
+          "at": "2026-12-02T11:30:00+00:00",
+          "pr_url": "https://github.com/claimtrack/claimtrack-lite-target/pull/1"
+        },
+        "openedAt": "2026-12-02T10:00:00+00:00"
+      }
+    ]
   }
 }

@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""Create the ClaimTrack database from the schema and the synthetic seed (Python 2.7)."""
+"""Create the ClaimTrack database from the schema and the synthetic seed (sandbox setup: runs on Python 2.7 and 3)."""
 import io
 import os
 import sqlite3
@@ -15,4 +15,4 @@ for name in ("schema.sql", "seed.sql"):
         conn.executescript(f.read())
 conn.commit()
 conn.close()
-print "database ready: %s" % DB
+print("database ready: %s" % DB)  # runs on Python 2 and 3: the seed is sandbox setup, not a module

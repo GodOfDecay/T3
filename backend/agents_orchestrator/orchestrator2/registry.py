@@ -347,6 +347,18 @@ def _load_prompt_testing_modernization() -> str:
     return EQUIVALENCE_SYS_MESSAGE
 
 
+def _load_graph_development_modernization() -> Any:
+    from agents_orchestrator.development_modernization_agent.agents.developer import app
+
+    return app
+
+
+def _load_prompt_development_modernization() -> str:
+    from agents_orchestrator.development_modernization_agent.agents.developer import MIGRATION_DEVELOPMENT_SYS_MESSAGE
+
+    return MIGRATION_DEVELOPMENT_SYS_MESSAGE
+
+
 REGISTRY: dict[str, AgentCapability] = {
     "requirements": AgentCapability(
         agent_id="requirements",
@@ -432,6 +444,12 @@ REGISTRY: dict[str, AgentCapability] = {
         agent_id="testing_modernization",
         load_graph=_load_graph_testing_modernization,
         load_prompt=_load_prompt_testing_modernization,
+        mode="stream",
+    ),
+    "development_modernization": AgentCapability(
+        agent_id="development_modernization",
+        load_graph=_load_graph_development_modernization,
+        load_prompt=_load_prompt_development_modernization,
         mode="stream",
     ),
 }

@@ -121,7 +121,7 @@ def test_agent_ids_for_track_matches_config_agent_registry():
     assert agent_ids_for_track("greenfield") == portfolio_1
     assert agent_ids_for_track("enhancement") == portfolio_1
     assert agent_ids_for_track("modernization") == ("requirements_modernization", "discovery", "design_modernization", "strategy",
-                                                 "testing_modernization")
+                                                 "testing_modernization", "development_modernization")
 
 
 def test_registry_for_track_matches_the_global_registry_for_portfolio_1():
@@ -131,7 +131,7 @@ def test_registry_for_track_matches_the_global_registry_for_portfolio_1():
 
     assert registry_for_track("greenfield") == {a: REGISTRY[a] for a in REGISTRY if a in _PORTFOLIO_1}
     assert set(registry_for_track("modernization")) == {"requirements_modernization", "discovery", "design_modernization", "strategy",
-                                                     "testing_modernization"}
+                                                     "testing_modernization", "development_modernization"}
     assert registry_for_track("rpa_infra") == {}
 
 

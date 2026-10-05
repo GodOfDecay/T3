@@ -48,13 +48,14 @@ describe("OrchestratorEvent", () => {
     ).toBe(false);
   });
 
-  it("covers Portfolio 1's nine and Track 3's first five", () => {
+  it("covers Portfolio 1's nine and Track 3's first six", () => {
     expect([...ORCHESTRATOR_AGENT_IDS].sort()).toEqual(
       [
         "code_review", "deployment", "design", "development", "documentation",
         "plan", "requirements", "security", "testing",
         "requirements_modernization", "discovery", "design_modernization", "strategy",
         "testing_modernization",
+        "development_modernization",
       ].sort(),
     );
   });

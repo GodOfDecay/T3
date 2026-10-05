@@ -810,9 +810,13 @@ def test_the_budget_is_large_enough_for_a_real_document():
     bounded and predictable slice of the target's window rather than an open tap.
     """
     from agents_orchestrator.orchestrator2 import context
-    from agents_orchestrator.orchestrator2.registry import AGENT_IDS as _IDS
+    from agents_orchestrator.orchestrator2.registry import agent_ids_for_track
+    from config.agent_registry import TRACK_PORTFOLIOS
 
-    per_agent = context.MAX_CONTEXT_CHARS // len(_IDS)
+    # A run belongs to ONE track and only its agents' work is on it: the largest track's full run is
+    # the worst case (Phase H: dividing by every agent on the platform modelled a run that cannot exist).
+    largest = max(len(agent_ids_for_track(t)) for t in TRACK_PORTFOLIOS)
+    per_agent = context.MAX_CONTEXT_CHARS // largest
     assert per_agent >= 5_000, f"only {per_agent} chars per agent on a full run"
     # Still bounded: ~4 chars/token, so this must stay a modest slice of a large window.
     assert context.MAX_CONTEXT_CHARS <= 120_000

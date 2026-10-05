@@ -463,6 +463,85 @@ export type Capture = z.infer<typeof Capture>;
 export const CaptureList = z.object({ projectId: z.string(), captures: z.array(Capture).default([]) });
 export type CaptureList = z.infer<typeof CaptureList>;
 
+/* ── Migration Development (Phase H) ──────────────────────────────────────────
+   Mirrors `MigrationArtifact`: ONE module's migration record — the hand-over packet's
+   MigrationRecordPayload plus what the record tool set from the workspace (the module's plan, the
+   commits by concern, the head, tests, lint and the equivalence preview). Never code. */
+
+const Check = z.object({ status: z.string(), note: text, head: text }).partial().nullable().default(null);
+
+export const Migration = z.object({
+  schema_version: z.number().default(1),
+  system_name: text,
+  module_id: z.string(),
+  outcome: z.enum(["ready_for_review", "build_failed", "blocked"]).catch("build_failed"),
+  legacy_module_path: z.string(),
+  target_branch: z.string().nullable().default(null),
+  pr_url: z.string().nullable().default(null),
+  recipes: z.array(z.object({ tool: z.string(), version: z.string(), args: text })).default([]),
+  file_map: z.array(z.object({
+    legacy_path: z.string(), disposition: z.enum(["mapped", "merged", "dropped"]).catch("mapped"),
+    target_path: z.string().nullable().default(null), reason: z.string().nullable().default(null),
+  })).default([]),
+  llm_rewritten: z.array(z.object({ file: z.string(), reason: z.string() })).default([]),
+  traps_handled: z.record(z.string(), z.string()).default({}),
+  vault_references: strings,
+  build: z.object({
+    status: z.enum(["green", "red", "not_run"]).catch("not_run"), rounds: z.number().default(0),
+    failing: z.string().nullable().default(null),
+  }).default({ status: "not_run", rounds: 0, failing: null }),
+  manual_follow_ups: strings,
+  handoff_note: z.string().nullable().default(null),
+  module: z.object({
+    name: z.string().nullable(), tier: z.string().nullable(), patterns: strings, wave: z.string().nullable(),
+    baseline_ids: strings, trap_ids: strings, target_runtime: z.string().nullable(), legacy_runtime: z.string().nullable(),
+    ecosystem: z.string().nullable(),
+  }).partial().default({}),
+  sources: z.object({
+    design: z.object({ version: z.number().nullable(), status: z.string().nullable() }).partial(),
+    plan: z.object({ version: z.number().nullable(), status: z.string().nullable() }).partial(),
+    baseline: z.object({ version: z.number().nullable(), status: z.string().nullable() }).partial(),
+  }).partial().default({}),
+  base_branch: z.string().nullable().default(null),
+  head_sha: z.string().nullable().default(null),
+  commits: z.array(z.object({ sha: z.string(), subject: z.string() })).default([]),
+  changed_files: strings,
+  tests: Check,
+  lint: Check,
+  preview: z.object({
+    headline: z.string(),
+    scenarios: z.record(z.string(), z.object({
+      cases: z.number().default(0), differences: z.record(z.string(), z.number()).default({}),
+      examples: Shapes, ignored: strings,
+    })).default({}),
+    baseline_version: z.number().nullable().default(null),
+  }).nullable().default(null),
+  notes: strings,
+  recorded_at: z.string().nullable().default(null),
+});
+export type Migration = z.infer<typeof Migration>;
+
+export const MigrationWorkspace = z.object({
+  moduleId: z.string(),
+  modulePath: text,
+  branch: text,
+  baseBranch: text,
+  ecosystem: z.string().nullable().default(null),
+  targetRuntime: z.string().nullable().default(null),
+  commits: z.array(z.object({ sha: z.string(), concern: z.string(), message: text, files: z.number().nullable().default(null) })).default([]),
+  recipes: z.array(z.object({ tool: z.string(), version: z.string(), files: z.number().default(0) })).default([]),
+  builds: z.array(z.object({ round: z.number(), ok: z.boolean(), at: z.string().nullable().default(null) })).default([]),
+  tests: z.string().nullable().default(null),
+  lint: z.string().nullable().default(null),
+  preview: z.string().nullable().default(null),
+  pushed: z.object({ head: z.string(), at: z.string(), pr_url: z.string().nullable() }).nullable().default(null),
+  openedAt: z.string().nullable().default(null),
+});
+export type MigrationWorkspace = z.infer<typeof MigrationWorkspace>;
+
+export const MigrationWorkspaceList = z.object({ projectId: z.string(), workspaces: z.array(MigrationWorkspace).default([]) });
+export type MigrationWorkspaceList = z.infer<typeof MigrationWorkspaceList>;
+
 export const LegacyInterface = z.object({
   kind: z.string(),
   direction: z.string(),

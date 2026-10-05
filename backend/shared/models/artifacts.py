@@ -499,6 +499,48 @@ class EquivalenceArtifact(BaseModel):
     agent_session_id: Optional[str] = None
 
 
+class MigrationArtifact(BaseModel):
+    """-> runs.migration_artifacts (0074), and each frozen `development_modernization` version.
+
+    Phase H: ONE MODULE's migration. The RECORD is the hand-over packet's payload
+    (`handover/packets.MigrationRecordPayload`: outcome, file map, recipes, rewrites, traps handled,
+    vault references, build, follow-ups), which `emit.migration_payload` reads back. Around it, what the
+    page, the push and Migration Review need and the model never writes: the module's plan, the
+    workspace's commits by concern, the head the record describes, the changed files, test and lint
+    results, and the equivalence preview (a hint). Every field declared: pydantic drops unknown keys."""
+
+    schema_version: int = 1
+    system_name: str = ""
+    # ── the record (MigrationRecordPayload) ──
+    module_id: str
+    outcome: str
+    legacy_module_path: str
+    target_branch: Optional[str] = None
+    pr_url: Optional[str] = None
+    recipes: List[Dict[str, Any]] = []
+    file_map: List[Dict[str, Any]] = []
+    llm_rewritten: List[Dict[str, Any]] = []
+    traps_handled: Dict[str, str] = {}
+    vault_references: List[str] = []
+    build: Dict[str, Any] = {}
+    manual_follow_ups: List[str] = []
+    handoff_note: Optional[str] = None
+    # ── set by the record tool, never by the model ──
+    module: Dict[str, Any] = {}
+    sources: Dict[str, Any] = {}
+    base_branch: Optional[str] = None
+    base_sha: Optional[str] = None
+    head_sha: Optional[str] = None
+    commits: List[Dict[str, Any]] = []
+    changed_files: List[str] = []
+    tests: Optional[Dict[str, Any]] = None
+    lint: Optional[Dict[str, Any]] = None
+    preview: Optional[Dict[str, Any]] = None
+    notes: List[str] = []
+    recorded_at: Optional[str] = None
+    agent_session_id: Optional[str] = None
+
+
 # ---------------------------------------------------------------------------
 # Traceability and handoff helpers
 # ---------------------------------------------------------------------------

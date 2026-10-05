@@ -281,6 +281,20 @@ def baseline_packet(artifact: dict, envelope: dict) -> Emitted:
     return _build(BaselinePacket, {**envelope, "payload": baseline_payload(artifact)})
 
 
+def migration_payload(artifact: dict) -> dict:
+    """The packet's payload from a stored module migration (`MigrationArtifact` as a dict): the record
+    fields only — the commits, the head and the preview are the page's."""
+    from .packets import MigrationRecordPayload  # noqa: PLC0415
+
+    return {name: artifact[name] for name in MigrationRecordPayload.model_fields if name in artifact}
+
+
+def migration_packet(artifact: dict, envelope: dict) -> Emitted:
+    from .packets import MigrationRecordPacket  # noqa: PLC0415
+
+    return _build(MigrationRecordPacket, {**envelope, "payload": migration_payload(artifact)})
+
+
 def assessment_packet(assessment: dict, envelope: dict) -> Emitted:
     if any(not (m or {}).get("id") for m in assessment.get("modules") or []):
         # Schema 1 (or a restored copy of one): no module ids, so nothing downstream can cite a

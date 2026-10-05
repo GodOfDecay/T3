@@ -17,7 +17,7 @@ def test_greenfield_and_enhancement_share_the_same_nine_agent_portfolio():
 def test_portfolios_hold_only_agents_that_are_built():
     """Track 3 has its first four agents (Phase 1, Phase E, Phase F); Tracks 4 and 5 have none yet."""
     assert TRACK_PORTFOLIOS["modernization"] == ["requirements_modernization", "discovery", "design_modernization", "strategy",
-                                           "testing_modernization"]
+                                           "testing_modernization", "development_modernization"]
     assert TRACK_PORTFOLIOS["rpa_infra"] == []
     assert TRACK_PORTFOLIOS["data_engineering"] == []
 

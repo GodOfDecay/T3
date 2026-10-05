@@ -1097,8 +1097,11 @@ app.include_router(design_modernization_router, prefix="/sdlc/agent/design-moder
 from agents_orchestrator.strategy_agent.strategy_agent_api import strategy_router
 app.include_router(strategy_router, prefix="/sdlc/agent/strategy", tags=["strategy"], dependencies=[_VIEW_DEP])
 from agents_orchestrator.testing_modernization_agent.testing_modernization_agent_api import testing_modernization_router
+from agents_orchestrator.development_modernization_agent.development_modernization_agent_api import development_modernization_router
 app.include_router(testing_modernization_router, prefix="/sdlc/agent/testing-modernization",
                    tags=["testing_modernization"], dependencies=[_VIEW_DEP])
+app.include_router(development_modernization_router, prefix="/sdlc/agent/development-modernization",
+                   tags=["development_modernization"], dependencies=[_VIEW_DEP])
 app.include_router(modernization_router, tags=["modernization"], dependencies=[_VIEW_DEP])
 app.include_router(deployment_router_orchestrator, prefix="/sdlc/agent/deployment_orchestrator", tags=["deployment-orchestrator"], dependencies=[_VIEW_DEP])
 # Testing: active orchestrated router serves both the primary and legacy prefixes (mirrors dev agent pattern)

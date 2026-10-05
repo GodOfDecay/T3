@@ -44,7 +44,7 @@ modernization_router = APIRouter()
 #: Page kind (URL segment) -> backend stage.
 _KINDS = {"migration-intent": "requirements_modernization", "discovery": "discovery",
           "target-architecture": "design_modernization", "strategy": "strategy",
-          "equivalence-testing": "testing_modernization"}
+          "equivalence-testing": "testing_modernization", "migration-development": "development_modernization"}
 _MEDIA = {
     "docx": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
     "pdf": "application/pdf",
@@ -134,6 +134,47 @@ async def list_captures(
             "profileSource", "mapping", "notCaptured", "stubs", "scenarios", "noise", "keep")
     return {"projectId": resolved,
             "captures": [{k: m.get(k) for k in keys} for m in LocalBaselineStore().list_captures(resolved)[:20]]}
+
+
+@modernization_router.get("/projects/{project_id}/modernization/migration-development")
+async def latest_migration(
+    project_id: str, request: Request, db: AsyncSession = Depends(get_db_session),
+) -> dict:
+    """The project's newest module migration record, or `payload: null`."""
+    return await _latest(db, request, project_id, "development_modernization", "migration_artifacts")
+
+
+@modernization_router.get("/projects/{project_id}/modernization/migration-development/workspaces")
+async def list_migration_workspaces(
+    project_id: str, request: Request, db: AsyncSession = Depends(get_db_session),
+) -> dict:
+    """Each module's migration workspace: branch, commits by concern, build rounds and the last result,
+    tests, lint, the equivalence preview's headline, and the push. Never code, never a credential."""
+    from agents_orchestrator.development_modernization_agent import workspace as W  # noqa: PLC0415
+
+    resolved, _tenant, _user = await _guard(db, request, project_id, "development_modernization", artifact=True)
+    base = W.root() / resolved
+    out = []
+    if base.is_dir():
+        for mdir in sorted(base.iterdir()):
+            state = W.read_state(mdir) if mdir.is_dir() else None
+            if not state:
+                continue
+            builds = state.get("builds") or []
+            out.append({
+                "moduleId": state.get("module_id"), "modulePath": state.get("module_path"),
+                "branch": state.get("branch"), "baseBranch": state.get("base_branch"),
+                "ecosystem": state.get("ecosystem"), "targetRuntime": state.get("target_runtime"),
+                "commits": [{"sha": c.get("sha", "")[:10], "concern": c.get("concern"), "message": c.get("message"),
+                             "files": c.get("files")} for c in state.get("commits") or []],
+                "recipes": [{"tool": r.get("tool"), "version": r.get("version"), "files": len(r.get("files") or [])}
+                            for r in state.get("recipes") or []],
+                "builds": [{"round": b.get("round"), "ok": b.get("ok"), "at": b.get("at")} for b in builds],
+                "tests": (state.get("tests") or {}).get("status"), "lint": (state.get("lint") or {}).get("status"),
+                "preview": (state.get("preview") or {}).get("headline"),
+                "pushed": state.get("pushed"), "openedAt": state.get("opened_at"),
+            })
+    return {"projectId": resolved, "workspaces": out}
 
 
 # ── legacy code ──────────────────────────────────────────────────────────────
@@ -276,6 +317,10 @@ def _version_markdown(stage: str, payload: dict) -> tuple[str, str]:
         from agents_orchestrator.testing_modernization_agent.baseline_document import baseline_markdown  # noqa: PLC0415
 
         return baseline_markdown(payload), "equivalence-baseline"
+    if stage == "development_modernization":
+        from agents_orchestrator.development_modernization_agent.migration_document import migration_markdown  # noqa: PLC0415
+
+        return migration_markdown(payload), f"migration-{str(payload.get('module_id') or 'module').lower()}"
     from agents_orchestrator.discovery_agent.analysis.assessment import assessment_markdown  # noqa: PLC0415
 
     return assessment_markdown(payload), "discovery-assessment"
@@ -288,7 +333,7 @@ async def version_packet(project_id: str, kind: str, version: int, request: Requ
     built from the frozen version and validated by the hand-over models — or, when it cannot
     be handed over, the reasons in words. `{ok, problems, packet}`."""
     from agents_orchestrator.modernization_common.handover.emit import (  # noqa: PLC0415
-        assessment_packet, baseline_packet, brief_packet, design_packet, envelope_of, plan_packet,
+        assessment_packet, baseline_packet, brief_packet, design_packet, envelope_of, migration_packet, plan_packet,
     )
     from shared.services import artifact_versions as svc  # noqa: PLC0415
 
@@ -301,7 +346,7 @@ async def version_packet(project_id: str, kind: str, version: int, request: Requ
         raise HTTPException(status_code=404, detail=f"v{version} not found")
     build = {"requirements_modernization": brief_packet, "discovery": assessment_packet,
              "design_modernization": design_packet, "strategy": plan_packet,
-             "testing_modernization": baseline_packet}[stage]
+             "testing_modernization": baseline_packet, "development_modernization": migration_packet}[stage]
     return {"stage": stage, "version": version, **build(row.payload, envelope_of(row)).as_dict()}
 
 

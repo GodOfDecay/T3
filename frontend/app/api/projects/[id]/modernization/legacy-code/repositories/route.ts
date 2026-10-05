@@ -7,7 +7,8 @@ import { bffProxy } from "@/lib/bff/proxy";
  * for the Pull legacy code dialog. Proxied to FastAPI
  * `GET /projects/{id}/modernization/legacy-code/repositories`.
  */
-const STAGES = new Set(["requirements_modernization", "discovery", "design_modernization", "testing_modernization"]);
+const STAGES = new Set(["requirements_modernization", "discovery", "design_modernization", "testing_modernization",
+  "development_modernization"]);
 
 export async function GET(
   req: NextRequest,

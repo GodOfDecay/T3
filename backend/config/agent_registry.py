@@ -331,6 +331,29 @@ AGENT_REGISTRY: dict[str, AgentDefinition] = {
         ],
         optional_capabilities=["legacy.code.read", "doc.export.docx", "doc.export.pdf"],
     ),
+    "development_modernization": AgentDefinition(
+        id="development_modernization",
+        name="Migration Development Agent",
+        pipeline_position=6,
+        # Research §6.6: the design (contracts, traps, ADRs, runtime), the plan (waves, criteria) and the
+        # ACCEPTED baseline every migrated module is proven against.
+        input_artifacts=["target_design_artifacts", "strategy_artifacts", "equivalence_artifacts"],
+        output_artifact="migration_artifacts",
+        route_path="/migration-development",
+        # "Accept the migrated module" is a Sign-off (another Developer or a Project Admin); pushing the
+        # branch and opening the pull request is a separate Consequential action, allowed only after it.
+        gate_type="approval_required",
+        sla_hours=48,
+        can_parallel_with=[],
+        max_rejections=3,
+        required_capabilities=[
+            "code.migrate.tooling.invoke", "code.migrate.llm.rewrite", "code.buildsystem.migrate",
+            "code.map.legacy_to_target", "vcs.branch.create", "vcs.pr.create", "code.build", "code.test",
+            "code.lint", "artifact.write",
+        ],
+        optional_capabilities=["code.behavior.preserve.verify", "legacy.code.read", "doc.export.docx",
+                               "doc.export.pdf"],
+    ),
 }
 
 
@@ -361,7 +384,7 @@ TRACK_PORTFOLIOS: dict[str, list[str]] = {
     # Built so far: the first four of Portfolio 2's ten (Phase 1, Phase E, Phase F). The rest
     # are added one at a time as each is built and mounted.
     "modernization": ["requirements_modernization", "discovery", "design_modernization", "strategy",
-                      "testing_modernization"],
+                      "testing_modernization", "development_modernization"],
     "rpa_infra": [],
     "data_engineering": [],
 }

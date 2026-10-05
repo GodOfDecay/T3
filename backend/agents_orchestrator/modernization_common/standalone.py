@@ -461,7 +461,8 @@ async def serve_agent_socket(
 _UPSTREAM_STAGE = {"migration_intent_payload": ("requirements_modernization", "Migration-intent brief"),
                    "discovery_artifacts": ("discovery", "Dependency and Risk assessment"),
                    "target_design_artifacts": ("design_modernization", "Target design"),
-                   "strategy_artifacts": ("strategy", "Migration plan")}
+                   "strategy_artifacts": ("strategy", "Migration plan"),
+                   "equivalence_artifacts": ("testing_modernization", "Behaviour baseline")}
 
 
 #: (agent, session, producing stage) → the version this chat session already recorded

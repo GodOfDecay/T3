@@ -584,6 +584,7 @@ _SEGMENT_OUTPUT_STAGES = {
     "design_modernization": "design_modernization_agent",
     "strategy": "strategy_agent",
     "testing_modernization": "testing_modernization_agent",
+    "development_modernization": "development_modernization_agent",
 }
 
 

@@ -122,6 +122,7 @@ DISPLAY_NAMES: dict[str, str] = {
     "design_modernization": "Target Architecture",
     "strategy": "Migration Strategy",
     "testing_modernization": "Equivalence Testing",
+    "development_modernization": "Migration Development",
 }
 
 # An agent that exists but has no display name is unreachable by name — the exact
@@ -186,6 +187,8 @@ _EXTRA_NAMES: dict[str, tuple[str, ...]] = {
     "design_modernization": ("target architecture", "target design", "architecture", "design"),
     "strategy": ("strategy", "migration plan", "wave plan", "waves", "migration strategy"),
     "testing_modernization": ("equivalence testing", "equivalence", "testing", "baseline", "golden master"),
+    "development_modernization": ("migration development", "migrate the module", "migrate module", "migration pull request",
+                                  "upgrade recipe", "port the module"),
 }
 
 _NAME_TO_IDS: dict[str, tuple[str, ...]] = {}
@@ -383,6 +386,12 @@ _CAPABILITIES: dict[str, str] = {
         "against the approved plan's equivalence criteria, twice, finds what varies between runs, "
         "proposes normalization rules to Migration Strategy, and records the baselines every migrated "
         "module is later proven against"
+    ),
+    "development_modernization": (
+        "migrates one legacy module at a time into the TARGET repository following the approved migration "
+        "plan: runs upgrade recipes where they exist, rewrites the rest with the legacy code, the frozen "
+        "contracts and the equivalence criteria in context, migrates the build, previews the module against "
+        "the accepted baseline, and opens a pull request only after the record is accepted and with approval"
     ),
 }
 
@@ -672,6 +681,10 @@ How a modernization starts:
   list above: "capture the baseline", "record the legacy behaviour", "run the legacy system in
   the sandbox", "golden master", "what varies between runs", "the capture profile". Deciding
   WHICH baselines are needed is planning (Migration Strategy); capturing them is this agent's.
+- CHANGING THE CODE, one module at a time into the target repository, is Migration Development
+  work, when that agent is in the list above: "migrate M-02", "port the claims API to Python 3",
+  "run the upgrade recipe", "open the migration pull request", "fix what review found". Proving the
+  migrated module equivalent is Equivalence Testing's; reviewing the pull request is Migration Review's.
 
 How to decide:
 

@@ -28,6 +28,7 @@ NOUNS = {
     "discovery": ("Dependency and Risk assessment", "assessment", "Dependency and Risk"),
     "design_modernization": ("target design", "target design", "Target Architecture"),
     "strategy": ("migration plan", "migration plan", "Migration Strategy"),
+    "testing_modernization": ("behaviour baseline", "baseline", "Equivalence Testing"),
 }
 
 
@@ -55,7 +56,8 @@ def _builder(stage: str):
     from agents_orchestrator.modernization_common.handover import emit  # noqa: PLC0415
 
     return {"requirements_modernization": emit.brief_packet, "discovery": emit.assessment_packet,
-            "design_modernization": emit.design_packet, "strategy": emit.plan_packet}[stage]
+            "design_modernization": emit.design_packet, "strategy": emit.plan_packet,
+            "testing_modernization": emit.baseline_packet}[stage]
 
 
 def _fill(item: Input, stored: dict, envelope: dict) -> None:

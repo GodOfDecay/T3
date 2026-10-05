@@ -102,6 +102,7 @@ export const qk = {
     repositories: (id: ProjectId) => ["modernization-programme", id, "repositories"] as const,
     approvalSettings: (id: ProjectId) => ["modernization-programme", id, "approval-settings"] as const,
     captures: (id: ProjectId) => ["modernization-programme", id, "captures"] as const,
+    migrationWorkspaces: (id: ProjectId) => ["modernization-programme", id, "migration-workspaces"] as const,
   },
   connectors: {
     list: (workspaceId?: string | null) => ["connectors", workspaceId ?? ""] as const,
