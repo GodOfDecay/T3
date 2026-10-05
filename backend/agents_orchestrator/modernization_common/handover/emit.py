@@ -295,6 +295,19 @@ def migration_packet(artifact: dict, envelope: dict) -> Emitted:
     return _build(MigrationRecordPacket, {**envelope, "payload": migration_payload(artifact)})
 
 
+def verification_payload(artifact: dict) -> dict:
+    """The packet's payload from a stored verification (`VerificationArtifact` as a dict)."""
+    from .packets import EquivalencePayload  # noqa: PLC0415
+
+    return {name: artifact[name] for name in EquivalencePayload.model_fields if name in artifact}
+
+
+def verification_packet(artifact: dict, envelope: dict) -> Emitted:
+    from .packets import EquivalencePacket  # noqa: PLC0415
+
+    return _build(EquivalencePacket, {**envelope, "payload": verification_payload(artifact)})
+
+
 def review_payload(artifact: dict) -> dict:
     """The packet's payload from a stored review (`MigrationReviewArtifact` as a dict)."""
     from .packets import ReviewPayload  # noqa: PLC0415

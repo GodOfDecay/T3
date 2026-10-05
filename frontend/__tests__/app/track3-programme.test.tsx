@@ -28,6 +28,8 @@ const state = vi.hoisted(() => ({
   target: null as Record<string, unknown> | null,
   settings: { fallbackMode: "always", policy: "standard", warnings: [] as string[] },
   repoCalls: [] as [string, string, string][],
+  actions: [] as [string, string, string, boolean][],
+  actionRefusal: null as string | null,
   settingsCalls: [] as [string, string][],
   ledgerCalls: 0,
   repoRefusal: null as string | null,
@@ -56,6 +58,11 @@ vi.mock("@/lib/api/modernization-programme", async (orig) => ({
     return { role, kind: "github", url, branch, setBy: "u-pa", updatedAt: null };
   },
   getApprovalSettings: async () => ({ projectId: PROJECT, ...state.settings }),
+  ledgerAction: async (_p: string, moduleId: string, action: string, reason: string, toMigrating: boolean) => {
+    state.actions.push([moduleId, action, reason, toMigrating]);
+    if (state.actionRefusal) throw new Error(state.actionRefusal);
+    return { moduleId, moduleName: moduleId, legacyPath: "src", state: toMigrating ? "migrating" : "in_review" };
+  },
   setApprovalSettings: async (_p: string, fallbackMode: string, policy: string) => {
     state.settingsCalls.push([fallbackMode, policy]);
     return { projectId: PROJECT, fallbackMode, policy, warnings: [] };
@@ -80,6 +87,8 @@ beforeEach(() => {
   state.target = null;
   state.settings = { fallbackMode: "always", policy: "standard", warnings: [] };
   state.repoCalls = [];
+  state.actions = [];
+  state.actionRefusal = null;
   state.settingsCalls = [];
   state.ledgerCalls = 0;
   state.repoRefusal = null;
@@ -109,6 +118,39 @@ describe("the Programme board", () => {
     expect(blocked.textContent).toContain("M-04");
     expect(blocked.textContent).toContain("In review");
     expect(blocked.textContent).toContain("three review rejections");
+  });
+
+  it("shows each module's review and security verdicts and its rejections", async () => {
+    state.modules = [mod("M-01", "in_review", { reviewVerdict: "request_changes", securityVerdict: "PASS", rejectionCount: 2 })];
+    wrap(<ProgrammePage />);
+    const table = await screen.findByRole("table", { name: "Modules" });
+    expect(table.textContent).toContain("request changes");
+    expect(table.textContent).toContain("PASS");
+    expect(table.textContent).toContain("2 of 3");
+  });
+
+  it("unblocks a blocked module with a reason, for rework or back where it was", async () => {
+    const user = userEvent.setup();
+    state.modules = [mod("M-04", "blocked", { blockedFrom: "in_review", blockedReason: "three review rejections" })];
+    wrap(<ProgrammePage />);
+    await user.click(await screen.findByRole("button", { name: "Unblock M-04" }));
+    const send = screen.getByRole("button", { name: "Send for rework" });
+    expect((send as HTMLButtonElement).disabled).toBe(true);  // a reason first
+    await user.type(screen.getByLabelText("Reason"), "Redesigned the writer");
+    await user.click(screen.getByRole("button", { name: "Send for rework" }));
+    await waitFor(() => expect(state.actions).toEqual([["M-04", "unblock", "Redesigned the writer", true]]));
+  });
+
+  it("shows the server's refusal and offers reopen only on a verified module", async () => {
+    const user = userEvent.setup();
+    state.actionRefusal = "Only an Architect or a Project Admin of this project unblocks or reopens a module.";
+    state.modules = [mod("M-01", "verified"), mod("M-02", "migrating")];
+    wrap(<ProgrammePage />);
+    await user.click(await screen.findByRole("button", { name: "Reopen M-01" }));
+    expect(screen.queryByRole("button", { name: "Reopen M-02" })).toBeNull();
+    await user.type(screen.getByLabelText("Reason"), "x");
+    await user.click(screen.getByRole("button", { name: "Reopen for rework" }));
+    expect((await screen.findByRole("alert")).textContent).toContain("Only an Architect or a Project Admin");
   });
 
   it("explains an empty ledger rather than drawing an empty board", async () => {

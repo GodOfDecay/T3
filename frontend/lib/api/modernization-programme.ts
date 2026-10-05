@@ -106,3 +106,11 @@ export const STATE_LABEL: Record<string, string> = {
 };
 
 export const stateLabel = (s: string) => STATE_LABEL[s] ?? s.replace(/_/g, " ");
+
+/** A person moves a module the agents cannot: unblock a blocked one (back where it was, or to migrating), or
+ *  reopen a verified / cut-over one. An Architect or a Project Admin of this project, with a reason. */
+export const ledgerAction = (projectId: ProjectId, moduleId: string, action: "unblock" | "reopen", reason: string,
+  toMigrating = false) =>
+  api(`${base(projectId)}/ledger/${encodeURIComponent(moduleId)}/${action}`,
+    { method: "POST", body: { reason, toMigrating }, schema: LedgerModule });
+

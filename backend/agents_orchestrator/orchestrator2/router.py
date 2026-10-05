@@ -188,7 +188,8 @@ _EXTRA_NAMES: dict[str, tuple[str, ...]] = {
     "discovery": ("discovery and assessment", "assessment", "dependency and risk", "dependency & risk", "dependancy and risk"),
     "design_modernization": ("target architecture", "target design", "architecture", "design"),
     "strategy": ("strategy", "migration plan", "wave plan", "waves", "migration strategy"),
-    "testing_modernization": ("equivalence testing", "equivalence", "testing", "baseline", "golden master"),
+    "testing_modernization": ("equivalence testing", "equivalence", "testing", "baseline", "golden master",
+                              "verify the module", "verification", "prove the migration"),
     "development_modernization": ("migration development", "migrate the module", "migrate module", "migration pull request",
                                   "upgrade recipe", "port the module"),
     "code_review_modernization": ("migration review", "review the migration", "review the pull request",
@@ -391,7 +392,9 @@ _CAPABILITIES: dict[str, str] = {
         "legacy code in an isolated sandbox (no internet, synthetic data, stubbed external services) "
         "against the approved plan's equivalence criteria, twice, finds what varies between runs, "
         "proposes normalization rules to Migration Strategy, and records the baselines every migrated "
-        "module is later proven against"
+        "module is later proven against; then VERIFIES each migrated module: replays the baseline on the "
+        "migrated code, diffs every criterion, compares p95 latency on both sides, and reports each "
+        "difference as a regression, a normalization gap or an allowed change"
     ),
     "development_modernization": (
         "migrates one legacy module at a time into the TARGET repository following the approved migration "
@@ -697,6 +700,8 @@ How a modernization starts:
   list above: "capture the baseline", "record the legacy behaviour", "run the legacy system in
   the sandbox", "golden master", "what varies between runs", "the capture profile". Deciding
   WHICH baselines are needed is planning (Migration Strategy); capturing them is this agent's.
+  VERIFYING A MIGRATED MODULE is Equivalence Testing work too: "verify M-01", "prove the migration",
+  "does the new code behave like the old", "run the equivalence tests on M-01".
 - CHANGING THE CODE, one module at a time into the target repository, is Migration Development
   work, when that agent is in the list above: "migrate M-02", "port the claims API to Python 3",
   "run the upgrade recipe", "open the migration pull request", "fix what review found". Proving the

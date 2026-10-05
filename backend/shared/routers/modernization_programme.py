@@ -86,6 +86,45 @@ async def get_ledger(project_id: str, request: Request, db: AsyncSession = Depen
     return {"projectId": resolved, "states": list(ledger.STATES), "modules": [ledger.as_dict(r) for r in rows]}
 
 
+class LedgerActionBody(BaseModel):
+    reason: str = Field(min_length=1, max_length=2000)
+    toMigrating: bool = False
+
+
+@modernization_programme_router.post(
+    "/{project_id}/ledger/{module_id}/{action}", dependencies=[Depends(require_permission("artifact:view"))],
+)
+async def ledger_action(project_id: str, module_id: str, action: Literal["unblock", "reopen"], body: LedgerActionBody,
+                        request: Request, db: AsyncSession = Depends(get_db_session)):
+    """A person moves a module the agents cannot (research §12.4): UNBLOCK a blocked module (back to where it
+    was, or to migrating for rework; the rejection count restarts) or REOPEN a verified / cut-over one for
+    rework. An Architect or a Project Admin OF THIS PROJECT, with a reason; audited. Without this a module
+    rejected three times stayed blocked for ever."""
+    from shared.services.fallback_approval import project_roles  # noqa: PLC0415
+
+    resolved, tenant_id = await _modernization_project(db, request, project_id)
+    user_id = str(getattr(request.state, "user_id", "") or "")
+    roles = await project_roles(db, tenant_id=tenant_id, project_id=resolved, user_id=user_id)
+    role = "project_admin" if "project_admin" in roles else ("architect" if "architect" in roles else None)
+    if role is None:
+        raise HTTPException(status_code=403, detail="Only an Architect or a Project Admin of this project unblocks or reopens a module.")
+    try:
+        if action == "unblock":
+            row = await ledger.unblock(db, project_id=resolved, module_id=module_id, role=role, reason=body.reason,
+                                       actor=user_id or None, to_migrating=body.toMigrating)
+        else:
+            row = await ledger.reopen(db, project_id=resolved, module_id=module_id, role=role, reason=body.reason,
+                                      actor=user_id or None)
+    except ledger.LedgerRefused as exc:
+        raise HTTPException(status_code=409, detail=str(exc)) from exc
+    await audit_service.emit(AuditEventPayload(
+        tenant_id=tenant_id, event_type=f"modernization.module_{action}ed", actor_id=user_id or None,
+        resource_type="project", resource_id=resolved,
+        payload={"moduleId": module_id, "reason": body.reason, "state": row.state, "role": role},
+    ))
+    return ledger.as_dict(row)
+
+
 @modernization_programme_router.get(
     "/{project_id}/repositories", dependencies=[Depends(require_permission("artifact:view"))],
 )

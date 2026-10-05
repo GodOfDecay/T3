@@ -339,6 +339,8 @@ async def publish_stage_version(
         await _design_approved(db, request, project_id, row)
     elif stage == "strategy":
         await _strategy_approved(db, request, project_id, row)
+    elif stage == "testing_modernization" and (row.payload or {}).get("mode") == "verify":
+        await _verification_approved(db, request, project_id, row)
     elif stage == "testing_modernization":
         await _baseline_approved(db, request, project_id, row)
     elif stage in ("code_review_modernization", "security_modernization"):
@@ -375,6 +377,39 @@ async def _verdict_approved(db: AsyncSession, request: Request, project_id: str,
                      actor=str(getattr(request.state, "user_id", "") or ""),
                      artifact=ledger.ArtifactRef("migration_review_artifacts" if review
                                                  else "modernization_security_artifacts", row.version))
+    except ledger.LedgerRefused as exc:
+        raise HTTPException(status_code=409, detail=f"Not accepted: {exc}") from exc
+
+
+async def _verification_approved(db: AsyncSession, request: Request, project_id: str, row) -> None:
+    """Equivalence Testing's Verify-mode ledger transition on ACCEPTANCE (Phase J, J8), in this request's
+    transaction: `verifying → verified` (every criterion passed), back to `migrating` (a failure), or stays
+    `verifying` (open). A verification of an older migration record than the module's current one is refused."""
+    from shared.services import artifact_versions as versions  # noqa: PLC0415
+    from shared.services import modernization_ledger as ledger  # noqa: PLC0415
+
+    payload = row.payload or {}
+    module_id, verdict = payload.get("module_id"), payload.get("module_verdict")
+    if not module_id or verdict not in ("verified", "migrating", "open"):
+        raise HTTPException(status_code=409, detail="Not accepted: this verification names no module and verdict.")
+    current = next((r for r in await versions.list_versions(db, project_id, "development_modernization")
+                    if (r.payload or {}).get("module_id") == module_id), None)
+    if current is None or current.version != payload.get("migration_version") \
+            or (current.payload or {}).get("head_sha") != payload.get("head_sha"):
+        raise HTTPException(status_code=409, detail=(
+            f"Not accepted: this verification is of {module_id}'s migration record v{payload.get('migration_version')}, "
+            f"and the module has been migrated again since (v{getattr(current, 'version', '?')}). Verify the current one."))
+    perf = payload.get("performance") or []
+    perf_verdict = None
+    if perf:
+        measured = [p for p in perf if p.get("target_p95_ms") is not None]
+        perf_verdict = ("not_measured" if len(measured) < len(perf) else
+                        "passed" if all(p["target_p95_ms"] <= p["threshold_ms"] for p in measured) else "failed")
+    try:
+        await ledger.equivalence_recorded(
+            db, project_id=project_id, module_id=module_id, verdict=verdict, perf_verdict=perf_verdict,
+            actor=str(getattr(request.state, "user_id", "") or ""),
+            artifact=ledger.ArtifactRef("equivalence_artifacts", row.version))
     except ledger.LedgerRefused as exc:
         raise HTTPException(status_code=409, detail=f"Not accepted: {exc}") from exc
 

@@ -130,10 +130,37 @@ async def latest_version(
     )).scalar_one_or_none()
 
 
+#: Track 3 stages whose versions are about ONE SUBJECT each — a module's migration record, review or
+#: security report, and for Equivalence Testing the project's baseline vs each module's verification. Their
+#: approvals are independent: accepting M-02's record must not supersede M-01's, and M-01's older record must
+#: still be acceptable after M-02's newer one (found walking a two-module workflow before Phase J). Every
+#: other stage has one subject, as before.
+PER_SUBJECT_STAGES = frozenset({"development_modernization", "code_review_modernization", "security_modernization",
+                                "testing_modernization"})
+#: What a reader of these stages means when it names no subject: Equivalence Testing's upstream readers
+#: (Migration Development, Migration Strategy's rule proposals) mean the BASELINE, never a verification.
+DEFAULT_SUBJECT = {"testing_modernization": "baseline"}
+_STAGE_DEFAULT = object()
+
+
+def subject_of(stage: str, payload: Any) -> Optional[str]:
+    """The subject a version is about (None = the whole stage, every non-Track-3 stage)."""
+    if stage not in PER_SUBJECT_STAGES:
+        return None
+    p = payload if isinstance(payload, dict) else {}
+    if stage == "testing_modernization":
+        return f"verify:{p.get('module_id')}" if p.get("mode") == "verify" else "baseline"
+    return str(p.get("module_id") or "")
+
+
 async def latest_published(
-    db: AsyncSession, project_id: str, stage: str,
+    db: AsyncSession, project_id: str, stage: str, subject: Any = _STAGE_DEFAULT,
 ) -> Optional[ArtifactVersion]:
     """The newest version a human has signed off.
+
+    `subject` (Track 3 per-subject stages): the newest published version ABOUT that subject; None = the
+    newest of the whole stage; left out = the stage's default (`DEFAULT_SUBJECT`: Equivalence Testing's
+    baseline), else the whole stage.
 
     THE READ EVERY CONSUMER WILL MAKE once phase 3 lands. Returning None here is a
     legitimate, meaningful answer — "no approved design exists yet" — and the caller
@@ -141,16 +168,18 @@ async def latest_published(
     gate decorative, exactly as the tenant-wide credential fallback made "Needs a
     credential" decorative until it was removed.
     """
-    return (await db.execute(
-        select(ArtifactVersion)
-        .where(
-            ArtifactVersion.project_id == project_id,
-            ArtifactVersion.stage == stage,
-            ArtifactVersion.status == "published",
-        )
-        .order_by(ArtifactVersion.version.desc())
-        .limit(1)
-    )).scalar_one_or_none()
+    if subject is _STAGE_DEFAULT:
+        subject = DEFAULT_SUBJECT.get(stage)
+    stmt = (select(ArtifactVersion)
+            .where(ArtifactVersion.project_id == project_id, ArtifactVersion.stage == stage,
+                   ArtifactVersion.status == "published")
+            .order_by(ArtifactVersion.version.desc()))
+    if subject is None:
+        return (await db.execute(stmt.limit(1))).scalar_one_or_none()
+    for row in (await db.execute(stmt)).scalars():
+        if subject_of(stage, row.payload) == subject:
+            return row
+    return None
 
 
 async def list_versions(
@@ -397,7 +426,9 @@ async def publish_version(
             code="self_publication",
         )
 
-    current = await latest_published(db, project_id, stage)
+    # Per subject for Track 3's per-module stages: only a version about the SAME module (or, for Equivalence
+    # Testing, the same baseline / the same module's verification) is superseded or "newer".
+    current = await latest_published(db, project_id, stage, subject=subject_of(stage, row.payload))
     if current is not None and current.version > version:
         raise PublicationRefused(
             f"{stage} v{current.version} is already published; publishing the older "

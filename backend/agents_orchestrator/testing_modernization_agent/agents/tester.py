@@ -1,4 +1,4 @@
-"""The Equivalence Testing agent's graph (Track 3 — Code Modernization, Phase G: Baseline mode).
+"""The Equivalence Testing agent's graph (Track 3 — Code Modernization, Phases G and J: Baseline and Verify).
 
 `app` is what both entry points run: the Orchestrator's dispatch (`orchestrator2/registry.py`) and
 the standalone socket (`testing_modernization_agent_api.py`).
@@ -9,11 +9,15 @@ from agents_orchestrator.modernization_common import legacy_code
 from agents_orchestrator.modernization_common.graph import build_tool_agent_graph
 from agents_orchestrator.modernization_common.restore_tool import make_compare_tool, make_restore_tool
 from agents_orchestrator.testing_modernization_agent.prompts.equivalence_prompt import EQUIVALENCE_SYS_MESSAGE
-from agents_orchestrator.testing_modernization_agent.tools.equivalence_tools import TOOLS
+from agents_orchestrator.testing_modernization_agent.tools.equivalence_tools import TOOLS as BASELINE_TOOLS
+from agents_orchestrator.testing_modernization_agent.tools.verify_tools import TOOLS as VERIFY_TOOLS
 from shared.tools.document_approval import make_approval_tools
 from shared.tools.project_documents import make_document_tools
 
 AGENT_ID = "testing_modernization"
+
+#: Baseline mode (Phase G) and Verify mode (Phase J).
+TOOLS = [*BASELINE_TOOLS, *VERIFY_TOOLS]
 
 #: The platform's document system bound to THIS stage.
 DOCUMENT_TOOLS = [*make_document_tools(AGENT_ID), *make_approval_tools(AGENT_ID)]

@@ -1,6 +1,6 @@
 # Track 3 (Code Modernization) — Handoff for whoever builds the next agents
 
-**Updated:** 2026-10-05, end of Phase I (Migration Review and Security built; proven on Postgres + git + the three scanners in Docker; 69/69 mutants; migration 0075 on the cloud session's test and dev DBs — the user's own dev DB is at 0074 and needs 0075 with their OK; the Migration Development, Migration Review and Security tiles flipped at the user's request on 2026-10-05, before their click-throughs — build-log Entry 15). Before that, end of Phase H (built; proven on Postgres + Docker and LIVE: a real pull request on GodOfDecay/claimtrack-lite-target; 71/71 mutants; migration 0074 on the test DB; tile not flipped until the user's click-through). Before that, 2026-10-01, end of Phase G (built, fix wave, mutation-proven; migration 0073 on the test DB; the user's own dev DB is still at 0072 and needs 0073 with their OK; tile flipped at the user's request on 2026-10-01, as Phase F's was). Phase G's build and fix wave are on `claude/intelligent-pasteur-m7ea75` (based on `akshat_track3`), to merge back. **Branch:** `akshat_track3` on `origin` (the team's shared branch; never push Track 3
+**Updated:** 2026-10-05, end of Phase J (Verify mode; workflow review fixes; tiles for H and I flipped at the user's request — Entry 16). Before that, end of Phase I (Migration Review and Security built; proven on Postgres + git + the three scanners in Docker; 69/69 mutants; migration 0075 on the test DB and, on 2026-10-05, on the user's own dev DB; tiles flipped at the user's request — build-log Entry 15). Before that, end of Phase H (built; proven on Postgres + Docker and LIVE: a real pull request on GodOfDecay/claimtrack-lite-target; 71/71 mutants; migration 0074 on the test DB; tile not flipped until the user's click-through). Before that, 2026-10-01, end of Phase G (built, fix wave, mutation-proven; migration 0073 on the test DB; the user's own dev DB is still at 0072 and needs 0073 with their OK; tile flipped at the user's request on 2026-10-01, as Phase F's was). Phase G's build and fix wave are on `claude/intelligent-pasteur-m7ea75` (based on `akshat_track3`), to merge back. **Branch:** `akshat_track3` on `origin` (the team's shared branch; never push Track 3
 work to `track-3`). Last commit: `12418303` (handoff) on `999b1b3e` (Phase E), `0c814fad` (Phase D),
 `9f2e81f6` (Phase C closed) and `8c90522c` (A, B and most of C).
 
@@ -9,7 +9,7 @@ work to `track-3`). Last commit: `12418303` (handoff) on `999b1b3e` (Phase E), `
 2. `help/Track-3/track3-research.md` §6.x for **the one agent you are building**. Do not read the ~8,000
    lines of design docs up front.
 3. `help/Track-3/Track-3 Lessons from Track 1-2.md` (rules R1–R57).
-4. `help/Track-3/build-log.md` for the evidence behind any decision below (Entries 1–15).
+4. `help/Track-3/build-log.md` for the evidence behind any decision below (Entries 1–16).
 
 The phase map is `docs/superpowers/plans/2026-09-28-track3-master-plan.md`. The binding rules and the
 mandatory stops are in `help/Track-3/Track-3 Implementation Prompt.md` §9.
@@ -31,11 +31,15 @@ mandatory stops are in `help/Track-3/Track-3 Implementation Prompt.md` §9.
 - [x] I5 Frontend: `/migration-review`, `/modernization-security` pages + tests
 - [x] I6 Mutation (69/69), regression, build-log Entry 15, click-through I, this file
 
-**Phase I is done.** Next is **Phase J — Equivalence Testing (verify)**: replay each `verifying` module's
-scenarios on the TARGET and record the equivalence verdict (`ledger.equivalence_recorded`). Start from
-research §6.5 (verify mode), `testing_modernization_agent/` (baseline mode is built) and Phase H's
-`preview.py` (the same overlay replay, which becomes the verdict there). Before J, the user's open items:
-Trivy DB refresh, click-throughs H and I, the Track 1 `git_tools.py` tenant decision, revoking the PAT.
+**Phase J is done** (build-log Entry 16): Equivalence Testing's Verify mode, after a workflow review that fixed
+per-module approvals (W-1), the rework list (W-2), unblock/reopen (W-3) and the Programme verdict columns (W-4).
+- [x] J plan · [x] workflow fixes · [x] verify analysis, tools, hook, prompt · [x] tests (units, Docker + Postgres
+  chain) · [x] frontend verification view · [x] mutation 25/25 · [x] regression · [x] build log, click-through J
+
+**Next is Phase K — Cutover** (`deployment_modernization`, research §6.9, master plan row K: "Request-only; your
+R13 decision first"). It aggregates every gate per module (baseline, review, security, equivalence = `verified`
+on the ledger, PR merged) and prepares the cutover; the user's R13 decision (what Cutover may actually do) is the
+first stop. Agents built: 8 of 10 + Verify mode; left: Cutover, Cutover Pack.
 
 **Phase I needs on the laptop:** Docker Desktop running; migration 0075 (`alembic upgrade head`, then
 `grant_app_role`); Trivy's database filled once with network (command in `click-through-phase-I.md`; or set
@@ -100,7 +104,7 @@ Track 3 has ten agents in hand-off order. The four built ones are live on their 
 | 2 | `discovery` | Dependency and Risk | BA | **Built** (Phases A, B, D) |
 | 3 | `design_modernization` | Target Architecture | Architect | **Built** (Phase E; tile unlocked, user-tested) |
 | 4 | `strategy` | Migration Strategy | Architect | **Built** (Phase F; tile unlocked at the user's request) |
-| 5 | `testing_modernization` | Equivalence Testing | QA | **Built: Baseline mode** (Phase G; tile unlocked at the user's request). Verify mode is Phase J |
+| 5 | `testing_modernization` | Equivalence Testing | QA | **Built: Baseline mode** (Phase G) and **Verify mode** (Phase J); tile unlocked at the user's request |
 | 6 | `development_modernization` | Migration Development | Developer (D10) | **Built** (Phase H; live PR proven; tile unlocked at the user's request) |
 | 7 | `code_review_modernization` | Migration Review | Architect | **Built** (Phase I; tile unlocked at the user's request) |
 | 8 | `security_modernization` | Security (Modernization) | Security Engineer | **Built** (Phase I; tile unlocked at the user's request) |

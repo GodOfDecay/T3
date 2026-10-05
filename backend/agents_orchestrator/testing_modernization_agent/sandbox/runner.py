@@ -113,6 +113,24 @@ def leftovers(capture_id: str) -> list[str]:
             + docker("network", "ls", "-q", "--filter", label, check=False).stdout.split())
 
 
+def measure(checkout: pathlib.Path, profile: dict, scenarios: list[dict], capture_id: str, repeat: int,
+            out_dir: pathlib.Path) -> dict[str, dict]:
+    """Phase J: build and start the system once and time each HTTP scenario `repeat` times, under the same
+    container limits as every run. {scenario: {"ms": [...], "errors": n}}. Leaves nothing behind."""
+    tag = f"sdlc-legacy:{capture_id.lower()}"
+    try:
+        tag, _image = build_image(checkout, profile, capture_id)
+        run = Run(checkout, profile, tag, capture_id, 1)
+        try:
+            run.start()
+            return {sc["id"]: run.perf(sc, out_dir / sc["id"], repeat) for sc in scenarios}
+        finally:
+            run.stop()
+    finally:
+        cleanup(capture_id)
+        docker("rmi", "-f", tag, check=False)
+
+
 def build_image(checkout: pathlib.Path, profile: dict, capture_id: str) -> tuple[str, str]:
     """(tag, image id). Built from the checkout's own Dockerfile; base images are digest-pinned
     (checked by the profile), so the same checkout builds the same runtime."""
@@ -208,6 +226,20 @@ class Run:
                         (files / name).write_bytes(data)
         (out / "exec.json").write_text(json.dumps(record, sort_keys=True), encoding="utf-8")
         return {"id": sc["id"], "kind": "batch", "cases": 1, "exit": proc.returncode, "missing": record["missing"]}
+
+    def perf(self, sc: dict, out: pathlib.Path, repeat: int) -> dict:
+        """Phase J: the scenario's requests `repeat` times; latencies only ({"ms": [...], "errors": n})."""
+        if sc["kind"] != "http":
+            raise CaptureFailed(f"Scenario {sc['id']} is not HTTP: performance is measured on HTTP scenarios.")
+        out.mkdir(parents=True, exist_ok=True)
+        requests = (self.checkout / sc["requests"]).resolve()
+        port = self.profile["service"]["port"]
+        proc = self._driver("perf", f"http://app:{port}", "/in/requests.jsonl", str(int(repeat)), "/out/latencies.json",
+                            extra=[*_mount(requests, "/in/requests.jsonl"), *_mount(out.resolve(), "/out", False)],
+                            timeout=60 + 30 * int(repeat) * int(sc.get("cases") or 1))
+        if proc.returncode != 0 or not (out / "latencies.json").is_file():
+            raise CaptureFailed(f"Scenario {sc['id']}: the performance driver failed.")
+        return json.loads((out / "latencies.json").read_text(encoding="utf-8"))
 
     def stop(self) -> None:
         cleanup_run = [f"{self.net}-{s['name']}" for s in self.profile.get("stubs") or []] + [self.app]

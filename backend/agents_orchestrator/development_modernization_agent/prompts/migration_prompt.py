@@ -64,6 +64,7 @@ HOW YOU WORK ON A MODULE
    step: Migration Review and Security review the pull request.
 
 ON REWORK
+- A module sent back to migrating has findings: read what Migration Review and Security found first.
 - Read every finding raised against the pull request. Fix on the same branch, one commit per finding
   where practical, record again, and say which commit answers which finding. For a finding you disagree
   with, explain why with the legacy code as evidence, and leave the decision to the reviewer.

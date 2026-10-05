@@ -924,6 +924,100 @@ async def push_and_open_pr(module_id: str) -> str:
             f"{module_id} is now in review: Migration Review and Security review the pull request.")
 
 
+async def _newest_of(stage: str, module_id: str):
+    from shared.db import get_db_session_for_tenant  # noqa: PLC0415
+    from shared.services import artifact_versions as svc  # noqa: PLC0415
+
+    tenant, project, _u = _scope()
+    async with get_db_session_for_tenant(tenant) as db:
+        for row in await svc.list_versions(db, project, stage):
+            if (row.payload or {}).get("module_id") == module_id:
+                return row
+    return None
+
+
+def rework_markdown(module_id: str, review, security, ledger_row: dict, verification=None) -> str:
+    """What Migration Review and Security said about the module's newest migration — the rework list. Pure."""
+    word = {"published": "accepted", "granted": "accepted by exception", "draft": "not yet accepted",
+            "rejected": "rejected (does not count)", "superseded": "superseded"}
+    lines = [f"# What review and security found on {module_id}",
+             f"Ledger: **{ledger_row.get('state') or 'unknown'}**, rejected {ledger_row.get('rejectionCount') or 0} of 3"
+             " (at three the module is blocked and an Architect decides)."]
+    if review is None and security is None and verification is None:
+        return "\n".join(lines + ["", "Neither Migration Review nor Security has reported on this module yet."])
+    sev = {"critical": 0, "high": 1, "medium": 2, "low": 3, "info": 4}
+    if review is not None:
+        r = review.payload or {}
+        lines += ["", f"## Migration review v{review.version} ({word.get(review.status, review.status)}): "
+                      f"{str(r.get('merge_recommendation') or '').replace('_', ' ')}, on migration record "
+                      f"v{r.get('migration_version')}", r.get("summary") or ""]
+        for f in sorted(r.get("findings") or [], key=lambda f: (sev.get(f.get("severity"), 9), f.get("id") or "")):
+            leg = f" (legacy {f['legacy_file']}:{f.get('legacy_line') or ''})" if f.get("legacy_file") else ""
+            lines.append(f"- {f.get('id')} [{f.get('severity')}, {str(f.get('category') or '').replace('_', ' ')}] "
+                         f"{f.get('file')}:{f.get('line') or ''}{leg}: {f.get('description')} → {f.get('recommendation')}")
+        for t in r.get("trap_check") or []:
+            if t.get("status") == "not_handled":
+                lines.append(f"- {t.get('tr_id')} is NOT handled.")
+    if security is not None:
+        sp = security.payload or {}
+        lines += ["", f"## Security report v{security.version} ({word.get(security.status, security.status)}): "
+                      f"{sp.get('verdict')}, on migration record v{sp.get('migration_version')}", sp.get("rationale") or ""]
+        for f in sorted(sp.get("findings") or [], key=lambda f: (sev.get(f.get("severity"), 9), f.get("id") or "")):
+            what = f"{f.get('cve')} in {f.get('package')}" if f.get("cve") else (f.get("file") or "")
+            lines.append(f"- {f.get('id')} [{f.get('severity')}, {str(f.get('origin') or '').replace('_', ' ')}"
+                         f"{', SECRET' if f.get('is_secret') else ''}] {f.get('title')} — {what}"
+                         + (f" → {f['remediation_plan']}" if f.get("remediation_plan") else ""))
+        for c in sp.get("secret_carryover") or []:
+            lines.append(f"- A legacy secret is in {c.get('file')}:{c.get('line')}: replace it with a vault reference; "
+                         "it must also be rotated.")
+        for a in sp.get("contract_authz") or []:
+            if a.get("status") == "weaker":
+                lines.append(f"- {a.get('ct_id')}: authorization weaker than the legacy's — {a.get('note') or ''}")
+    if verification is not None:
+        v = verification.payload or {}
+        lines += ["", f"## Equivalence verification v{verification.version} ({word.get(verification.status, verification.status)}): "
+                      f"{v.get('module_verdict')}, on migration record v{v.get('migration_version')}"]
+        for c in v.get("criteria") or []:
+            if c.get("verdict") != "passed":
+                lines.append(f"- {c.get('ec_id')}: {str(c.get('verdict')).replace('_', ' ')}")
+        for d in v.get("differences") or []:
+            if d.get("classification") in ("regression", "environment", "normalization_gap"):
+                lines.append(f"- {d.get('id')} [{str(d.get('classification')).replace('_', ' ')}] {d.get('field')} differs in "
+                             f"{d.get('cases')} case(s) ({d.get('masked_example')}); likely {d.get('likely_area') or 'unknown'}")
+    lines += ["", "Fix on the same branch, one commit per finding where practical, then record again: the new record "
+                  "must be accepted and pushed, and both reviews run again on it."]
+    return "\n".join(lines)
+
+
+async def _newest_verification(module_id: str):
+    from shared.db import get_db_session_for_tenant  # noqa: PLC0415
+    from shared.services import artifact_versions as svc  # noqa: PLC0415
+
+    tenant, project, _u = _scope()
+    async with get_db_session_for_tenant(tenant) as db:
+        for row in await svc.list_versions(db, project, "testing_modernization"):
+            p = row.payload or {}
+            if p.get("mode") == "verify" and p.get("module_id") == module_id:
+                return row
+    return None
+
+
+@tool
+async def read_review_findings(module_id: str) -> str:
+    """What Migration Review, Security and Equivalence Testing said about the module (findings with file and line,
+    unhandled traps, carried-over secrets, weaker authorization, behaviour differences) and its rejection count.
+    Read it before reworking a module."""
+    try:
+        review = await _newest_of("code_review_modernization", module_id)
+        security = await _newest_of("security_modernization", module_id)
+        verification = await _newest_verification(module_id)
+        rows = await _ledger_rows()
+    except Exception:  # noqa: BLE001
+        logger.exception("migration development: reading the reviews failed")
+        return "The reviews could not be read just now (a database error). Try again."
+    return rework_markdown(module_id, review, security, rows.get(module_id, {}), verification)
+
+
 @tool
 async def export_migration_document(module_id: str, filename: str = "migration.docx") -> str:
     """Export a module's newest migration record as a document (.docx, .pdf or .md)."""
@@ -951,4 +1045,4 @@ async def export_migration_document(module_id: str, filename: str = "migration.d
 TOOLS = [get_ledger, get_module_plan, open_target_workspace, list_upgrade_recipes, run_upgrade_recipe,
          list_target_files, read_target_file, write_target_file, edit_target_file, commit_changes,
          run_build, run_tests, run_lint, preview_equivalence, record_module_migration, push_and_open_pr,
-         export_migration_document]
+         read_review_findings, export_migration_document]

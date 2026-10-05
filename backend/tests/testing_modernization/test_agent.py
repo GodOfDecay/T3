@@ -28,7 +28,10 @@ def test_the_prompt_says_propose_never_apply_consent_and_masked_only():
     assert "only after an explicit yes on the" in p and "Only QA or a Project Admin of this project" in p
     assert "Data is\n   synthetic or sample only" in p or "synthetic or sample only" in p
     assert "never copy a recording into the chat" in p
-    assert "VERIFY MODE is not available yet" in p
+    # Phase J: Verify mode is built; its prompt says the tools classify and an accepted change needs an ADR.
+    assert "VERIFY MODE" in p and "not available yet" not in p
+    assert "ONLY when an ADR on this module explicitly allows" in p
+    assert "a performance criterion not measured is \"not run\"" in p
 
 
 def test_registry_portfolio_and_upstream_reads():

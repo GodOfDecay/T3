@@ -1,0 +1,30 @@
+{
+ "root": "backend",
+ "target": "shared/services/artifact_versions.py",
+ "env_test": true,
+ "tests": [
+  "tests/modernization_common/test_per_subject_versions.py"
+ ],
+ "mutants": [
+  [
+   "stage-wide-supersede",
+   "    current = await latest_published(db, project_id, stage, subject=subject_of(stage, row.payload))",
+   "    current = await latest_published(db, project_id, stage, subject=None)"
+  ],
+  [
+   "verify-is-baseline",
+   "        return f\"verify:{p.get('module_id')}\" if p.get(\"mode\") == \"verify\" else \"baseline\"",
+   "        return \"baseline\""
+  ],
+  [
+   "no-default-subject",
+   "DEFAULT_SUBJECT = {\"testing_modernization\": \"baseline\"}",
+   "DEFAULT_SUBJECT = {}"
+  ],
+  [
+   "all-stages-per-module",
+   "    if stage not in PER_SUBJECT_STAGES:\n        return None",
+   "    if False:\n        return None"
+  ]
+ ]
+}
