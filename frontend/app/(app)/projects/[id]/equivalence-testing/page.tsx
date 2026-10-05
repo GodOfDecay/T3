@@ -4,9 +4,10 @@ import { useParams } from "next/navigation";
 
 import { ErrorState } from "@/components/ui/error-state";
 import { CapturesButton, EquivalenceView } from "@/components/modernization/equivalence-view";
+import { VerificationView } from "@/components/modernization/verification-view";
 import { Track3AgentPage } from "@/components/modernization/track3-agent-page";
 import type { ProjectId } from "@/lib/schemas";
-import { Baseline } from "@/lib/schemas/modernization";
+import { Baseline, Verification } from "@/lib/schemas/modernization";
 
 /**
  * Equivalence Testing — Track 3 agent 5 (research §6.5), Baseline mode (Phase G). QA owns it.
@@ -50,6 +51,11 @@ export default function EquivalenceTestingPage() {
         },
       ]}
       renderVersion={(payload, detail) => {
+        const verify = Verification.safeParse(payload);
+        if (verify.success) {
+          return <VerificationView verification={verify.data} projectId={projectId} approved={detail.status === "published"}
+            status={detail.status} />;
+        }
         const parsed = Baseline.safeParse(payload);
         return parsed.success ? (
           <EquivalenceView baseline={parsed.data} projectId={projectId} approved={detail.status === "published"}

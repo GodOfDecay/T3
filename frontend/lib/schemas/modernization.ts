@@ -521,6 +521,44 @@ export const Migration = z.object({
 });
 export type Migration = z.infer<typeof Migration>;
 
+/* ── Equivalence Testing, Verify mode (Phase J) ─────────────────────────────────
+   Mirrors `VerificationArtifact`: ONE module's verification — the packet's EquivalencePayload (criteria
+   verdicts, differences, performance, rule proposals) plus what the tools set (the migration version and head
+   verified, the baseline replayed, the module verdict, per-scenario field names). Shapes only, never values. */
+
+export const Verification = z.object({
+  schema_version: z.number().default(1),
+  system_name: text,
+  mode: z.literal("verify"),
+  module_id: z.string(),
+  pr: text,
+  baselines_replayed: z.array(z.object({ id: z.string(), version: z.number() })).default([]),
+  criteria: z.array(z.object({
+    ec_id: z.string(), verdict: z.enum(["passed", "failed", "open", "not_run"]).catch("not_run"),
+    cases_compared: z.number().nullable().default(null), normalization_applied: strings,
+  })).default([]),
+  differences: z.array(z.object({
+    id: z.string(), ec_id: z.string(),
+    classification: z.enum(["regression", "normalization_gap", "accepted_change", "environment"]).catch("regression"),
+    field: z.string(), cases: z.number(), masked_example: z.string(),
+    likely_area: z.string().nullable().default(null), adr_id: z.string().nullable().default(null),
+  })).default([]),
+  performance: z.array(z.object({
+    ec_id: z.string(), legacy_p95_ms: z.number().nullable().default(null), target_p95_ms: z.number().nullable().default(null),
+    threshold_ms: z.number(),
+  })).default([]),
+  rule_proposals: z.array(z.object({ ec_id: z.string(), field: z.string(), rule: z.string(), evidence: z.string() })).default([]),
+  runs: z.number().default(2),
+  module_verdict: z.enum(["verified", "migrating", "open"]).catch("open"),
+  migration_version: z.number().nullable().default(null),
+  head_sha: z.string().nullable().default(null),
+  baseline_version: z.number().nullable().default(null),
+  module: z.object({ name: z.string().nullable(), legacy_path: z.string().nullable() }).partial().default({}),
+  notes: strings,
+  recorded_at: z.string().nullable().default(null),
+});
+export type Verification = z.infer<typeof Verification>;
+
 /* ── Migration Review and Security (Phase I) ──────────────────────────────────
    Mirror `MigrationReviewArtifact` and `ModernizationSecurityArtifact`: ONE module's review / security
    report — the hand-over packet's payload plus what the submit tool set (the migration version and head

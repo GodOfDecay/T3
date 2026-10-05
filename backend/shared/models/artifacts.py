@@ -499,6 +499,41 @@ class EquivalenceArtifact(BaseModel):
     agent_session_id: Optional[str] = None
 
 
+class VerificationArtifact(BaseModel):
+    """-> runs.equivalence_artifacts, and each frozen `testing_modernization` version in VERIFY mode (Phase J).
+
+    ONE MODULE's verification. The RESULT is the hand-over packet's payload
+    (`handover/packets.EquivalencePayload`: criteria verdicts, differences, performance, rule proposals,
+    runs), which `emit.verification_payload` reads back. Around it, set by the tools and never by the model:
+    the migration record version and head verified, the baseline version replayed, the module verdict, and
+    each scenario's case count and per-run differences (field names and masked shapes, never values)."""
+
+    schema_version: int = 1
+    system_name: str = ""
+    # ── the result (EquivalencePayload) ──
+    mode: str = "verify"
+    module_id: str
+    pr: str
+    baselines_replayed: List[Dict[str, Any]] = []
+    criteria: List[Dict[str, Any]] = []
+    differences: List[Dict[str, Any]] = []
+    performance: List[Dict[str, Any]] = []
+    rule_proposals: List[Dict[str, Any]] = []
+    runs: int = 2
+    # ── set by the tools ──
+    module_verdict: str = "open"
+    migration_version: Optional[int] = None
+    head_sha: Optional[str] = None
+    baseline_version: Optional[int] = None
+    module: Dict[str, Any] = {}
+    sources: Dict[str, Any] = {}
+    scenarios: List[Dict[str, Any]] = []
+    perf_samples: Dict[str, Any] = {}
+    notes: List[str] = []
+    recorded_at: Optional[str] = None
+    agent_session_id: Optional[str] = None
+
+
 class MigrationArtifact(BaseModel):
     """-> runs.migration_artifacts (0074), and each frozen `development_modernization` version.
 

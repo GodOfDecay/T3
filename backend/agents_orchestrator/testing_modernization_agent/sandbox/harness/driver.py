@@ -2,6 +2,10 @@
 
     python driver.py wait <url> <seconds>
     python driver.py http <base url> <requests.jsonl> <responses.jsonl>
+    python driver.py perf <base url> <requests.jsonl> <repeat> <latencies.json>
+
+`perf` (Phase J) sends the same requests `repeat` times and keeps ONLY how long each took and whether it
+failed — no status, no body — so a performance comparison never records behaviour.
 
 One response line per request, in order, with sorted keys, so two runs of the same system on the
 same inputs produce comparable files. Only the status, the content type and the body are kept:
@@ -61,6 +65,19 @@ def main(argv):
             for line in f:
                 if line.strip():
                     out.write(json.dumps(send(argv[2], json.loads(line)), sort_keys=True) + "\n")
+        return 0
+    if argv[1] == "perf":
+        with open(argv[3], encoding="utf-8") as f:
+            reqs = [json.loads(line) for line in f if line.strip()]
+        ms, errors = [], 0
+        for _ in range(int(argv[4])):
+            for req in reqs:
+                started = time.perf_counter()
+                reply = send(argv[2], req)
+                ms.append(round((time.perf_counter() - started) * 1000, 2))
+                errors += 1 if "error" in reply or reply.get("status", 500) >= 500 else 0
+        with open(argv[5], "w", encoding="utf-8") as out:
+            json.dump({"ms": ms, "errors": errors}, out)
         return 0
     return 2
 

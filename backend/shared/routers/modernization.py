@@ -359,7 +359,7 @@ async def version_packet(project_id: str, kind: str, version: int, request: Requ
     be handed over, the reasons in words. `{ok, problems, packet}`."""
     from agents_orchestrator.modernization_common.handover.emit import (  # noqa: PLC0415
         assessment_packet, baseline_packet, brief_packet, design_packet, envelope_of, migration_packet, plan_packet,
-        review_packet, security_packet,
+        review_packet, security_packet, verification_packet,
     )
     from shared.services import artifact_versions as svc  # noqa: PLC0415
 
@@ -374,6 +374,8 @@ async def version_packet(project_id: str, kind: str, version: int, request: Requ
              "design_modernization": design_packet, "strategy": plan_packet,
              "testing_modernization": baseline_packet, "development_modernization": migration_packet,
              "code_review_modernization": review_packet, "security_modernization": security_packet}[stage]
+    if stage == "testing_modernization" and (row.payload or {}).get("mode") == "verify":
+        build = verification_packet
     return {"stage": stage, "version": version, **build(row.payload, envelope_of(row)).as_dict()}
 
 

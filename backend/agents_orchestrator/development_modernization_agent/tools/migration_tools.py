@@ -936,14 +936,14 @@ async def _newest_of(stage: str, module_id: str):
     return None
 
 
-def rework_markdown(module_id: str, review, security, ledger_row: dict) -> str:
+def rework_markdown(module_id: str, review, security, ledger_row: dict, verification=None) -> str:
     """What Migration Review and Security said about the module's newest migration — the rework list. Pure."""
     word = {"published": "accepted", "granted": "accepted by exception", "draft": "not yet accepted",
             "rejected": "rejected (does not count)", "superseded": "superseded"}
     lines = [f"# What review and security found on {module_id}",
              f"Ledger: **{ledger_row.get('state') or 'unknown'}**, rejected {ledger_row.get('rejectionCount') or 0} of 3"
              " (at three the module is blocked and an Architect decides)."]
-    if review is None and security is None:
+    if review is None and security is None and verification is None:
         return "\n".join(lines + ["", "Neither Migration Review nor Security has reported on this module yet."])
     sev = {"critical": 0, "high": 1, "medium": 2, "low": 3, "info": 4}
     if review is not None:
@@ -973,23 +973,49 @@ def rework_markdown(module_id: str, review, security, ledger_row: dict) -> str:
         for a in sp.get("contract_authz") or []:
             if a.get("status") == "weaker":
                 lines.append(f"- {a.get('ct_id')}: authorization weaker than the legacy's — {a.get('note') or ''}")
+    if verification is not None:
+        v = verification.payload or {}
+        lines += ["", f"## Equivalence verification v{verification.version} ({word.get(verification.status, verification.status)}): "
+                      f"{v.get('module_verdict')}, on migration record v{v.get('migration_version')}"]
+        for c in v.get("criteria") or []:
+            if c.get("verdict") != "passed":
+                lines.append(f"- {c.get('ec_id')}: {str(c.get('verdict')).replace('_', ' ')}")
+        for d in v.get("differences") or []:
+            if d.get("classification") in ("regression", "environment", "normalization_gap"):
+                lines.append(f"- {d.get('id')} [{str(d.get('classification')).replace('_', ' ')}] {d.get('field')} differs in "
+                             f"{d.get('cases')} case(s) ({d.get('masked_example')}); likely {d.get('likely_area') or 'unknown'}")
     lines += ["", "Fix on the same branch, one commit per finding where practical, then record again: the new record "
                   "must be accepted and pushed, and both reviews run again on it."]
     return "\n".join(lines)
 
 
+async def _newest_verification(module_id: str):
+    from shared.db import get_db_session_for_tenant  # noqa: PLC0415
+    from shared.services import artifact_versions as svc  # noqa: PLC0415
+
+    tenant, project, _u = _scope()
+    async with get_db_session_for_tenant(tenant) as db:
+        for row in await svc.list_versions(db, project, "testing_modernization"):
+            p = row.payload or {}
+            if p.get("mode") == "verify" and p.get("module_id") == module_id:
+                return row
+    return None
+
+
 @tool
 async def read_review_findings(module_id: str) -> str:
-    """What Migration Review and Security said about the module (findings with file and line, unhandled traps,
-    carried-over secrets, weaker authorization) and its rejection count. Read it before reworking a module."""
+    """What Migration Review, Security and Equivalence Testing said about the module (findings with file and line,
+    unhandled traps, carried-over secrets, weaker authorization, behaviour differences) and its rejection count.
+    Read it before reworking a module."""
     try:
         review = await _newest_of("code_review_modernization", module_id)
         security = await _newest_of("security_modernization", module_id)
+        verification = await _newest_verification(module_id)
         rows = await _ledger_rows()
     except Exception:  # noqa: BLE001
         logger.exception("migration development: reading the reviews failed")
         return "The reviews could not be read just now (a database error). Try again."
-    return rework_markdown(module_id, review, security, rows.get(module_id, {}))
+    return rework_markdown(module_id, review, security, rows.get(module_id, {}), verification)
 
 
 @tool
