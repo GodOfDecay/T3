@@ -1,6 +1,6 @@
 # Track 3 (Code Modernization) — Handoff for whoever builds the next agents
 
-**Updated:** 2026-10-05, end of Phase H (built; proven on Postgres + Docker and LIVE: a real pull request on GodOfDecay/claimtrack-lite-target; 71/71 mutants; migration 0074 on the test DB; tile not flipped until the user's click-through). Before that, 2026-10-01, end of Phase G (built, fix wave, mutation-proven; migration 0073 on the test DB; the user's own dev DB is still at 0072 and needs 0073 with their OK; tile flipped at the user's request on 2026-10-01, as Phase F's was). Phase G's build and fix wave are on `claude/intelligent-pasteur-m7ea75` (based on `akshat_track3`), to merge back. **Branch:** `akshat_track3` on `origin` (the team's shared branch; never push Track 3
+**Updated:** 2026-10-05, end of Phase I (Migration Review and Security built; proven on Postgres + git + the three scanners in Docker; 69/69 mutants; migration 0075 on the test and dev DBs; tiles not flipped until the user's click-through — build-log Entry 15). Before that, end of Phase H (built; proven on Postgres + Docker and LIVE: a real pull request on GodOfDecay/claimtrack-lite-target; 71/71 mutants; migration 0074 on the test DB; tile not flipped until the user's click-through). Before that, 2026-10-01, end of Phase G (built, fix wave, mutation-proven; migration 0073 on the test DB; the user's own dev DB is still at 0072 and needs 0073 with their OK; tile flipped at the user's request on 2026-10-01, as Phase F's was). Phase G's build and fix wave are on `claude/intelligent-pasteur-m7ea75` (based on `akshat_track3`), to merge back. **Branch:** `akshat_track3` on `origin` (the team's shared branch; never push Track 3
 work to `track-3`). Last commit: `12418303` (handoff) on `999b1b3e` (Phase E), `0c814fad` (Phase D),
 `9f2e81f6` (Phase C closed) and `8c90522c` (A, B and most of C).
 
@@ -9,7 +9,7 @@ work to `track-3`). Last commit: `12418303` (handoff) on `999b1b3e` (Phase E), `
 2. `help/Track-3/track3-research.md` §6.x for **the one agent you are building**. Do not read the ~8,000
    lines of design docs up front.
 3. `help/Track-3/Track-3 Lessons from Track 1-2.md` (rules R1–R57).
-4. `help/Track-3/build-log.md` for the evidence behind any decision below (Entries 1–12).
+4. `help/Track-3/build-log.md` for the evidence behind any decision below (Entries 1–15).
 
 The phase map is `docs/superpowers/plans/2026-09-28-track3-master-plan.md`. The binding rules and the
 mandatory stops are in `help/Track-3/Track-3 Implementation Prompt.md` §9.
@@ -29,7 +29,19 @@ mandatory stops are in `help/Track-3/Track-3 Implementation Prompt.md` §9.
 - [x] I3 Wiring: registry, orchestrator2, migration 0075, routes, ledger verdicts, roster pins
 - [x] I4 Tests: units, Postgres chain (review + security on Phase H's PR), rework loop
 - [x] I5 Frontend: `/migration-review`, `/modernization-security` pages + tests
-- [ ] I6 Mutation, regression, build-log Entry 15, click-through I, this file
+- [x] I6 Mutation (69/69), regression, build-log Entry 15, click-through I, this file
+
+**Phase I is done.** Next is **Phase J — Equivalence Testing (verify)**: replay each `verifying` module's
+scenarios on the TARGET and record the equivalence verdict (`ledger.equivalence_recorded`). Start from
+research §6.5 (verify mode), `testing_modernization_agent/` (baseline mode is built) and Phase H's
+`preview.py` (the same overlay replay, which becomes the verdict there). Before J, the user's open items:
+Trivy DB refresh, click-throughs H and I, the Track 1 `git_tools.py` tenant decision, revoking the PAT.
+
+**Phase I needs on the laptop:** Docker Desktop running; migration 0075 (`alembic upgrade head`, then
+`grant_app_role`); Trivy's database filled once with network (command in `click-through-phase-I.md`; or set
+`SDLC_TRIVY_CACHE`). Scanner images pull on first use (aquasec/trivy, semgrep/semgrep, zricethezav/gitleaks —
+pinned digests in `security_modernization_agent/scanners.py`). New tests: `tests/review_security_modernization`
+(units run anywhere; `test_scanners.py` and part of `test_chain.py` skip without Docker).
 
 ### 0.1 Run it on the Windows laptop (PowerShell)
 
