@@ -1,0 +1,73 @@
+{
+ "target": "agents_orchestrator/development_modernization_agent/workspace.py",
+ "tests": [
+  "tests/development_modernization/test_units.py"
+ ],
+ "mutants": [
+  [
+   "forced-push",
+   "    git(repo, \"push\", \"--porcelain\", url, *refs, secret=secret)",
+   "    git(repo, \"push\", \"--force\", \"--porcelain\", url, *refs, secret=secret)"
+  ],
+  [
+   "dirty-push",
+   "    if pending(repo):\n        raise WorkspaceError(\"There are uncommitted changes; commit them",
+   "    if False:\n        raise WorkspaceError(\"There are uncommitted changes; commit them"
+  ],
+  [
+   "mixed-commit",
+   "    take = changed if include_build else (build if concern == \"build\" else code)",
+   "    take = changed"
+  ],
+  [
+   "any-concern",
+   "    if concern not in CONCERNS:",
+   "    if False:"
+  ],
+  [
+   "first-file-lost",
+   "    out = git(repo, \"status\", \"--porcelain\", \"-z\", \"--no-renames\", \"--untracked-files=all\", raw=True)",
+   "    out = git(repo, \"status\", \"--porcelain\", \"-z\", \"--no-renames\", \"--untracked-files=all\")"
+  ],
+  [
+   "no-copy-commit",
+   "        commit(repo, state, \"copy\", f\"Copy",
+   "        (lambda *a, **k: None)(repo, state, \"copy\", f\"Copy"
+  ],
+  [
+   "overwrite-target",
+   "        if target.exists():\n            raise WorkspaceError",
+   "        if False:\n            raise WorkspaceError"
+  ],
+  [
+   "no-empty-base",
+   "        created_base = True",
+   "        created_base = False"
+  ],
+  [
+   "credential-kept",
+   "    git(repo, \"remote\", \"set-url\", \"origin\", clean_url)",
+   "    pass"
+  ],
+  [
+   "secret-in-error",
+   "scrub((proc.stderr or proc.stdout).strip(), secret)",
+   "(proc.stderr or proc.stdout).strip()"
+  ],
+  [
+   "lock-shared",
+   "            if fresh:\n                return False",
+   "            if False:\n                return False"
+  ],
+  [
+   "release-anyones",
+   "        if json.loads(path.read_text(encoding=\"utf-8\")).get(\"holder\") == holder:",
+   "        if True:"
+  ],
+  [
+   "bad-module-id",
+   "    if not _MODULE_RE.match(module_id or \"\"):",
+   "    if False:"
+  ]
+ ]
+}

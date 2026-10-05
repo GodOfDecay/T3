@@ -1,0 +1,58 @@
+{
+ "target": "agents_orchestrator/development_modernization_agent/rules.py",
+ "tests": [
+  "tests/development_modernization/test_units.py"
+ ],
+ "mutants": [
+  [
+   "other-module-ok",
+   "    if in_module(path, module_path) or is_shared_build_file(path):",
+   "    if True:"
+  ],
+  [
+   "any-build-file-shared",
+   "    return \"/\" not in path and any(fnmatch.fnmatchcase(path, p) for p in SHARED_ROOT)",
+   "    return is_build_file(path)"
+  ],
+  [
+   "prefix-match",
+   "    return path == root or path.startswith(root + \"/\")",
+   "    return path.startswith(root)"
+  ],
+  [
+   "dotdot-ok",
+   "    if norm == \".\" or norm.startswith(\"../\") or norm == \"..\" or \"/../\" in f\"/{norm}/\":",
+   "    if norm == \".\":"
+  ],
+  [
+   "absolute-ok",
+   "    if not raw or raw.startswith(\"/\") or re.match(r\"^[A-Za-z]:\", raw):",
+   "    if not raw:"
+  ],
+  [
+   "git-dir-ok",
+   "    if norm == \".git\" or norm.startswith(\".git/\"):",
+   "    if False:"
+  ],
+  [
+   "private-key-unseen",
+   "    (\"a private key\", re.compile(r\"-----BEGIN (?:RSA |EC |DSA |OPENSSH |ENCRYPTED )?PRIVATE KEY-----\")),",
+   ""
+  ],
+  [
+   "password-unseen",
+   "    (\"a connection string with a password\", re.compile(",
+   "    (\"a connection string with a password\", re.compile(r\"(?!x)x\") or re.compile("
+  ],
+  [
+   "env-reference-is-secret",
+   "(?![\\\"']?\\s*(?:\\$\\{|\\{\\{|%\\(|<|os\\.environ|getenv|env\\[|kv://|vault:))",
+   ""
+  ],
+  [
+   "build-unclassified",
+   "    return any(fnmatch.fnmatchcase(name, p) for p in BUILD_NAMES) or any(path.startswith(d) for d in BUILD_DIRS)",
+   "    return False"
+  ]
+ ]
+}

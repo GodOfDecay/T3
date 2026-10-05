@@ -1,0 +1,13 @@
+{
+ "target": "agents_orchestrator/development_modernization_agent/remote.py",
+ "tests": [
+  "tests/development_modernization/test_units.py"
+ ],
+ "mutants": [
+  [
+   "map-in-production",
+   "    return os.environ.get(\"ENV\", \"\").strip().lower() in (\"dev\", \"test\")",
+   "    return True"
+  ]
+ ]
+}

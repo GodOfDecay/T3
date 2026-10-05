@@ -856,3 +856,69 @@ a Developer does not). Frontend after the flip: 1,244/1,246 (the same two `docum
 eslint clean. Migration 0073 is applied to this container's dev and test databases; the user's own dev database is
 on their machine and gets it with `uv run python -m alembic upgrade head` then `uv run python -m scripts.grant_app_role`.
 
+
+## Entry 14 — 2026-10-05 — Phase H: Migration Development (agent 6)
+
+Implements research §6.6, master plan row H. Plan (decisions H1–H12):
+`docs/superpowers/plans/2026-10-05-track3-phase-h-migration-development.md`. Click-through:
+`click-through-phase-H.md`. Built on `Phase-G` (`140ae0b`). Migration 0074 on the test database. **Tile not
+flipped** (R42): no push to a real hosted repository yet (see Open).
+
+**The use case it was built and proven on.** ClaimTrack Lite's claims API (M-01), Python 2.7 → 3.12 in place.
+The legacy code meets two real traps a recipe cannot see: Python 3's `round()` rounds halves to even (CLM-0004
+and CLM-0007 would pay a cent less — TR-01) and the socket needs bytes (`self.wfile.write(str)` raises — TR-02).
+A ClaimTrack Lite design fixture (`tests/development_modernization/lite_h.py`) carries those traps; the Phase G
+tests reused the full ClaimTrack design, whose traps name Java files the sample does not have.
+
+**What was built**
+- `development_modernization_agent/`: prompt, graph, socket `/sdlc/agent/development-modernization/ws`; tools
+  `get_ledger`, `get_module_plan`, `open_target_workspace`, `list_upgrade_recipes`, `run_upgrade_recipe`,
+  `list_target_files`, `read_target_file`, `write_target_file`, `edit_target_file`, `commit_changes`,
+  `run_build`, `run_tests`, `run_lint`, `preview_equivalence`, `record_module_migration`, `push_and_open_pr`,
+  `export_migration_document` + legacy read tools (read-only), documents/approval, compare/restore.
+- `workspace.py` (git: clone of the TARGET, `migrate/<module>`, copy-first commit, commits by concern, no-force
+  push, credential only inside one git call and scrubbed from errors, O_EXCL lock); `rules.py` (module bounds,
+  build files, secrets); `toolchains.py` (data: pinned image, recipes, build/test/lint); `sandbox.py` (no network,
+  no capabilities, bounded, workspace read-only for checks); `checks/python_build.py`; `preview.py`; `record.py`;
+  `remote.py` (GitHub REST / Azure DevOps helper, dev-only local remote); `migration_document.py`.
+- Ledger: `baselined → migrating` on opening, `migrating → in_review` on the pull request (with the record
+  version); a manual module is blocked with its hand-off. `repository_roles.assert_target_write` now has its
+  first caller.
+- Wiring: registry (position 6, inputs design + plan + baseline), portfolio, orchestrator2 (registry, router
+  names/capability/prompt bullet, deliverables), migration 0074, context formatter for the baseline, shared
+  readers' Track 3 rows (`inputs.py`, `standalone._UPSTREAM_STAGE`, `emit.migration_packet`), page routes (latest,
+  workspaces, packet, export), legacy-code stages (backend and both BFF allow-lists).
+- Frontend: `/migration-development` (`MigrationView`: outcome, build x/5, tests "not run" never "passed", the
+  preview as a hint, Legacy → target, traps x/y, commits by concern, follow-ups; the ledger panel; Workspaces
+  dialog), schemas, BFF route, backend-produced fixtures (`regen_view_fixtures.py`).
+
+**Findings while building (each fixed with a test that fails without the fix)**
+| # | Finding | Fix |
+|---|---|---|
+| H-F1 | A compile-only Python "build" called the LEGACY code green on 3.12: `import urllib2` is valid syntax | The build compiles AND resolves every import without running the module (`checks/python_build.py`); the test asserts the legacy build is red naming `BaseHTTPServer`/`urllib2` |
+| H-F2 | `pending()` lost the first changed file: the git helper stripped the leading space of git's status line | Raw output for status; regression test |
+| H-F3 | The sample's seed script (`db/init.py`) was Python-2-only: no module could be previewed on 3.12 | Made runtime-neutral (`print(...)`); it is sandbox setup, not a module; Phase G's real-Docker tests re-run unchanged (6/6, the measured noise floor identical) |
+| H-F4 | `test_the_budget_is_large_enough_for_a_real_document` divided the Orchestrator context budget by EVERY agent on the platform (15 now), a run that cannot exist | The test models the largest track's run (a run is one track's). `MAX_CONTEXT_CHARS` NOT changed: the truncation policy is a product decision (§9) |
+| H-F5 | Inside a preview, a failure read "The legacy service did not answer" | "The service with the migrated module…", plus what a running vs an exited container usually means |
+| H-F6 | Process: a `git stash` inside a lint loop set the work aside mid-session | Restored at once (one stash, popped, verified 19 files); no code affected. Never a state-changing git command in a loop |
+
+**Acceptance checks of research §6.6, proven on the real chain** (`test_chain.py`, Postgres + Docker + git):
+the file map is complete or refused; nothing outside the module (or the shared root build) is written or
+recorded; the preview runs before the pull request; and a deliberately broken target is CAUGHT — with only TR-02
+fixed, the preview flags exactly `payout (2; <number> vs <number>)` in settle and nothing else; with TR-01 fixed,
+11 cases are identical to the baseline after normalization. The rounding fix (`Decimal(x).quantize(…,
+ROUND_HALF_UP)` on the exact value) was checked against the real Python 2.7 image on 19 values, including
+2.675 → 2.67 and 1.005 → 1.0.
+
+**Open (need the user, not code):**
+- A REAL target repository and a credential (§9 "needing a real credential"): an empty GitHub repository (or
+  Azure DevOps), set as the project's target, and a GitHub connection wired to Migration Development with WRITE,
+  whose token has `contents: write` + `pull requests: write` on that repository only. Until then the push is
+  proven against a local repository (`SDLC_TARGET_REMOTE_MAP`, honoured only with ENV=dev/test).
+- Third-party dependencies: the sandbox has no network, so a module needing packages builds red ("cannot import
+  X") until an install step against the organisation's package mirror is allowed (one host). ClaimTrack Lite is
+  standard library only.
+- More toolchains (Java with OpenRewrite, Node, .NET try-convert): data in `toolchains.py` plus their pinned images.
+- Azure DevOps: a rework push reuses the ledger's pull request; finding an existing ADO pull request for a branch
+  that the ledger does not know is not implemented (GitHub's is).
+- Verify mode (Phase J) is still the verdict; the preview is a hint.

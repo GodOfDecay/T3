@@ -1,0 +1,18 @@
+{
+ "target": "agents_orchestrator/development_modernization_agent/checks/python_build.py",
+ "tests": [
+  "tests/development_modernization/test_sandbox.py"
+ ],
+ "mutants": [
+  [
+   "imports-unchecked",
+   "                if not found:\n",
+   "                if False:\n"
+  ],
+  [
+   "always-green",
+   "    return 1 if errors else 0",
+   "    return 0"
+  ]
+ ]
+}

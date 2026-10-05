@@ -1,0 +1,23 @@
+{
+ "target": "agents_orchestrator/development_modernization_agent/sandbox.py",
+ "tests": [
+  "tests/development_modernization/test_sandbox.py"
+ ],
+ "mutants": [
+  [
+   "network-on",
+   "    args = [\"run\", \"--rm\", \"--network\", \"none\", *limits(),",
+   "    args = [\"run\", \"--rm\", *limits(),"
+  ],
+  [
+   "build-writes",
+   "    mount = f\"type=bind,src={workspace.resolve()},dst=/work\" + (\"\" if writable else \",readonly\")",
+   "    mount = f\"type=bind,src={workspace.resolve()},dst=/work\""
+  ],
+  [
+   "not-redacted",
+   "    return CommandResult(exit_code=proc.returncode, output=sanitize_output(out.strip()),",
+   "    return CommandResult(exit_code=proc.returncode, output=out.strip(),"
+  ]
+ ]
+}

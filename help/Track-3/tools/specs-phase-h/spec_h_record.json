@@ -1,0 +1,93 @@
+{
+ "target": "agents_orchestrator/development_modernization_agent/record.py",
+ "tests": [
+  "tests/development_modernization/test_units.py"
+ ],
+ "mutants": [
+  [
+   "incomplete-map-ok",
+   "    if missing:\n        problems.append(\"The file map does not cover",
+   "    if False:\n        problems.append(\"The file map does not cover"
+  ],
+  [
+   "ghost-entries-ok",
+   "    if extra:\n",
+   "    if False:\n"
+  ],
+  [
+   "missing-target-ok",
+   "        if e.get(\"disposition\") in (\"mapped\", \"merged\") and e.get(\"target_path\") and e[\"target_path\"] not in target:",
+   "        if False:"
+  ],
+  [
+   "outside-diff-ok",
+   "    if outside:\n        problems.append(\"The branch changes files outside",
+   "    if False:\n        problems.append(\"The branch changes files outside"
+  ],
+  [
+   "rewrite-claim-ok",
+   "        if r.get(\"file\") not in set(changed):",
+   "        if False:"
+  ],
+  [
+   "secret-ok",
+   "    for hit_file, kinds in sorted(secret_hits.items()):",
+   "    for hit_file, kinds in []:"
+  ],
+  [
+   "vault-anything",
+   "        if not _VAULT_RE.match(str(ref).strip()):",
+   "        if False:"
+  ],
+  [
+   "unknown-trap-ok",
+   "    if unknown:\n",
+   "    if False:\n"
+  ],
+  [
+   "unhandled-trap-ok",
+   "        if unhandled:\n",
+   "        if False:\n"
+  ],
+  [
+   "red-build-ready",
+   "        if build[\"status\"] != \"green\":",
+   "        if False:"
+  ],
+  [
+   "red-check-ok",
+   "            if result and result.get(\"status\") == \"red\":",
+   "            if False:"
+  ],
+  [
+   "stale-check-ok",
+   "            if result and state.get(\"builds\") and result.get(\"head\") != state[\"builds\"][-1].get(\"head\"):",
+   "            if False:"
+  ],
+  [
+   "stale-build-ok",
+   "        if not state.get(\"builds\") or state[\"builds\"][-1].get(\"head\") != state.get(\"head\"):",
+   "        if False:"
+  ],
+  [
+   "pending-ok",
+   "    if list(pending):",
+   "    if False:"
+  ],
+  [
+   "blocked-with-code",
+   "        if changed:\n",
+   "        if False:\n"
+  ],
+  [
+   "rounds-uncapped",
+   "\"rounds\": min(len(builds), 5)",
+   "\"rounds\": len(builds)"
+  ],
+  [
+   "green-from-first",
+   "    last = builds[-1]",
+   "    last = builds[0]"
+  ]
+ ]
+}

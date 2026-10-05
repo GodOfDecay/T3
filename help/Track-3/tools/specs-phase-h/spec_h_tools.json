@@ -1,0 +1,114 @@
+{
+ "target": "agents_orchestrator/development_modernization_agent/tools/migration_tools.py",
+ "tests": [
+  "tests/development_modernization/test_chain.py"
+ ],
+ "env_test": true,
+ "mutants": [
+  [
+   "orchestrator-migrates",
+   "    if get_orchestrator_run():\n        return (\"Modules are migrated",
+   "    if False:\n        return (\"Modules are migrated"
+  ],
+  [
+   "any-role",
+   "    if not (await _roles()) & DEV_ROLES:",
+   "    if False:"
+  ],
+  [
+   "no-baseline-ok",
+   "    if not item[\"baseline_accepted\"]:\n        return (f\"Not yet:",
+   "    if False:\n        return (f\"Not yet:"
+  ],
+  [
+   "manual-migrated",
+   "    if item[\"tier\"] == \"manual\":\n        return (f\"{module_id} is MANUAL tier",
+   "    if False:\n        return (f\"{module_id} is MANUAL tier"
+  ],
+  [
+   "wave-ignored",
+   "    if item[\"wave_starts\"] and item[\"wave_starts\"] > today and not override_wave_order and item[\"state\"] == \"baselined\":",
+   "    if False:"
+  ],
+  [
+   "no-target-ok",
+   "    if row is None:\n        raise RemoteError(\"No target repository",
+   "    if False:\n        raise RemoteError(\"No target repository"
+  ],
+  [
+   "ledger-not-moved",
+   "            async with get_db_session_for_tenant(tenant) as db:\n                await ledger.migration_started(",
+   "            async with get_db_session_for_tenant(tenant) as db:\n                0 and ledger.migration_started("
+  ],
+  [
+   "secret-written",
+   "    if kinds:\n        raise rules.WriteRefused(f\"NOT WRITTEN",
+   "    if False:\n        raise rules.WriteRefused(f\"NOT WRITTEN"
+  ],
+  [
+   "outside-written",
+   "    rel = rules.assert_may_write(path, state[\"module_path\"])\n    if len(content",
+   "    rel = rules.clean_path(path)\n    if len(content"
+  ],
+  [
+   "build-on-dirty",
+   "        if W.pending(repo):\n            return \"There are uncommitted changes; commit them first (fix for code",
+   "        if False:\n            return \"There are uncommitted changes; commit them first (fix for code"
+  ],
+  [
+   "rounds-uncapped",
+   "        if kind == \"build\" and len(builds) >= MAX_ROUNDS:",
+   "        if False:"
+  ],
+  [
+   "preview-unmasked-name",
+   "            reason = str(exc).replace(\"The legacy service\", \"The service with the migrated module\")",
+   "            reason = str(exc)"
+  ],
+  [
+   "record-unchecked",
+   "    if problems:\n        return \"NOT RECORDED — \" + \"\\n\".join(f\"- {p}\" for p in problems[:14])",
+   "    if False:\n        return \"NOT RECORDED — \" + \"\\n\".join(f\"- {p}\" for p in problems[:14])"
+  ],
+  [
+   "blocked-not-on-ledger",
+   "                await ledger.block(db, project_id=project, module_id=module_id, agent=STAGE,",
+   "                0 and ledger.block(db, project_id=project, module_id=module_id, agent=STAGE,"
+  ],
+  [
+   "no-consent",
+   "    if not ok:\n        return why\n    state, mdir, why = _open_state(module_id)\n    if state is None:\n        return why\n    row = await _newest_record",
+   "    state, mdir, why = _open_state(module_id)\n    if state is None:\n        return why\n    row = await _newest_record"
+  ],
+  [
+   "unaccepted-pushed",
+   "    if row.status not in (\"published\", \"granted\"):",
+   "    if False:"
+  ],
+  [
+   "changed-pushed",
+   "    if W.pending(repo) or W.head(repo) != record.get(\"head_sha\"):",
+   "    if False:"
+  ],
+  [
+   "no-write-guard",
+   "            await rr.assert_target_write(db, tenant_id=tenant, project_id=project, stage=STAGE, remote_url=target.url)",
+   "            pass"
+  ],
+  [
+   "not-migrating-pushed",
+   "        if rows.get(module_id, {}).get(\"state\") != \"migrating\":",
+   "        if False:"
+  ],
+  [
+   "ledger-not-in-review",
+   "            await ledger.pr_opened(db, project_id=project, module_id=module_id, pr_url=pr_url, actor=user or None,",
+   "            0 and ledger.pr_opened(db, project_id=project, module_id=module_id, pr_url=pr_url, actor=user or None,"
+  ],
+  [
+   "no-push-audit",
+   "    await _audit(\"modernization.migration_pushed\"",
+   "    (lambda *a: None)(\"modernization.migration_pushed\""
+  ]
+ ]
+}
