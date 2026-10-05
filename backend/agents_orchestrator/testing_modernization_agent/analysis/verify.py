@@ -111,12 +111,8 @@ def evaluate(*, criteria: list[dict], mapping: dict[str, list[str]], diffs: dict
                                 "cases_compared": int(measured.get("samples") or 0) or None,
                                 "normalization_applied": []})
             continue
-        scenarios = [s for s in mapping.get(ec) or [] if s in diffs]
+        scenarios = [s for s in mapping.get(ec) or [] if s in diffs]  # none recorded it: 0 cases, not run
         rules = list(c.get("normalization") or [])
-        if not scenarios:
-            results.append({"ec_id": ec, "verdict": "not_run", "cases_compared": None,
-                            "normalization_applied": [r.get("field") for r in rules if r.get("field")]})
-            continue
         cases, kinds = 0, set()
         for sid in scenarios:
             first, second = diffs[sid]

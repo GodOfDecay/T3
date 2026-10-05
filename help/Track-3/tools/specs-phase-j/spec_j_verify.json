@@ -41,11 +41,6 @@
    "    if False:\n        return \"not_run\""
   ],
   [
-   "unrecorded-runs",
-   "        if not scenarios:\n            results.append",
-   "        if False:\n            results.append"
-  ],
-  [
    "unmeasured-passes",
    "            if limit is None or legacy is None or target is None:",
    "            if limit is None:"

@@ -23,7 +23,6 @@ SPECS = {
             ["regression-passes", '    if "regression" in kinds:\n        return "failed"', '    if False:\n        return "failed"'],
             ["gap-passes", '    if kinds & {"normalization_gap", "environment"}:\n        return "open"', '    if False:\n        return "open"'],
             ["nothing-compared-passes", "    if not cases:\n        return \"not_run\"", "    if False:\n        return \"not_run\""],
-            ["unrecorded-runs", "        if not scenarios:\n            results.append", "        if False:\n            results.append"],
             ["unmeasured-passes", "            if limit is None or legacy is None or target is None:", "            if limit is None:"],
             ["slow-passes", '"passed" if target <= limit else "failed"', '"passed"'],
             ["seconds-as-ms", '    return value * 1000 if m.group(2).lower() == "s" else value', "    return value"],

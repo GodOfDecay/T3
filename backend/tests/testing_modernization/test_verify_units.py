@@ -80,6 +80,19 @@ def test_a_difference_in_one_run_only_is_the_environment(tmp_path):
     assert {c["ec_id"]: c["verdict"] for c in r["criteria"]}["EC-02"] == "open"
 
 
+def test_a_difference_only_in_the_second_run_is_seen_too(tmp_path):
+    base = [{"payout": 0.13, "settledAt": "x", "requestId": "a"}]
+    r = _evaluate(_runs(tmp_path, settle_t1=base, settle_t2=[{**base[0], "payout": 0.12}]))
+    assert next(d for d in r["differences"] if d["field"] == "settle:payout")["classification"] == "environment"
+
+
+def test_a_scenario_with_no_cases_is_not_run():
+    assert V.verdict_for(set(), 0) == "not_run" and V.verdict_for(set(), 3) == "passed"
+    r = V.evaluate(criteria=[CRITERIA[0]], mapping=MAPPING, diffs={"claims-read": ({"cases": 0}, {"cases": 0})},
+                   noise={}, design=DESIGN)
+    assert (r["criteria"][0]["verdict"], r["criteria"][0]["cases_compared"]) == ("not_run", None)
+
+
 def test_only_the_criterions_own_rules_apply(tmp_path):
     # generatedAt is EC-01's rule, not EC-02's: a target that adds it to settle differs there.
     base = [{"payout": 0.13, "settledAt": "x", "requestId": "a"}]
