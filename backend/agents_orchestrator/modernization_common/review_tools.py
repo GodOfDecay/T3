@@ -46,6 +46,7 @@ async def module_context(module_id: str) -> tuple[Optional[dict], str]:
         "criteria": [c for c in plan.get("equivalence_criteria") or [] if c.get("module_id") in (module_id, "all")],
         "layers": [{"layer": la.get("layer"), "target": la.get("target")} for la in design.get("layers") or []
                    if module_id in (la.get("modules") or [])],
+        "waves": [{"id": w.get("id"), "starts": w.get("starts"), "ends": w.get("ends")} for w in plan.get("waves") or []],
         "system_name": design.get("system_name") or "",
         "design_label": ins[DESIGN].label, "plan_label": ins[PLAN].label,
         "sources": {"design": {"version": ins[DESIGN].version, "status": ins[DESIGN].status},

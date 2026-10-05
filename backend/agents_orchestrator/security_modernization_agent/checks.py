@@ -21,9 +21,14 @@ def _matches(finding: dict, hit: dict) -> bool:
 
 
 def check(*, report: dict, target_hits: list[dict], carryover: list[dict], http_contracts: list[str],
-          authz: dict[str, dict]) -> list[str]:
+          authz: dict[str, dict], wave_ends: str = "") -> list[str]:
     problems: list[str] = []
     findings = report.get("findings") or []
+    if report.get("verdict") == "CONDITIONAL" and wave_ends:
+        late = [f["id"] for f in findings if f.get("remediation_due") and str(f["remediation_due"]) > wave_ends]
+        if late:
+            problems.append(f"CONDITIONAL needs every remediation inside the module's wave (it ends {wave_ends}); "
+                            f"{', '.join(late)} fall after it.")
     for hit in target_hits:
         if hit.get("severity") not in _BLOCKING:
             continue

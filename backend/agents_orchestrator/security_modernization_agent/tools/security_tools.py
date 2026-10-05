@@ -400,8 +400,9 @@ async def submit_security_report(module_id: str, verdict: str, rationale: str, f
         return f"NOT SUBMITTED — the report could not be built: {type(exc).__name__}: {str(exc)[:300]}"
     handover = security_packet(artifact, {"version": 1, "status": "draft"})
     problems = list(handover.problems)
+    wave = next((w for w in ctx.get("waves") or [] if w.get("id") == mig.ledger.get("wave")), {})
     problems += check(report=artifact, target_hits=diff["target"], carryover=state.get("carryover") or [],
-                      http_contracts=http, authz=state.get("authz") or {})
+                      http_contracts=http, authz=state.get("authz") or {}, wave_ends=str(wave.get("ends") or ""))
     if problems:
         return "NOT SUBMITTED — " + "\n".join(f"- {p}" for p in problems[:16])
     saved = await _persist(artifact)

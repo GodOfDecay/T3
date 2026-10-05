@@ -380,8 +380,9 @@ AGENT_REGISTRY: dict[str, AgentDefinition] = {
         name="Security Agent (Modernization)",
         pipeline_position=7,
         # Research §6.8: Track 1's scan stack on the migrated module plus the same scans of the legacy
-        # module, so every finding is carried over, fixed or introduced.
-        input_artifacts=["target_design_artifacts", "migration_artifacts"],
+        # module, so every finding is carried over, fixed or introduced. The plan for the module's wave:
+        # a CONDITIONAL sign-off's remediation dates fall inside it.
+        input_artifacts=["target_design_artifacts", "strategy_artifacts", "migration_artifacts"],
         output_artifact="modernization_security_artifacts",
         route_path="/modernization-security",
         gate_type="mandatory",

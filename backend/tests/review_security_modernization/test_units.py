@@ -324,6 +324,16 @@ def test_a_carried_over_secret_must_be_a_critical_secret_finding_and_authz_cover
     assert "missing: CT-05" in text and "CT-01's authorization is weaker (the target lacks role_check)" in text
 
 
+def test_a_conditional_sign_off_remediates_inside_the_wave():
+    report = {"verdict": "CONDITIONAL", "findings": [{"id": "S-001", "remediation_due": "2027-01-15"},
+                                                     {"id": "S-002", "remediation_due": "2026-12-20"}]}
+    assert security_check(report=report, target_hits=[], carryover=[], http_contracts=[], authz={},
+                          wave_ends="2026-12-31") == [
+        "CONDITIONAL needs every remediation inside the module's wave (it ends 2026-12-31); S-001 fall after it."]
+    assert security_check(report={**report, "verdict": "FAIL"}, target_hits=[], carryover=[], http_contracts=[], authz={},
+                          wave_ends="2026-12-31") == []
+
+
 def _payload(**over):
     base = {"module_id": "M-01", "pr": "p", "legacy_commit": "c", "scans": {t: "ran" for t in S.SCANNERS},
             "verdict": "PASS", "rationale": "r"}
