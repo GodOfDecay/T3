@@ -352,6 +352,18 @@ def test_the_policy_fails_reachable_or_unknown_high_and_never_passes_unscanned()
         SecurityPayload.model_validate(_payload(scans={"trivy": "not_installed", "semgrep": "ran", "gitleaks": "ran"}))
 
 
+def test_the_stored_policy_verdict_is_computed_whatever_was_stated():
+    from agents_orchestrator.security_modernization_agent.tools.security_tools import policy_verdict
+    low = {"id": "S-001", "title": "t", "severity": "low", "origin": "carried_over", "legacy_ref": "x"}
+    ran = {t: "ran" for t in S.SCANNERS}
+    assert policy_verdict({"findings": [low], "scans": ran}) == "CONDITIONAL"
+    assert policy_verdict({"findings": [], "scans": ran}) == "PASS"
+    assert policy_verdict({"findings": [], "scans": {**ran, "trivy": "failed"}}) == "INCOMPLETE"
+    assert policy_verdict({"findings": [{**low, "severity": "critical"}], "scans": ran}) == "FAIL"
+    assert policy_verdict({"findings": [], "scans": ran, "contract_authz": [{"ct_id": "CT-01", "status": "weaker"}]}) == "FAIL"
+    assert policy_verdict({"findings": [{"id": "bad"}], "scans": ran}) is None
+
+
 # ── documents ───────────────────────────────────────────────────────────────
 
 def test_the_review_and_security_documents_say_what_was_decided():

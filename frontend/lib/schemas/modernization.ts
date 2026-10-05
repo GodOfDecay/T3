@@ -521,6 +521,97 @@ export const Migration = z.object({
 });
 export type Migration = z.infer<typeof Migration>;
 
+/* ── Migration Review and Security (Phase I) ──────────────────────────────────
+   Mirror `MigrationReviewArtifact` and `ModernizationSecurityArtifact`: ONE module's review / security
+   report — the hand-over packet's payload plus what the submit tool set (the migration version and head
+   reviewed, the files the run opened, the API diff and anti-pattern scan; the scans, scanner hits, legacy
+   baseline, carry-over and authz evidence). Never code, never a secret value. */
+
+const Severity = z.enum(["critical", "high", "medium", "low", "info"]).catch("info");
+const SurfaceItem = z.object({ kind: z.string(), name: z.string(), location: text, evidence: text, change: z.string().optional() });
+const Hit = z.object({
+  tool: z.string(), rule: z.string().nullable().default(null), title: text, severity: Severity,
+  file: z.string().nullable().default(null), line: z.number().nullable().default(null),
+  package: z.string().nullable().default(null), version: z.string().nullable().default(null),
+  cve: z.string().nullable().default(null), origin: z.string().optional(), legacy_ref: z.string().nullable().optional(),
+});
+const Sources = z.record(z.string(), z.object({ version: z.number().nullable(), status: z.string().nullable() }).partial()).default({});
+
+export const MigrationReview = z.object({
+  schema_version: z.number().default(1),
+  system_name: text,
+  module_id: z.string(),
+  pr: text,
+  summary: text,
+  merge_recommendation: z.enum(["approve", "request_changes", "needs_discussion"]).catch("needs_discussion"),
+  findings: z.array(z.object({
+    id: z.string(), severity: Severity, category: z.string(), file: z.string(), line: z.number().nullable().default(null),
+    legacy_file: z.string().nullable().default(null), legacy_line: z.number().nullable().default(null),
+    description: z.string(), recommendation: z.string(), refs: strings, autofix_patch: z.string().nullable().default(null),
+  })).default([]),
+  equivalence_coverage: z.array(z.object({ ec_id: z.string(), status: z.string(), note: text })).default([]),
+  contract_check: z.array(z.object({ ct_id: z.string(), status: z.string(), note: text })).default([]),
+  trap_check: z.array(z.object({ tr_id: z.string(), status: z.string(), where: text })).default([]),
+  traceability: z.array(z.object({ legacy_path: z.string(), target_path: z.string().nullable().default(null), status: z.string() })).default([]),
+  known_debt: z.array(z.object({ pattern: z.string(), legacy_file: z.string(), note: text })).default([]),
+  files_read: z.object({ target: strings, legacy: strings }).default({ target: [], legacy: [] }),
+  migration_version: z.number().nullable().default(null),
+  head_sha: z.string().nullable().default(null),
+  legacy_commit: z.string().nullable().default(null),
+  module: z.object({ name: z.string().nullable(), tier: z.string().nullable(), legacy_path: z.string().nullable() }).partial().default({}),
+  sources: Sources,
+  surface: z.object({
+    removed: z.array(SurfaceItem).default([]), added: z.array(SurfaceItem).default([]),
+    contracts: z.record(z.string(), z.array(SurfaceItem)).default({}),
+    legacy_count: z.number().default(0), target_count: z.number().default(0),
+  }).partial().default({}),
+  antipatterns: z.object({
+    target: z.array(z.object({ rule: z.string(), title: z.string(), severity: Severity, file: z.string(), line: z.number(),
+      origin: z.string(), legacy_file: z.string().nullable().default(null) })).default([]),
+    fixed: z.array(z.object({ rule: z.string(), title: z.string(), file: z.string(), line: z.number() })).default([]),
+  }).partial().default({}),
+  notes: strings,
+  recorded_at: z.string().nullable().default(null),
+});
+export type MigrationReview = z.infer<typeof MigrationReview>;
+
+export const ModernizationSecurity = z.object({
+  schema_version: z.number().default(1),
+  system_name: text,
+  module_id: z.string(),
+  pr: text,
+  legacy_commit: text,
+  scans: z.record(z.string(), z.string()).default({}),
+  findings: z.array(z.object({
+    id: z.string(), title: z.string(), severity: Severity, origin: z.enum(["carried_over", "introduced"]).catch("introduced"),
+    legacy_ref: z.string().nullable().default(null), reachable: z.boolean().nullable().default(null),
+    is_secret: z.boolean().default(false), cve: z.string().nullable().default(null), package: z.string().nullable().default(null),
+    file: z.string().nullable().default(null), remediation_plan: z.string().nullable().default(null),
+    remediation_due: z.string().nullable().default(null),
+  })).default([]),
+  fixed_from_legacy: z.array(z.object({ title: z.string(), cve: z.string().nullable().default(null),
+    package: z.string().nullable().default(null), legacy_ref: z.string() })).default([]),
+  contract_authz: z.array(z.object({ ct_id: z.string(), status: z.string(), note: text })).default([]),
+  sbom: z.object({ components: z.number().nullable().default(null), vulnerabilities: z.number().nullable().default(null) })
+    .default({ components: null, vulnerabilities: null }),
+  verdict: z.enum(["FAIL", "CONDITIONAL", "PASS"]).catch("FAIL"),
+  rationale: text,
+  required_verdict: z.string().nullable().default(null),
+  migration_version: z.number().nullable().default(null),
+  head_sha: z.string().nullable().default(null),
+  module: z.object({ name: z.string().nullable(), legacy_path: z.string().nullable() }).partial().default({}),
+  sources: Sources,
+  scanner_versions: z.record(z.string(), z.string()).default({}),
+  scan_notes: z.record(z.string(), z.string()).default({}),
+  target_hits: z.array(Hit).default([]),
+  legacy_hits: z.array(Hit).default([]),
+  legacy_cached: z.boolean().default(false),
+  secret_carryover: z.array(z.object({ file: z.string(), line: z.number(), legacy_file: z.string() })).default([]),
+  notes: strings,
+  recorded_at: z.string().nullable().default(null),
+});
+export type ModernizationSecurity = z.infer<typeof ModernizationSecurity>;
+
 export const MigrationWorkspace = z.object({
   moduleId: z.string(),
   modulePath: text,

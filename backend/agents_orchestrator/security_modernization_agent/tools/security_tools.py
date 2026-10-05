@@ -321,7 +321,6 @@ async def _persist(artifact: dict) -> str:
 def build_artifact(*, module_id: str, report: dict, mig: RC.Migration, ctx: dict, state: dict, legacy: dict,
                    diff: dict, recorded_at: Optional[str], session: str = "") -> dict:
     """The stored report (`ModernizationSecurityArtifact`) — ONE builder, for the submit tool and the view fixtures."""
-    from agents_orchestrator.modernization_common.handover.packets import SecurityPayload  # noqa: PLC0415
     from shared.models.artifacts import ModernizationSecurityArtifact  # noqa: PLC0415
 
     target = state["target"]
@@ -344,13 +343,25 @@ def build_artifact(*, module_id: str, report: dict, mig: RC.Migration, ctx: dict
         authz_evidence=dict(state.get("authz") or {}),
         system_name=ctx.get("system_name") or "", recorded_at=recorded_at, agent_session_id=session or None,
     ).model_dump(mode="json")
-    try:
-        artifact["required_verdict"] = SecurityPayload.model_validate(
-            {k: artifact[k] for k in SecurityPayload.model_fields if k in artifact} | {"verdict": "FAIL"}
-        ).required_verdict()
-    except Exception:  # noqa: BLE001 — the packet check reports the problem
-        artifact["required_verdict"] = None
+    artifact["required_verdict"] = policy_verdict(artifact)
     return artifact
+
+
+def policy_verdict(artifact: dict) -> Optional[str]:
+    """What the Track 3 policy gives for these findings, scans and authz — the packet's own
+    `required_verdict`, computed WITHOUT its check that the stated verdict agrees (that check is the
+    submit's). None when a finding or an authz line is malformed (the packet check says why)."""
+    from agents_orchestrator.modernization_common.handover.packets import (  # noqa: PLC0415
+        ContractAuthz, SecurityFinding, SecurityPayload,
+    )
+    try:
+        return SecurityPayload.model_construct(
+            findings=[SecurityFinding.model_validate(f) for f in artifact.get("findings") or []],
+            contract_authz=[ContractAuthz.model_validate(a) for a in artifact.get("contract_authz") or []],
+            scans=dict(artifact.get("scans") or {}),
+        ).required_verdict()
+    except Exception:  # noqa: BLE001
+        return None
 
 
 @tool

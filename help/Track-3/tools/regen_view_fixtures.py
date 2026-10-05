@@ -198,6 +198,98 @@ data["migration_workspaces"] = {"projectId": "p-claimtrack", "workspaces": [
      "pushed": {"head": _shas[5], "at": "2026-12-02T11:30:00+00:00", "pr_url": "https://github.com/claimtrack/claimtrack-lite-target/pull/1"},
      "openedAt": "2026-12-02T10:00:00+00:00"},
 ]}
+# Phase I: the review and the security report of that migration, built by the submit tools' own builders. The
+# API diff and the anti-pattern scan are COMPUTED here by the review's analysis on the sample and the migrated
+# server (tests/review_security_modernization/lite_i.py) — the faithful one and the broken one (rounding trap
+# left in, 409 → 400, /metrics added) — not typed in.
+import shutil as _shutil  # noqa: E402
+import tempfile as _tempfile  # noqa: E402
+
+from agents_orchestrator.code_review_modernization_agent.tools.review_tools import build_artifact as build_review, compute  # noqa: E402
+from agents_orchestrator.modernization_common.review_checkout import Migration as _Mig  # noqa: E402
+from agents_orchestrator.security_modernization_agent.tools.security_tools import build_artifact as build_security  # noqa: E402
+from tests.review_security_modernization import lite_i  # noqa: E402
+
+_ldesign = lite_i.design()
+_ctx = {"name": "claims-api", "tier": "llm_assisted", "patterns": ["in_place_upgrade"],
+        "contracts": [c for c in _ldesign["frozen_contracts"] if c["id"] == "CT-01"],
+        "traps": [t for t in _ldesign["traps"] if "M-01" in t["affects"]],
+        "criteria": [{"id": e} for e in ("EC-01", "EC-02", "EC-04")], "waves": [{"id": "W1", "starts": "2026-12-01", "ends": "2027-01-31"}],
+        "system_name": "ClaimTrack Lite", "sources": {k: v for k, v in _sources.items() if k != "baseline"}}
+
+
+def _mig(server_text: str, version: int, head: str) -> _Mig:
+    tmp = pathlib.Path(_tempfile.mkdtemp())
+    _shutil.copytree(lite.SAMPLE / "claims-api", tmp / "claims-api")
+    (tmp / "claims-api" / "server.py").write_text(server_text, encoding="utf-8")
+    return _Mig(module_id="M-01", record={**data["migration"], "pr_url": "https://github.com/claimtrack/claimtrack-lite-target/pull/1"},
+                version=version, status="published", head=head, branch="migrate/claims-api", module_path="claims-api",
+                ledger={"state": "in_review", "wave": "W1"}, target=tmp, legacy=lite.SAMPLE, legacy_commit="4f1c2e9a7b" * 4)
+
+
+_good, _bad = _mig(lite_i.migrated_server(), 1, _shas[5]), _mig(lite_i.broken_server(), 2, "3a7b6c8d9e" * 4)
+_files_read = {"target": ["claims-api/server.py"], "legacy": ["claims-api/server.py"]}
+_checks = {
+    "contract_check": [{"ct_id": "CT-01", "status": "unchanged",
+                        "note": "The same JSON on every route; encoded to bytes for the socket (TR-02)."}],
+    "trap_check": [{"tr_id": "TR-01", "status": "handled", "where": "claims-api/server.py:28"},
+                   {"tr_id": "TR-02", "status": "handled", "where": "claims-api/server.py:53"}],
+    "equivalence_coverage": [{"ec_id": e, "status": "covered", "note": ""} for e in ("EC-01", "EC-02", "EC-04")],
+    "traceability": [{"legacy_path": f, "target_path": f, "status": "mapped"} for f in _files]}
+_diff, _hits = compute(_good, _ctx)
+data["review"] = build_review(module_id="M-01", mig=_good, ctx=_ctx, opened=_files_read, diff=_diff, hits=_hits,
+                              recorded_at="2026-12-03T10:00:00+00:00", review={
+    "summary": "A faithful port: both traps handled where the design says, every route, status code and SQL statement kept.",
+    "merge_recommendation": "approve", "findings": [],
+    "known_debt": [{"pattern": "Hard-coded host", "legacy_file": "claims-api/server.py", "note": "FRAUD_URL default; the environment overrides it"}],
+    **_checks})
+_bdiff, _bhits = compute(_bad, _ctx)
+data["review_changes"] = build_review(module_id="M-01", mig=_bad, ctx=_ctx, opened=_files_read, diff=_bdiff, hits=_bhits,
+                                      recorded_at="2026-12-03T11:00:00+00:00", review={
+    "summary": "The rounding trap is not handled and a settled claim answers 400 instead of 409.",
+    "merge_recommendation": "request_changes",
+    "findings": [
+        {"id": "F-001", "severity": "high", "category": "trap_unhandled", "file": "claims-api/server.py", "line": 27,
+         "legacy_file": "claims-api/server.py", "legacy_line": 27, "refs": ["TR-01", "EC-02"],
+         "description": "Python 3 round() rounds halves to even: two half-cent payouts pay a cent less.",
+         "recommendation": "Decimal ROUND_HALF_UP on the exact value, as the design's TR-01 says."},
+        {"id": "F-002", "severity": "high", "category": "contract_drift", "file": "claims-api/server.py", "line": 84,
+         "legacy_file": "claims-api/server.py", "legacy_line": 82, "refs": ["CT-01"],
+         "description": "Settling a claim that is not open answers 400; the legacy answers 409.", "recommendation": "Answer 409."},
+        {"id": "F-003", "severity": "medium", "category": "scope_creep", "file": "claims-api/server.py", "line": 60,
+         "description": "A /metrics route was added; no ADR asks for it.", "recommendation": "Remove it from this migration."}],
+    **{**_checks, "contract_check": [{"ct_id": "CT-01", "status": "changed", "note": "409 → 400; /metrics added"}],
+       "trap_check": [{"tr_id": "TR-01", "status": "not_handled", "where": ""}, _checks["trap_check"][1]]}})
+# Security: the scanners' results as the chain test measured them on the sample (Semgrep's bind-all on both
+# sides; Trivy and Gitleaks clean), plus a variant where Gitleaks did not run.
+_bind = {"tool": "semgrep", "rule": "py-bind-all", "title": "Server binds every interface", "severity": "low",
+         "file": "claims-api/server.py", "line": 99, "package": None, "version": None, "cve": None, "fixed_version": None,
+         "secret_hash": None}
+_py2 = {**_bind, "rule": "py-eval-exec", "title": "eval or exec of a value", "severity": "high", "line": 12}
+_state_sec = {"target": {"scans": {"trivy": "ran", "semgrep": "ran", "gitleaks": "ran"}, "notes": {},
+                         "findings": [_bind], "sbom": {"components": 0, "vulnerabilities": 0},
+                         "versions": {"trivy": "0.58.1", "semgrep": "1.99.0", "gitleaks": "8.21.2"}},
+              "carryover": [], "authz": {"CT-01": {"suggested": "same", "reason": "no authentication marker on either side",
+                                                   "legacy": {}, "target": {}, "legacy_file": "claims-api/server.py",
+                                                   "target_files": ["claims-api/server.py"], "found": True}}}
+_legacy_sec = {"findings": [{**_bind, "line": 98}, _py2], "served_from_cache": True}
+_sdiff = {"target": [{**_bind, "origin": "carried_over", "legacy_ref": "claims-api/server.py:98"}],
+          "fixed": [{**_py2, "origin": "fixed", "legacy_ref": "claims-api/server.py:12"}]}
+data["security"] = build_security(module_id="M-01", mig=_good, ctx=_ctx, state=_state_sec, legacy=_legacy_sec, diff=_sdiff,
+                                  recorded_at="2026-12-03T12:00:00+00:00", report={
+    "verdict": "CONDITIONAL", "rationale": "Nothing introduced. One low finding carried over (the server binds every interface), "
+                                           "with a plan inside the wave.",
+    "findings": [{"id": "S-001", "title": "Server binds every interface", "severity": "low", "origin": "carried_over",
+                  "legacy_ref": "claims-api/server.py:98", "reachable": True, "file": "claims-api/server.py",
+                  "remediation_plan": "Bind to the container interface from configuration", "remediation_due": "2027-01-15"}],
+    "contract_authz": [{"ct_id": "CT-01", "status": "same", "note": "No authentication on either side, as before (gateway-enforced)."}]})
+_state_partial = {**_state_sec, "target": {**_state_sec["target"], "scans": {"trivy": "not_installed", "semgrep": "ran", "gitleaks": "ran"},
+                                           "notes": {"trivy": "Trivy's vulnerability database is not on this server."},
+                                           "sbom": {"components": None, "vulnerabilities": None}}}
+data["security_unscanned"] = build_security(module_id="M-01", mig=_good, ctx=_ctx, state=_state_partial, legacy={"findings": []},
+                                            diff={"target": [], "fixed": []}, recorded_at="2026-12-03T12:30:00+00:00", report={
+    "verdict": "FAIL", "rationale": "Dependencies were not scanned; the sign-off waits for the database.", "findings": [],
+    "contract_authz": [{"ct_id": "CT-01", "status": "same", "note": ""}]})
 FIXTURES.write_text(json.dumps(data, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
 print(f"assessment: schema {new['schema_version']}, {len(new['modules'])} modules, "
       f"{len(new['not_assessable_statically'])} not-assessable questions")
