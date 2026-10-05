@@ -28,7 +28,7 @@ mandatory stops are in `help/Track-3/Track-3 Implementation Prompt.md` §9.
 - [x] I2 Security (Modernization) agent (`security_modernization`): tools, prompt, graph, socket
 - [x] I3 Wiring: registry, orchestrator2, migration 0075, routes, ledger verdicts, roster pins
 - [x] I4 Tests: units, Postgres chain (review + security on Phase H's PR), rework loop
-- [ ] I5 Frontend: `/migration-review`, `/modernization-security` pages + tests
+- [x] I5 Frontend: `/migration-review`, `/modernization-security` pages + tests
 - [ ] I6 Mutation, regression, build-log Entry 15, click-through I, this file
 
 ### 0.1 Run it on the Windows laptop (PowerShell)
