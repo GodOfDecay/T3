@@ -71,6 +71,26 @@ async def _baseline(env):
     assert "Recorded as baseline v1" in await eq.record_baseline.ainvoke({"capture_id": capture_id,
                                                                           "rule_proposals": lite.PROPOSALS})
     assert _publish(env, "testing_modernization", 1, "u-qa2").status_code == 200
+    await _adopt_proposals(env)
+
+
+async def _adopt_proposals(env):
+    """Migration Strategy adopts the baseline's rule proposals (`requestId` is a fresh uuid on every response,
+    in the legacy too): plan v2, the same waves and criteria, approved by someone else. Without it verify
+    honestly reports a normalization gap on every scenario — what the first run of this test did."""
+    import copy
+    from shared.services.artifact_versions import publish_version, snapshot_stage_payload
+    plan = copy.deepcopy(lite.stored_plan())
+    for c in plan["equivalence_criteria"]:
+        if c["id"] in {p["ec_id"] for p in lite.PROPOSALS}:
+            c["normalization"] = [*(c.get("normalization") or []),
+                                  {"field": "requestId", "rule": "ignore the value, require it present",
+                                   "reason": "a fresh uuid per response (the baseline's noise report)"}]
+    async with get_db_session_for_tenant(env["org"]) as s:
+        ref = await snapshot_stage_payload(s, tenant_id=env["org"], project_id=env["proj"], stage="strategy",
+                                           payload=plan, produced_by="u-arch")
+        await publish_version(s, tenant_id=env["org"], project_id=env["proj"], stage="strategy", version=ref.version,
+                              published_by="u-pa")
 
 
 async def _verifying(env, server_text: str, version: int = 1, *, python3: bool = True) -> None:

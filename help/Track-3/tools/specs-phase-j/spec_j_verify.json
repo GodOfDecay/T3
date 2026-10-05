@@ -1,0 +1,99 @@
+{
+ "root": "backend",
+ "target": "agents_orchestrator/testing_modernization_agent/analysis/verify.py",
+ "tests": [
+  "tests/testing_modernization/test_verify_units.py"
+ ],
+ "mutants": [
+  [
+   "rules-ignored",
+   "        if any(covers(str(r.get(\"field\") or \"\"), f) for r in rules):\n            continue",
+   "        pass"
+  ],
+  [
+   "gap-is-regression",
+   "        kind = \"normalization_gap\" if f in floor else (\"environment\" if in1 != in2 else \"regression\")",
+   "        kind = \"environment\" if in1 != in2 else \"regression\""
+  ],
+  [
+   "env-is-regression",
+   "        kind = \"normalization_gap\" if f in floor else (\"environment\" if in1 != in2 else \"regression\")",
+   "        kind = \"normalization_gap\" if f in floor else \"regression\""
+  ],
+  [
+   "one-run-only",
+   "    fields = sorted(set(first.get(\"varying\") or {}) | set(second.get(\"varying\") or {}))",
+   "    fields = sorted(set(first.get(\"varying\") or {}))"
+  ],
+  [
+   "regression-passes",
+   "    if \"regression\" in kinds:\n        return \"failed\"",
+   "    if False:\n        return \"failed\""
+  ],
+  [
+   "gap-passes",
+   "    if kinds & {\"normalization_gap\", \"environment\"}:\n        return \"open\"",
+   "    if False:\n        return \"open\""
+  ],
+  [
+   "nothing-compared-passes",
+   "    if not cases:\n        return \"not_run\"",
+   "    if False:\n        return \"not_run\""
+  ],
+  [
+   "unrecorded-runs",
+   "        if not scenarios:\n            results.append",
+   "        if False:\n            results.append"
+  ],
+  [
+   "unmeasured-passes",
+   "            if limit is None or legacy is None or target is None:",
+   "            if limit is None:"
+  ],
+  [
+   "slow-passes",
+   "\"passed\" if target <= limit else \"failed\"",
+   "\"passed\""
+  ],
+  [
+   "seconds-as-ms",
+   "    return value * 1000 if m.group(2).lower() == \"s\" else value",
+   "    return value"
+  ],
+  [
+   "p95-is-max",
+   "    return round(xs[max(0, math.ceil(0.95 * len(xs)) - 1)], 1)",
+   "    return round(xs[-1], 1)"
+  ],
+  [
+   "any-adr",
+   "        elif adr not in adrs:",
+   "        elif False:"
+  ],
+  [
+   "accept-a-gap",
+   "        elif d[\"classification\"] != \"regression\":",
+   "        elif False:"
+  ],
+  [
+   "accepted-not-recomputed",
+   "            r[\"verdict\"] = verdict_for(kinds - {\"accepted_change\"}, r[\"cases_compared\"] or 0)",
+   "            pass"
+  ],
+  [
+   "no-proposals",
+   "                if d[\"classification\"] == \"normalization_gap\":\n                    proposals.append",
+   "                if False:\n                    proposals.append"
+  ],
+  [
+   "open-is-verified",
+   "    if verdicts == {\"passed\"}:\n        return \"verified\"",
+   "    if \"failed\" not in verdicts:\n        return \"verified\""
+  ],
+  [
+   "no-likely-area",
+   "                                    \"masked_example\": d[\"example\"], \"likely_area\": _likely_area(c, design),",
+   "                                    \"masked_example\": d[\"example\"], \"likely_area\": None,"
+  ]
+ ]
+}

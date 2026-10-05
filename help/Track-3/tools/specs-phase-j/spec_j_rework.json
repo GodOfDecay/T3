@@ -1,0 +1,29 @@
+{
+ "root": "backend",
+ "target": "agents_orchestrator/development_modernization_agent/tools/migration_tools.py",
+ "tests": [
+  "tests/development_modernization/test_units.py"
+ ],
+ "mutants": [
+  [
+   "unhandled-trap-hidden",
+   "            if t.get(\"status\") == \"not_handled\":",
+   "            if False:"
+  ],
+  [
+   "carryover-hidden",
+   "        for c in sp.get(\"secret_carryover\") or []:",
+   "        for c in []:"
+  ],
+  [
+   "weaker-hidden",
+   "            if a.get(\"status\") == \"weaker\":",
+   "            if False:"
+  ],
+  [
+   "unsorted",
+   "        for f in sorted(r.get(\"findings\") or [], key=lambda f: (sev.get(f.get(\"severity\"), 9), f.get(\"id\") or \"\")):",
+   "        for f in r.get(\"findings\") or []:"
+  ]
+ ]
+}
